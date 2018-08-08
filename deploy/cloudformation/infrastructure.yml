@@ -211,28 +211,28 @@ Outputs:
     Description: The name of the ECS Cluster created by this CloudFormation
     Value: !Ref ContainerCluster
     Export:
-      Name: ClusterName
+      Name: MEL-ClusterName
 
   PrivateSubnet1ID:
     Description: The subnet ID of the 1st private subnet
     Value: !Ref PrivateSubnet1
     Export:
-      Name: PrivateSubnet1ID
+      Name: MEL-PrivateSubnet1ID
 
   PrivateSubnet2ID:
     Description: The subnet ID of the 2nd private subnet
     Value: !Ref PrivateSubnet2
     Export:
-      Name: PrivateSubnet2ID
+      Name: MEL-PrivateSubnet2ID
 
   IIIFSecurityGroupID:
     Description: The Security Group ID for the IIIF Service
     Value: !Ref IIIFSecurityGroup
     Export:
-      Name: IIIFSecurityGroupID
+      Name: MEL-IIIFSecurityGroupID
 
   ContainerTaskExecutionRoleArn:
     Description: The ARN (Amazon Resource Name) of the Container Task Execution Role
     Value: !GetAtt ContainerTaskExecutionRole.Arn
     Export:
-      Name: ContainerTaskExecutionRoleArn
+      Name: MEL-ContainerTaskExecutionRoleArn

@@ -11,6 +11,7 @@ Description: >
     - A Security Group that allows incoming traffic over TCP Port 8182 for the IIIF Service
     - An ECS Cluster to allow Fargate or other container services to run in
     - An IAM Role to allow ECS Task Execution
+    - A Public Load Balancer to access private resources over open Internet
 
 Parameters:
   EnvironmentName:
@@ -39,12 +40,19 @@ Parameters:
     ConstraintDescription: "Must be a valid IP CIDR range in the form x.x.x.x/x"
     Default: 10.0.1.0/24
 
-  PublicSubnetCIDR:
+  PublicSubnet1CIDR:
     Type: String
-    Description: The CIDR Block for the public subnet - needed for NAT Gateway
+    Description: The CIDR Block for the 1st public subnet - needed for NAT Gateway
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
     ConstraintDescription: "Must be a valid IP CIDR range in the form x.x.x.x/x"
     Default: 10.0.2.0/24
+
+  PublicSubnet2CIDR:
+    Type: String
+    Description: The CIDR Block for the 2nd public subnet - needed for NAT Gateway
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: "Must be a valid IP CIDR range in the form x.x.x.x/x"
+    Default: 10.0.3.0/24
 
 Resources:
   VPC:
@@ -56,16 +64,27 @@ Resources:
         - Key: Name
           Value: !Ref EnvironmentName
 
-  PublicSubnet:
+  PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: !Ref PublicSubnetCIDR
+      CidrBlock: !Ref PublicSubnet1CIDR
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Public Subnet
+          Value: !Sub ${EnvironmentName} Public Subnet 1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet 2
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -102,17 +121,29 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
 
-  NATGatewayEIP:
+  NATGateway1EIP:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
     Properties:
       Domain: vpc
 
-  NATGateway:
+  NATGateway1:
     Type: AWS::EC2::NatGateway
     Properties:
-      AllocationId: !GetAtt NATGatewayEIP.AllocationId
-      SubnetId: !Ref PublicSubnet
+      AllocationId: !GetAtt NATGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  NATGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
 
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
@@ -127,7 +158,7 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTable1
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NATGateway
+      NatGatewayId: !Ref NATGateway1
 
   PrivateSubnet1PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -148,13 +179,66 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTable2
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NATGateway
+      NatGatewayId: !Ref NATGateway2
 
   PrivateSubnet2PrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRouteTable2
       SubnetId: !Ref PrivateSubnet2
+
+  PublicLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Access to a public facing load balancer
+      SecurityGroupIngress:
+          # Allow access to ALB from anywhere on the internet
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: "Public Facing Load Balancer Security Group"
+
+  PublicLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      # LoadBalancerAttributes:
+      # - Key: idle_timeout.timeout_seconds
+      #   Value: '30'
+      # SecurityGroups:
+      #   - !Ref PublicLoadBalancerSecurityGroup
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      Type: network
+
+  DummyTargetGroupPublic:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      # HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Name: !Sub ${EnvironmentName}-TargetGroup
+      Port: 8182
+      Protocol: TCP
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref VPC
+
+  PublicLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - PublicLoadBalancer
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref DummyTargetGroupPublic
+          Type: forward
+      LoadBalancerArn: !Ref PublicLoadBalancer
+      Port: 8182
+      Protocol: TCP
 
   IIIFSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -164,8 +248,8 @@ Resources:
       SecurityGroupIngress:
         -
           IpProtocol: "tcp"
-          FromPort: 8185
-          ToPort: 8185
+          FromPort: 8182
+          ToPort: 8182
           CidrIp: 0.0.0.0/0 # This may need to be changed for security purposes
       Tags:
         - Key: Name
@@ -236,3 +320,15 @@ Outputs:
     Value: !GetAtt ContainerTaskExecutionRole.Arn
     Export:
       Name: MEL-ContainerTaskExecutionRoleArn
+
+  VPCID:
+    Description: The ID of the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: MEL-VPCID
+
+  PublicLoadBalancerListener:
+    Description: The Arn of the created public Load Balancer's Listener
+    Value: !Ref PublicLoadBalancerListener
+    Export:
+      Name: MEL-PublicLoadBalancerListener

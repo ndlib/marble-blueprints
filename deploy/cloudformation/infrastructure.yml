@@ -200,19 +200,43 @@ Resources:
         - Key: Name
           Value: "Public Facing Load Balancer Security Group"
 
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
   PublicLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Scheme: internet-facing
-      # LoadBalancerAttributes:
-      # - Key: idle_timeout.timeout_seconds
-      #   Value: '30'
-      # SecurityGroups:
-      #   - !Ref PublicLoadBalancerSecurityGroup
+      LoadBalancerAttributes:
+      - Key: idle_timeout.timeout_seconds
+        Value: '30'
+      SecurityGroups:
+        - !Ref PublicLoadBalancerSecurityGroup
       Subnets:
         - !Ref PublicSubnet1
         - !Ref PublicSubnet2
-      Type: network
 
   DummyTargetGroupPublic:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -220,11 +244,11 @@ Resources:
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /
       HealthCheckProtocol: HTTP
-      # HealthCheckTimeoutSeconds: 5
+      HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
-      Name: !Sub ${EnvironmentName}-TargetGroup
+      Name: !Sub ${EnvironmentName}-TargetGroup1
       Port: 8182
-      Protocol: TCP
+      Protocol: HTTP
       UnhealthyThresholdCount: 2
       VpcId: !Ref VPC
 
@@ -238,7 +262,7 @@ Resources:
           Type: forward
       LoadBalancerArn: !Ref PublicLoadBalancer
       Port: 8182
-      Protocol: TCP
+      Protocol: HTTP
 
   IIIFSecurityGroup:
     Type: AWS::EC2::SecurityGroup

@@ -11,7 +11,6 @@ Description: >
     - A Security Group that allows incoming traffic over TCP Port 8182 for the IIIF Service
     - An ECS Cluster to allow Fargate or other container services to run in
     - An IAM Role to allow ECS Task Execution
-    - A Public Load Balancer to access private resources over open Internet
 
 Parameters:
   EnvironmentName:
@@ -225,19 +224,6 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
 
-  PublicLoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Scheme: internet-facing
-      LoadBalancerAttributes:
-      - Key: idle_timeout.timeout_seconds
-        Value: '30'
-      SecurityGroups:
-        - !Ref PublicLoadBalancerSecurityGroup
-      Subnets:
-        - !Ref PublicSubnet1
-        - !Ref PublicSubnet2
-
   DummyTargetGroupPublic:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -251,18 +237,6 @@ Resources:
       Protocol: HTTP
       UnhealthyThresholdCount: 2
       VpcId: !Ref VPC
-
-  PublicLoadBalancerListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    DependsOn:
-      - PublicLoadBalancer
-    Properties:
-      DefaultActions:
-        - TargetGroupArn: !Ref DummyTargetGroupPublic
-          Type: forward
-      LoadBalancerArn: !Ref PublicLoadBalancer
-      Port: 8182
-      Protocol: HTTP
 
   IIIFSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -319,40 +293,52 @@ Outputs:
     Description: The name of the ECS Cluster created by this CloudFormation
     Value: !Ref ContainerCluster
     Export:
-      Name: MEL-ClusterName
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ClusterName']]
+
+  PublicSubnet1ID:
+    Description: The subnet ID of the 1st public subnet
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet1ID']]
+
+  PublicSubnet2ID:
+    Description: The subnet ID of the 2nd public subnet
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet2ID']]
 
   PrivateSubnet1ID:
     Description: The subnet ID of the 1st private subnet
     Value: !Ref PrivateSubnet1
     Export:
-      Name: MEL-PrivateSubnet1ID
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet1ID']]
 
   PrivateSubnet2ID:
     Description: The subnet ID of the 2nd private subnet
     Value: !Ref PrivateSubnet2
     Export:
-      Name: MEL-PrivateSubnet2ID
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet2ID']]
 
   IIIFSecurityGroupID:
     Description: The Security Group ID for the IIIF Service
     Value: !Ref IIIFSecurityGroup
     Export:
-      Name: MEL-IIIFSecurityGroupID
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'IIIFSecurityGroupID']]
 
   ContainerTaskExecutionRoleArn:
     Description: The ARN (Amazon Resource Name) of the Container Task Execution Role
     Value: !GetAtt ContainerTaskExecutionRole.Arn
     Export:
-      Name: MEL-ContainerTaskExecutionRoleArn
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ContainerTaskExecutionRoleArn']]
 
   VPCID:
     Description: The ID of the created VPC
     Value: !Ref VPC
     Export:
-      Name: MEL-VPCID
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'VPCID']]
 
-  PublicLoadBalancerListener:
-    Description: The Arn of the created public Load Balancer's Listener
-    Value: !Ref PublicLoadBalancerListener
+  PublicLoadBalancerSecurityGroupID:
+    Description: The ID of the load balancer security group
+    Value: !Ref PublicLoadBalancerSecurityGroup
     Export:
-      Name: MEL-PublicLoadBalancerListener
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicLoadBalancerSecurityGroup']]

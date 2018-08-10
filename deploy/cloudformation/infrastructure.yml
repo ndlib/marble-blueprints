@@ -39,12 +39,19 @@ Parameters:
     ConstraintDescription: "Must be a valid IP CIDR range in the form x.x.x.x/x"
     Default: 10.0.1.0/24
 
-  PublicSubnetCIDR:
+  PublicSubnet1CIDR:
     Type: String
-    Description: The CIDR Block for the public subnet - needed for NAT Gateway
+    Description: The CIDR Block for the 1st public subnet - needed for NAT Gateway
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
     ConstraintDescription: "Must be a valid IP CIDR range in the form x.x.x.x/x"
     Default: 10.0.2.0/24
+
+  PublicSubnet2CIDR:
+    Type: String
+    Description: The CIDR Block for the 2nd public subnet - needed for NAT Gateway
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: "Must be a valid IP CIDR range in the form x.x.x.x/x"
+    Default: 10.0.3.0/24
 
 Resources:
   VPC:
@@ -56,16 +63,27 @@ Resources:
         - Key: Name
           Value: !Ref EnvironmentName
 
-  PublicSubnet:
+  PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: !Ref PublicSubnetCIDR
+      CidrBlock: !Ref PublicSubnet1CIDR
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Public Subnet
+          Value: !Sub ${EnvironmentName} Public Subnet 1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet 2
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -102,17 +120,29 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
 
-  NATGatewayEIP:
+  NATGateway1EIP:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
     Properties:
       Domain: vpc
 
-  NATGateway:
+  NATGateway1:
     Type: AWS::EC2::NatGateway
     Properties:
-      AllocationId: !GetAtt NATGatewayEIP.AllocationId
-      SubnetId: !Ref PublicSubnet
+      AllocationId: !GetAtt NATGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  NATGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
 
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
@@ -127,7 +157,7 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTable1
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NATGateway
+      NatGatewayId: !Ref NATGateway1
 
   PrivateSubnet1PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -148,13 +178,51 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTable2
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NATGateway
+      NatGatewayId: !Ref NATGateway2
 
   PrivateSubnet2PrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRouteTable2
       SubnetId: !Ref PrivateSubnet2
+
+  PublicLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Access to a public facing load balancer
+      SecurityGroupIngress:
+          # Allow access to ALB from anywhere on the internet
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: "Public Facing Load Balancer Security Group"
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
 
   IIIFSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -164,8 +232,8 @@ Resources:
       SecurityGroupIngress:
         -
           IpProtocol: "tcp"
-          FromPort: 8185
-          ToPort: 8185
+          FromPort: 8182
+          ToPort: 8182
           CidrIp: 0.0.0.0/0 # This may need to be changed for security purposes
       Tags:
         - Key: Name
@@ -178,7 +246,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Verion: 2012-10-17
+        Version: 2012-10-17
         Statement:
           -
             Effect: Allow
@@ -211,28 +279,52 @@ Outputs:
     Description: The name of the ECS Cluster created by this CloudFormation
     Value: !Ref ContainerCluster
     Export:
-      Name: MEL-ClusterName
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ClusterName']]
+
+  PublicSubnet1ID:
+    Description: The subnet ID of the 1st public subnet
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet1ID']]
+
+  PublicSubnet2ID:
+    Description: The subnet ID of the 2nd public subnet
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet2ID']]
 
   PrivateSubnet1ID:
     Description: The subnet ID of the 1st private subnet
     Value: !Ref PrivateSubnet1
     Export:
-      Name: MEL-PrivateSubnet1ID
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet1ID']]
 
   PrivateSubnet2ID:
     Description: The subnet ID of the 2nd private subnet
     Value: !Ref PrivateSubnet2
     Export:
-      Name: MEL-PrivateSubnet2ID
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet2ID']]
 
   IIIFSecurityGroupID:
     Description: The Security Group ID for the IIIF Service
     Value: !Ref IIIFSecurityGroup
     Export:
-      Name: MEL-IIIFSecurityGroupID
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'IIIFSecurityGroupID']]
 
   ContainerTaskExecutionRoleArn:
     Description: The ARN (Amazon Resource Name) of the Container Task Execution Role
     Value: !GetAtt ContainerTaskExecutionRole.Arn
     Export:
-      Name: MEL-ContainerTaskExecutionRoleArn
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ContainerTaskExecutionRoleArn']]
+
+  VPCID:
+    Description: The ID of the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'VPCID']]
+
+  PublicLoadBalancerSecurityGroupID:
+    Description: The ID of the load balancer security group
+    Value: !Ref PublicLoadBalancerSecurityGroup
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicLoadBalancerSecurityGroup']]

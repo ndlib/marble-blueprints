@@ -1,0 +1,218 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Creates the IIIF service on AWS Fargate, hosted in a private subnet, but accessible via a public load balancer. Will create the following:
+    - A bucket that the IIIF service will read from for its images
+    - The IIIF ECS Task and Service (via Fargate)
+    - A Public Load Balancer to access the private IIIF resource over open Internet
+
+  Expects the following exports from the infrastructure stack:
+    - InfrastructureStackName:ContainerTaskExecutionRoleArn
+    - InfrastructureStackName:ClusterName
+    - InfrastructureStackName:IIIFSecurityGroupID
+    - InfrastructureStackName:PrivateSubnet1ID
+    - InfrastructureStackName:PrivateSubnet2ID
+    - InfrastructureStackName:VPCID
+    - InfrastructureStackName:PublicLoadBalancerSecurityGroup
+    - InfrastructureStackName:PublicSubnet1ID
+    - InfrastructureStackName:PublicSubnet2ID
+    - InfrastructureStackName:ContainerTaskExecutionRoleArn
+
+Parameters:
+  InfrastructureStackName:
+    Type: String
+    Default: mellon-infrastructure
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+  ImageUrl:
+    Type: String
+    Default: mitlibraries/cantaloupe
+    Description: The url of a docker image that contains the application process that
+                 will handle the traffic for this service
+  ContainerPort:
+    Type: Number
+    Default: 8182
+    Description: What port number the application inside the docker container is binding to
+  ContainerCpu:
+    Type: Number
+    Default: 256
+    Description: How much CPU to give the container. 1024 is 1 CPU
+  ContainerMemory:
+    Type: Number
+    Default: 512
+    Description: How much memory in megabytes to give the container
+  Path:
+    Type: String
+    Default: "*"
+    Description: A path on the public load balancer that this service
+                 should be connected to. Use * to send all load balancer
+                 traffic to this service.
+  Priority:
+    Type: Number
+    Default: 1
+    Description: The priority for the routing rule added to the load balancer.
+                 This only applies if your have multiple services which have been
+                 assigned to different paths on the load balancer.
+  DesiredCount:
+    Type: Number
+    Default: 2
+    Description: How many copies of the service task to run
+  Role:
+    Type: String
+    Default: ""
+    Description: (Optional) An IAM role to give the service's containers if the code within needs to
+                 access other AWS resources like S3 buckets, DynamoDB tables, etc
+
+Conditions:
+  HasCustomRole: !Not [ !Equals [!Ref 'Role', ''] ]
+
+Resources:
+
+  # The task definition. This is a simple metadata description of what
+  # container to run, and what resource requirements it has.
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${AWS::StackName}-ImageService'
+      Cpu: !Ref 'ContainerCpu'
+      Memory: !Ref 'ContainerMemory'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn:
+        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
+      TaskRoleArn:
+        Fn::If:
+          - 'HasCustomRole'
+          - !Ref 'Role'
+          - !Ref "AWS::NoValue"
+      ContainerDefinitions:
+        - Name: !Sub '${AWS::StackName}-ImageService'
+          Cpu: !Ref 'ContainerCpu'
+          Memory: !Ref 'ContainerMemory'
+          Image: !Ref 'ImageUrl'
+          PortMappings:
+            - ContainerPort: !Ref 'ContainerPort'
+
+  # The service. The service is a resource which allows you to run multiple
+  # copies of a type of task, and gather up their logs and metrics, as well
+  # as monitor the number of running tasks and replace any that have crashed
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: LoadBalancerRule
+    Properties:
+      ServiceName: !Sub '${AWS::StackName}-ImageService'
+      Cluster:
+        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ClusterName']]
+      LaunchType: FARGATE
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 75
+      DesiredCount: !Ref 'DesiredCount'
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'IIIFSecurityGroupID']]
+          Subnets:
+            - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PrivateSubnet1ID']]
+            - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PrivateSubnet2ID']]
+      TaskDefinition: !Ref 'TaskDefinition'
+      LoadBalancers:
+        - ContainerName: !Sub '${AWS::StackName}-ImageService'
+          ContainerPort: !Ref 'ContainerPort'
+          TargetGroupArn: !Ref 'TargetGroup'
+
+  # A target group. This is used for keeping track of all the tasks, and
+  # what IP addresses / port numbers they have. You can query it yourself,
+  # to use the addresses yourself, but most often this target group is just
+  # connected to an application load balancer, or network load balancer, so
+  # it can automatically distribute traffic across all the targets.
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 6
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      TargetType: ip
+      Port: !Ref 'ContainerPort'
+      Protocol: HTTP
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'VPCID']]
+
+  PublicLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Description: This is the publicly accessible endpoint for the image service.
+    Properties:
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+      - Key: idle_timeout.timeout_seconds
+        Value: '30'
+      SecurityGroups:
+        -
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicLoadBalancerSecurityGroup']]
+      Subnets:
+        -
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicSubnet1ID']]
+        -
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicSubnet2ID']]
+
+  PublicLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - PublicLoadBalancer
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref PublicLoadBalancer
+      Port: 8182
+      Protocol: HTTP
+
+  LoadBalancerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Description: This default rule sends all traffic to the target group
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref 'TargetGroup'
+          Type: 'forward'
+      Conditions:
+        - Field: path-pattern
+          Values: [!Ref 'Path']
+      ListenerArn: !Ref 'PublicLoadBalancerListener'
+      Priority: !Ref 'Priority'
+
+  ImageSourceBucket:
+    Type: AWS::S3::Bucket
+    Description: This is the source bucket that the IIIF service will read from for its assets.
+  ImageSourceBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Description: This should limit r/w access to the container only
+    Properties:
+      Bucket:
+        Ref: ImageSourceBucket
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource:
+              Fn::Join:
+                - ""
+                -
+                  - !GetAtt ImageSourceBucket.Arn
+                  - "/*"
+            Principal:
+              AWS:
+                Fn::ImportValue:
+                  !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
+
+Outputs:
+  PublicLoadBalancerDNSName:
+    Description: The dns name of the load balancer
+    Value: !GetAtt PublicLoadBalancer.DNSName
+  ImageSourceBucketName:
+    Description: The name of the bucket that will be used as the source for image files
+    Value: !Ref ImageSourceBucket

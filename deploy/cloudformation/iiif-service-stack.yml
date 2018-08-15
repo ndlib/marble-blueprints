@@ -25,7 +25,7 @@ Parameters:
                  to locate and reference resources created by that stack.
   ImageUrl:
     Type: String
-    Default: mitlibraries/cantaloupe
+    Default: ndlib/image-service
     Description: The url of a docker image that contains the application process that
                  will handle the traffic for this service
   ContainerPort:
@@ -56,14 +56,6 @@ Parameters:
     Type: Number
     Default: 2
     Description: How many copies of the service task to run
-  Role:
-    Type: String
-    Default: ""
-    Description: (Optional) An IAM role to give the service's containers if the code within needs to
-                 access other AWS resources like S3 buckets, DynamoDB tables, etc
-
-Conditions:
-  HasCustomRole: !Not [ !Equals [!Ref 'Role', ''] ]
 
 Resources:
 
@@ -71,6 +63,10 @@ Resources:
   # container to run, and what resource requirements it has.
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
+    DependsOn:
+      - ImageSourceBucket
+      - ImageServiceLogGroup
+      - ImageServiceTaskRole
     Properties:
       Family: !Sub '${AWS::StackName}-ImageService'
       Cpu: !Ref 'ContainerCpu'
@@ -80,11 +76,7 @@ Resources:
         - FARGATE
       ExecutionRoleArn:
         Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
-      TaskRoleArn:
-        Fn::If:
-          - 'HasCustomRole'
-          - !Ref 'Role'
-          - !Ref "AWS::NoValue"
+      TaskRoleArn: !GetAtt ImageServiceTaskRole.Arn
       ContainerDefinitions:
         - Name: !Sub '${AWS::StackName}-ImageService'
           Cpu: !Ref 'ContainerCpu'
@@ -92,6 +84,15 @@ Resources:
           Image: !Ref 'ImageUrl'
           PortMappings:
             - ContainerPort: !Ref 'ContainerPort'
+          Environment:
+            - Name: IMAGE_BUCKET
+              Value: !Ref ImageSourceBucket
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group : /ecs/image-service
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: !Ref InfrastructureStackName
 
   # The service. The service is a resource which allows you to run multiple
   # copies of a type of task, and gather up their logs and metrics, as well
@@ -129,15 +130,16 @@ Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HealthCheckIntervalSeconds: 6
+      # It takes on average almost 60 seconds to start this in ECS
+      HealthCheckIntervalSeconds: 30
       HealthCheckPath: /
       HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
       TargetType: ip
       Port: !Ref 'ContainerPort'
       Protocol: HTTP
-      UnhealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
       VpcId:
         Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'VPCID']]
 
@@ -186,28 +188,43 @@ Resources:
   ImageSourceBucket:
     Type: AWS::S3::Bucket
     Description: This is the source bucket that the IIIF service will read from for its assets.
-  ImageSourceBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Description: This should limit r/w access to the container only
+
+  ImageServiceLogGroup:
+    Type: AWS::Logs::LogGroup
     Properties:
-      Bucket:
-        Ref: ImageSourceBucket
-      PolicyDocument:
+      RetentionInDays: 7
+      LogGroupName: /ecs/image-service
+
+  ImageServiceTaskRole:
+    Type: AWS::IAM::Role
+    DependsOn: ImageSourceBucket
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           -
-            Action:
-              - "s3:GetObject"
-            Effect: "Allow"
-            Resource:
-              Fn::Join:
-                - ""
-                -
-                  - !GetAtt ImageSourceBucket.Arn
-                  - "/*"
+            Effect: Allow
             Principal:
-              AWS:
-                Fn::ImportValue:
-                  !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: ImageSourceBucketPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "s3:GetObject"
+                Effect: "Allow"
+                Resource:
+                  Fn::Join:
+                    - ""
+                    -
+                      - !GetAtt ImageSourceBucket.Arn
+                      - "/*"
 
 Outputs:
   PublicLoadBalancerDNSName:

@@ -142,6 +142,13 @@ Resources:
       UnhealthyThresholdCount: 3
       VpcId:
         Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'VPCID']]
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
 
   PublicLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -159,6 +166,13 @@ Resources:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicSubnet1ID']]
         -
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicSubnet2ID']]
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
 
   PublicLoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener

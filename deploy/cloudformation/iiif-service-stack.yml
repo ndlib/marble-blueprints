@@ -98,6 +98,8 @@ Resources:
           Environment:
             - Name: IMAGE_BUCKET
               Value: !Ref ImageSourceBucket
+            - Name: CACHE_BUCKET
+              Value: !Ref ImageDerivativeCacheBucket
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -214,6 +216,10 @@ Resources:
     Type: AWS::S3::Bucket
     Description: This is the source bucket that the IIIF service will read from for its assets.
 
+  ImageDerivativeCacheBucket:
+    Type: AWS::S3::Bucket
+    Description: This is the target bucket that the IIIF service will write to when it generates its cache of derivative.
+
   ImageServiceLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -222,7 +228,9 @@ Resources:
 
   ImageServiceTaskRole:
     Type: AWS::IAM::Role
-    DependsOn: ImageSourceBucket
+    DependsOn:
+      - ImageSourceBucket
+      - ImageDerivativeCacheBucket
     Properties:
       Path: /
       AssumeRolePolicyDocument:
@@ -250,6 +258,25 @@ Resources:
                     -
                       - !GetAtt ImageSourceBucket.Arn
                       - "/*"
+        - PolicyName: ImageDerivativeCacheBucketPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:ListBucket"
+                Effect: "Allow"
+                Resource:
+                  # This one is the base bucket name for the ListBucket permission
+                  - !GetAtt ImageDerivativeCacheBucket.Arn
+                  # This one is for the Get/Put permissions to all objects in the bucket
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt ImageDerivativeCacheBucket.Arn
+                        - "/*"
 
 Outputs:
   PublicLoadBalancerDNSName:
@@ -258,3 +285,6 @@ Outputs:
   ImageSourceBucketName:
     Description: The name of the bucket that will be used as the source for image files
     Value: !Ref ImageSourceBucket
+  ImageDerivativeCacheBucketName:
+    Description: The name of the bucket that will be used as the source/destination for derivative images
+    Value: !Ref ImageDerivativeCacheBucket

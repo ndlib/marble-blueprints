@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Creates a CodeBuild Project to pull the GitHub repository,
+  build a Docker Image based on the repository. It will then push the
+  Image to a Container Repository.
+
+Outputs:
+
+  ContainerRepositoryName:
+    Description: Name of the created container repository
+    Value: !Ref AmazonContainerRepository
+    Export:
+      Name: ContainerRepositoryName
+
+Resources:
+
+  AmazonContainerRepository:
+    Type: AWS::ECR::Repository
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: "TrustPolicyAllowCodeBuildToAssume"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+      Policies:
+        -
+          PolicyName: "AllowCloudWatchLogsForCodeBuild"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Action: logs:*
+                Effect: Deny
+                NotResource: arn:aws:logs:*:*:log-group:/aws/codebuild/*
+
+  DockerBuilder:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: mellon_docker
+      Description: 'Build Docker Image from GitHub'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: GITHUB
+        Location: 'https://github.com/ndlib/image-server.git'
+        GitCloneDepth: 1
+        ReportBuildStatus: true
+        BuildSpec: deploy/aws/buildspec.yml
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Triggers:
+        Webhook: true
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:17.09.0
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Value: ndlib-image-server
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref AmazonContainerRepository
+          - Name: IMAGE_TAG
+            Value: latest
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId

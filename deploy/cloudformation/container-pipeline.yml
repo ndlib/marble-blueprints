@@ -4,6 +4,26 @@ Description: >
   build a Docker Image based on the repository. It will then push the
   Image to a Container Repository.
 
+Parameters:
+  NameTag:
+    Type: String
+    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
+    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
+    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
+
+  OwnerTag:
+    Type: String
+    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
+
+  ContactTag:
+    Type: String
+    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
+
+  OAuth:
+    Type: String
+    NoEcho: true
+    Description: The OAuth Token Value to connect CodePipeline to GitHub. Passed in at Runtime.
+
 Outputs:
 
   ContainerRepositoryName:
@@ -43,6 +63,18 @@ Resources:
                 Action: logs:*
                 Effect: Deny
                 NotResource: arn:aws:logs:*:*:log-group:/aws/codebuild/*
+              -
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource:
+                  - !GetAtt CodeS3Bucket.Arn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt CodeS3Bucket.Arn
+                        - "/*"
 
   DockerBuilder:
     Type: 'AWS::CodeBuild::Project'
@@ -76,3 +108,109 @@ Resources:
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
             Value: !Ref AWS::AccountId
+
+  CodeS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: "TrustPolicyAllowCodeBuildToAssume"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "codepipeline.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  CodePipelinePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: "Policy to Allow CodePipeline to do its work"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - codepipeline:*
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource:
+              - !GetAtt CodeS3Bucket.Arn
+              - Fn::Join:
+                  - ""
+                  -
+                    - !GetAtt CodeS3Bucket.Arn
+                    - "/*"
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:GetBucketVersioning
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - codebuild:StartBuild
+              - codebuild:BatchGetBuilds
+            Resource: !GetAtt DockerBuilder.Arn
+      Roles:
+        - !Ref CodePipelineRole
+
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Location: !Ref CodeS3Bucket
+        Type: S3
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      Stages:
+        -
+          Name: Source
+          Actions:
+            -
+              Name: "RetrieveSourceCode"
+              ActionTypeId:
+                Owner: ThirdParty
+                Category: Source
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: ndlib
+                Repo: image-server
+                Branch: master
+                OAuthToken: !Ref OAuth
+              OutputArtifacts:
+                - Name: SourceCode
+        -
+          Name: Build
+          Actions:
+            -
+              Name: "BuildDockerImage"
+              InputArtifacts:
+                - Name: SourceCode
+              OutputArtifacts:
+                - Name: BuiltCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Build
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref DockerBuilder

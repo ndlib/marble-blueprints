@@ -23,6 +23,9 @@ Parameters:
     Default: mellon-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
+  ImageSourceBucket:
+    Type: String
+    Description: The name of the source bucket that the IIIF service will read from for its assets.
   ImageUrl:
     Type: String
     Default: ndlib/image-service
@@ -68,6 +71,14 @@ Parameters:
     Type: String
     Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
 
+Outputs:
+  PublicLoadBalancerDNSName:
+    Description: The dns name of the load balancer
+    Value: !GetAtt PublicLoadBalancer.DNSName
+  ImageDerivativeCacheBucketName:
+    Description: The name of the bucket that will be used as the source/destination for derivative images
+    Value: !Ref ImageDerivativeCacheBucket
+
 Resources:
 
   # The task definition. This is a simple metadata description of what
@@ -75,7 +86,6 @@ Resources:
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     DependsOn:
-      - ImageSourceBucket
       - ImageServiceLogGroup
       - ImageServiceTaskRole
     Properties:
@@ -212,10 +222,6 @@ Resources:
       ListenerArn: !Ref 'PublicLoadBalancerListener'
       Priority: !Ref 'Priority'
 
-  ImageSourceBucket:
-    Type: AWS::S3::Bucket
-    Description: This is the source bucket that the IIIF service will read from for its assets.
-
   ImageDerivativeCacheBucket:
     Type: AWS::S3::Bucket
     Description: This is the target bucket that the IIIF service will write to when it generates its cache of derivative.
@@ -229,7 +235,6 @@ Resources:
   ImageServiceTaskRole:
     Type: AWS::IAM::Role
     DependsOn:
-      - ImageSourceBucket
       - ImageDerivativeCacheBucket
     Properties:
       Path: /
@@ -256,7 +261,7 @@ Resources:
                   Fn::Join:
                     - ""
                     -
-                      - !GetAtt ImageSourceBucket.Arn
+                      - !Sub "arn:aws:s3:::${ImageSourceBucket}"
                       - "/*"
         - PolicyName: ImageDerivativeCacheBucketPermissions
           PolicyDocument:
@@ -277,14 +282,3 @@ Resources:
                       -
                         - !GetAtt ImageDerivativeCacheBucket.Arn
                         - "/*"
-
-Outputs:
-  PublicLoadBalancerDNSName:
-    Description: The dns name of the load balancer
-    Value: !GetAtt PublicLoadBalancer.DNSName
-  ImageSourceBucketName:
-    Description: The name of the bucket that will be used as the source for image files
-    Value: !Ref ImageSourceBucket
-  ImageDerivativeCacheBucketName:
-    Description: The name of the bucket that will be used as the source/destination for derivative images
-    Value: !Ref ImageDerivativeCacheBucket

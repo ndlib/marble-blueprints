@@ -225,7 +225,6 @@ Resources:
     Properties:
       RetentionInDays: 7
       LogGroupName: /ecs/image-service
-
   ImageServiceTaskRole:
     Type: AWS::IAM::Role
     DependsOn:
@@ -288,3 +287,8 @@ Outputs:
   ImageDerivativeCacheBucketName:
     Description: The name of the bucket that will be used as the source/destination for derivative images
     Value: !Ref ImageDerivativeCacheBucket
+  ImageServiceName:
+    Description: The name of the Image Server service running in Fargate
+    Value: !GetAtt Service.Name
+    Export:
+      Name: !Join [ ':', [ !Ref 'InfrastructureStackName', 'Service']]

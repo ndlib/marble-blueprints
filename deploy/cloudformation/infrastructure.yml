@@ -325,6 +325,8 @@ Resources:
             Action:
               - sts:AssumeRole
       Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
 
   ContainerTaskExecutionLogPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -341,6 +343,7 @@ Resources:
               - logs:CreateLogStream
               - logs:PutLogEvents
             Resource: "*"
+
 
 Outputs:
 

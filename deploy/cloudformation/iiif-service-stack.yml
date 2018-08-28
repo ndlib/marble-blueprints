@@ -225,6 +225,7 @@ Resources:
     Properties:
       RetentionInDays: 7
       LogGroupName: /ecs/image-service
+      
   ImageServiceTaskRole:
     Type: AWS::IAM::Role
     DependsOn:

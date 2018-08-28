@@ -1,10 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Creates a CodeBuild Project to pull the GitHub repository,
-  build a Docker Image based on the repository. It will then push the
-  Image to a Container Repository.
+  - Creates a CodeBuild Project to pull the GitHub repository,
+  build a Docker Image based on the repository.
+  - Creates a CodePipeline that has a specific CodeBuild associated,
+  which on a merge to master will build the Docker image, push it to
+  a created ECR repository, and deploy it to a test stack.
+  - The CodeBuild configurations are stored in ndlib/image-service rather than
+  this file.
 
 Parameters:
+  InfrastructureStackName:
+    Type: String
+    Default: mellon-infrastructure
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
   NameTag:
     Type: String
     Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
@@ -61,13 +70,16 @@ Resources:
             Statement:
               -
                 Action: logs:*
-                Effect: Deny
-                NotResource: arn:aws:logs:*:*:log-group:/aws/codebuild/*
+                Effect: Allow
+                Resource:
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*:*:*
               -
                 Effect: Allow
                 Action:
                   - s3:GetObject
                   - s3:GetObjectVersion
+                  - s3:PutObject
                 Resource:
                   - !GetAtt CodeS3Bucket.Arn
                   - Fn::Join:
@@ -88,7 +100,7 @@ Resources:
         Location: 'https://github.com/ndlib/image-server.git'
         GitCloneDepth: 1
         ReportBuildStatus: true
-        BuildSpec: deploy/aws/buildspec.yml
+        BuildSpec: deploy/aws/build/buildspec.yml
       Artifacts:
         Type: NO_ARTIFACTS
       Triggers:
@@ -108,6 +120,37 @@ Resources:
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
             Value: !Ref AWS::AccountId
+
+  DockerCodePipelineBuilder:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: mellon_docker_codepipeline
+      Description: 'Build Docker Image from GitHub for CodePipeline'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        GitCloneDepth: 1
+        BuildSpec: deploy/aws/buildspec.yml
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:17.09.0
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Value: ndlib-image-server
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref AmazonContainerRepository
+          - Name: IMAGE_TAG
+            Value: latest
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: TEST_CONTAINER_NAME
+            Value: mellon-image-service-ialford-ImageService
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket
@@ -130,13 +173,17 @@ Resources:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: "TrustPolicyAllowCodeBuildToAssume"
+          - Sid: "TrustPolicyAllowCodePipelineToAssume"
             Effect: "Allow"
             Principal:
               Service:
                 - "codepipeline.amazonaws.com"
             Action:
               - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerServiceFullAccess
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
 
   CodePipelinePolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -146,12 +193,16 @@ Resources:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
+            Action: iam:PassRole
+            Resource: "*"
+          - Effect: Allow
             Action:
               - codepipeline:*
             Resource: '*'
           - Effect: Allow
             Action:
               - s3:PutObject
+              - s3:GetObject
             Resource:
               - !GetAtt CodeS3Bucket.Arn
               - Fn::Join:
@@ -170,6 +221,18 @@ Resources:
               - codebuild:StartBuild
               - codebuild:BatchGetBuilds
             Resource: !GetAtt DockerBuilder.Arn
+          - Effect: Allow
+            Action:
+              - codebuild:StartBuild
+              - codebuild:BatchGetBuilds
+            Resource: !GetAtt DockerCodePipelineBuilder.Arn
+          - Effect: Allow
+            Action:
+              - ecs:UpdateService
+              - ecs:RegisterTaskDefinition
+              - ecs:List*
+              - ecs:CreateService
+            Resource: "*"
       Roles:
         - !Ref CodePipelineRole
 
@@ -213,4 +276,22 @@ Resources:
                 Provider: CodeBuild
                 Version: "1"
               Configuration:
-                ProjectName: !Ref DockerBuilder
+                ProjectName: !Ref DockerCodePipelineBuilder
+        -
+          Name: Deploy
+          Actions:
+            -
+              Name: "DeployAsTestTask"
+              InputArtifacts:
+                - Name: BuiltCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Deploy
+                Provider: ECS
+                Version: "1"
+              Configuration:
+                ClusterName:
+                  Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ClusterName']]
+                ServiceName:
+                  Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'Service']]
+                FileName: imagedefinitions.json

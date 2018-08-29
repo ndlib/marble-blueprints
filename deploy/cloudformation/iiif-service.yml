@@ -123,7 +123,7 @@ Resources:
               awslogs-group :
                 Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogGroup']]
               awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: !Ref AWS::StackName
+              awslogs-stream-prefix: !Sub '${AWS::StackName}-Task'
 
   # The service. The service is a resource which allows you to run multiple
   # copies of a type of task, and gather up their logs and metrics, as well

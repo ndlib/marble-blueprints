@@ -1,0 +1,285 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Creates the IIIF service on AWS Fargate, hosted in a private subnet, but accessible via a public load balancer. Will create the following:
+    - A bucket that the IIIF service will read from for its images
+    - The IIIF ECS Task and Service (via Fargate)
+    - A Public Load Balancer to access the private IIIF resource over open Internet
+
+  Expects the following exports from the app-infrastructure stack:
+    - InfrastructureStackName:ContainerTaskExecutionRoleArn
+    - InfrastructureStackName:ClusterName
+    - InfrastructureStackName:IIIFSecurityGroupID
+    - InfrastructureStackName:ContainerTaskExecutionRoleArn
+    - InfrastructureStackName:PublicLoadBalancerSecurityGroup
+
+
+  Expects the following exports ftom the network stack:
+    - NetworkStackName:PrivateSubnet1ID
+    - NetworkStackName:PrivateSubnet2ID
+    - NetworkStackName:VPCID
+    - NetworkStackName:PublicSubnet1ID
+    - NetworkStackName:PublicSubnet2ID
+
+Parameters:
+
+  NetworkStackName:
+    Type: String
+    Description: The name of the parent networking stack created.
+    Default: "mellon-network"
+  InfrastructureStackName:
+    Type: String
+    Default: "mellon-app-infrastructure"
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+  ImageSourceBucket:
+    Type: String
+    Description: The name of the source bucket that the IIIF service will read from for its assets.
+  ImageUrl:
+    Type: String
+    Default: ndlib/image-service
+    Description: The url of a docker image that contains the application process that
+                 will handle the traffic for this service
+  ContainerPort:
+    Type: Number
+    Default: 8182
+    Description: What port number the application inside the docker container is binding to
+  ContainerCpu:
+    Type: Number
+    Default: 256
+    Description: How much CPU to give the container. 1024 is 1 CPU
+  ContainerMemory:
+    Type: Number
+    Default: 512
+    Description: How much memory in megabytes to give the container
+  Path:
+    Type: String
+    Default: "*"
+    Description: A path on the public load balancer that this service
+                 should be connected to. Use * to send all load balancer
+                 traffic to this service.
+  Priority:
+    Type: Number
+    Default: 1
+    Description: The priority for the routing rule added to the load balancer.
+                 This only applies if your have multiple services which have been
+                 assigned to different paths on the load balancer.
+  DesiredCount:
+    Type: Number
+    Default: 2
+    Description: How many copies of the service task to run
+  NameTag:
+    Type: String
+    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
+    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
+    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
+  OwnerTag:
+    Type: String
+    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
+  ContactTag:
+    Type: String
+    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
+
+Outputs:
+  PublicLoadBalancerDNSName:
+    Description: The dns name of the load balancer
+    Value: !GetAtt PublicLoadBalancer.DNSName
+  ImageDerivativeCacheBucketName:
+    Description: The name of the bucket that will be used as the source/destination for derivative images
+    Value: !Ref ImageDerivativeCacheBucket
+
+Resources:
+
+  # The task definition. This is a simple metadata description of what
+  # container to run, and what resource requirements it has.
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    DependsOn:
+      - ImageServiceTaskRole
+    Properties:
+      Family: !Sub '${AWS::StackName}-ImageService'
+      Cpu: !Ref 'ContainerCpu'
+      Memory: !Ref 'ContainerMemory'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn:
+        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
+      TaskRoleArn: !GetAtt ImageServiceTaskRole.Arn
+      ContainerDefinitions:
+        - Name: !Sub '${AWS::StackName}-ImageService'
+          Cpu: !Ref 'ContainerCpu'
+          Memory: !Ref 'ContainerMemory'
+          Image: !Ref 'ImageUrl'
+          PortMappings:
+            - ContainerPort: !Ref 'ContainerPort'
+          Environment:
+            - Name: IMAGE_BUCKET
+              Value: !Ref ImageSourceBucket
+            - Name: CACHE_BUCKET
+              Value: !Ref ImageDerivativeCacheBucket
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group : /ecs/image-service
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: !Ref AWS::StackName
+
+  # The service. The service is a resource which allows you to run multiple
+  # copies of a type of task, and gather up their logs and metrics, as well
+  # as monitor the number of running tasks and replace any that have crashed
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: LoadBalancerRule
+    Properties:
+      ServiceName: !Sub '${AWS::StackName}-ImageService'
+      Cluster:
+        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ClusterName']]
+      LaunchType: FARGATE
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 75
+      DesiredCount: !Ref 'DesiredCount'
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'IIIFSecurityGroupID']]
+          Subnets:
+            - Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'PrivateSubnet1ID']]
+            - Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'PrivateSubnet2ID']]
+      TaskDefinition: !Ref 'TaskDefinition'
+      LoadBalancers:
+        - ContainerName: !Sub '${AWS::StackName}-ImageService'
+          ContainerPort: !Ref 'ContainerPort'
+          TargetGroupArn: !Ref 'TargetGroup'
+
+  # A target group. This is used for keeping track of all the tasks, and
+  # what IP addresses / port numbers they have. You can query it yourself,
+  # to use the addresses yourself, but most often this target group is just
+  # connected to an application load balancer, or network load balancer, so
+  # it can automatically distribute traffic across all the targets.
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      # It takes on average almost 60 seconds to start this in ECS
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      TargetType: ip
+      Port: !Ref 'ContainerPort'
+      Protocol: HTTP
+      UnhealthyThresholdCount: 3
+      VpcId:
+        Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'VPCID']]
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
+
+  PublicLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Description: This is the publicly accessible endpoint for the image service.
+    Properties:
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+      - Key: idle_timeout.timeout_seconds
+        Value: '30'
+      SecurityGroups:
+        -
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicLoadBalancerSecurityGroup']]
+      Subnets:
+        -
+          Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'PublicSubnet1ID']]
+        -
+          Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'PublicSubnet2ID']]
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
+
+  PublicLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - PublicLoadBalancer
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref PublicLoadBalancer
+      Port: 8182
+      Protocol: HTTP
+
+  LoadBalancerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Description: This default rule sends all traffic to the target group
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref 'TargetGroup'
+          Type: 'forward'
+      Conditions:
+        - Field: path-pattern
+          Values: [!Ref 'Path']
+      ListenerArn: !Ref 'PublicLoadBalancerListener'
+      Priority: !Ref 'Priority'
+
+  ImageDerivativeCacheBucket:
+    Type: AWS::S3::Bucket
+    Description: This is the target bucket that the IIIF service will write to when it generates its cache of derivative.
+
+  ImageServiceTaskRole:
+    Type: AWS::IAM::Role
+    DependsOn:
+      - ImageDerivativeCacheBucket
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: ImageSourceBucketPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "s3:GetObject"
+                Effect: "Allow"
+                Resource:
+                  Fn::Join:
+                    - ""
+                    -
+                      - !Sub "arn:aws:s3:::${ImageSourceBucket}"
+                      - "/*"
+        - PolicyName: ImageDerivativeCacheBucketPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:ListBucket"
+                Effect: "Allow"
+                Resource:
+                  # This one is the base bucket name for the ListBucket permission
+                  - !GetAtt ImageDerivativeCacheBucket.Arn
+                  # This one is for the Get/Put permissions to all objects in the bucket
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt ImageDerivativeCacheBucket.Arn
+                        - "/*"

@@ -113,9 +113,31 @@ Resources:
               - logs:PutLogEvents
             Resource: "*"
 
+  LogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+      VersioningConfiguration:
+        Status: Suspended
+      LifecycleConfiguration:
+        Rules:
+        - Status: Enabled
+          ExpirationInDays: 3653
+          NoncurrentVersionExpirationInDays: 1
+
+  ImageServiceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+      LogGroupName: !Join [ ':', [ !Ref 'AWS::StackName', 'LogGroup']]
 
 Outputs:
 
+  ImageServiceLogGroup:
+    Description: The name of the log group to use for application logs
+    Value: !Ref ImageServiceLogGroup
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogGroup']]
   ClusterName:
     Description: The name of the ECS Cluster created by this CloudFormation
     Value: !Ref ContainerCluster
@@ -139,3 +161,9 @@ Outputs:
     Value: !Ref PublicLoadBalancerSecurityGroup
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicLoadBalancerSecurityGroup']]
+
+  LogBucket:
+    Description: Bucket to put all logs into for this application
+    Value: !Ref LogBucket
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogBucket']]

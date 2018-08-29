@@ -135,7 +135,7 @@ Outputs:
 
   SharedLogGroup:
     Description: The name of the log group to use for application logs
-    Value: !Ref ImageServiceLogGroup
+    Value: !Ref SharedLogGroup
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogGroup']]
   ClusterName:

@@ -125,7 +125,7 @@ Resources:
           ExpirationInDays: 3653
           NoncurrentVersionExpirationInDays: 1
 
-  ImageServiceLogGroup:
+  SharedLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 7
@@ -133,7 +133,7 @@ Resources:
 
 Outputs:
 
-  ImageServiceLogGroup:
+  SharedLogGroup:
     Description: The name of the log group to use for application logs
     Value: !Ref ImageServiceLogGroup
     Export:

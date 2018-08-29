@@ -120,7 +120,8 @@ Resources:
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group : /ecs/image-service
+              awslogs-group :
+                Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogGroup']]
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: !Ref AWS::StackName
 

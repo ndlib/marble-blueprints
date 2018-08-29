@@ -1,0 +1,141 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >
+  This CloudFormation will create the following:
+
+    - A Security Group that allows incoming traffic over TCP Port 8182 for the IIIF Service
+    - An ECS Cluster to allow Fargate or other container services to run in
+    - An IAM Role to allow ECS Task Execution
+    - An S3 Bucket for Logging
+    - A Log Group for aggregarion of logs
+
+Parameters:
+
+  NetworkStackName:
+    Type: String
+    Description: The name of the parent networking stack created.
+    Default: "mellon-network"
+
+  EnvironmentName:
+    Type: String
+    Description: Any value that describes where the service exists
+    Default: "dev"
+
+  NameTag:
+    Type: String
+    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
+    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
+    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
+
+  OwnerTag:
+    Type: String
+    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
+
+  ContactTag:
+    Type: String
+    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
+
+Resources:
+
+  PublicLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'VPCID']]
+      GroupDescription: Access to a public facing load balancer
+      SecurityGroupIngress:
+          # Allow access to ALB from anywhere on the internet
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: "-1"
+
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
+
+  IIIFSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'VPCID']]
+      GroupDescription: "Security Group to allow incoming traffic over Port 8182 for IIIF Service"
+      SecurityGroupIngress:
+        -
+          IpProtocol: "tcp"
+          FromPort: 8182
+          ToPort: 8182
+          CidrIp: 0.0.0.0/0 # This may need to be changed for security purposes
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
+
+  ContainerCluster:
+    Type: AWS::ECS::Cluster
+
+  ContainerTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+
+  ContainerTaskExecutionLogPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: A policy that allows the ECS Tasks to create and write logs
+      Roles:
+        - !Ref ContainerTaskExecutionRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: "*"
+
+
+Outputs:
+
+  ClusterName:
+    Description: The name of the ECS Cluster created by this CloudFormation
+    Value: !Ref ContainerCluster
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ClusterName']]
+
+  IIIFSecurityGroupID:
+    Description: The Security Group ID for the IIIF Service
+    Value: !Ref IIIFSecurityGroup
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'IIIFSecurityGroupID']]
+
+  ContainerTaskExecutionRoleArn:
+    Description: The ARN (Amazon Resource Name) of the Container Task Execution Role
+    Value: !GetAtt ContainerTaskExecutionRole.Arn
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ContainerTaskExecutionRoleArn']]
+
+  PublicLoadBalancerSecurityGroupID:
+    Description: The ID of the load balancer security group
+    Value: !Ref PublicLoadBalancerSecurityGroup
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicLoadBalancerSecurityGroup']]

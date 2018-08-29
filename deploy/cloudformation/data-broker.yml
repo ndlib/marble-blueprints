@@ -1,0 +1,47 @@
+
+Parameters:
+
+  InfrastructureStackName:
+    Type: String
+    Default: mellon-infrastructure
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+
+Outputs:
+
+  PublicBucket:
+    Description: A temporary bucket to share assets publicly for Mellon project
+    Value: !Ref PublicBucket
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicBucket']]
+
+Resources:
+
+  PublicBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedOrigins: ['http://universalviewer.io', '*.cloudfront.net']
+            AllowedMethods: [GET]
+            MaxAge: 3600
+      LoggingConfiguration:
+        DestinationBucketName:
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
+        LogFilePrefix: s3/data-broker/
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  PublicBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PublicBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub ${PublicBucket.Arn}/*
+            Principal: '*'

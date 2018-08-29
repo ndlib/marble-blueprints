@@ -1,0 +1,159 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+
+Description: 'Static host for IIIF webcomponents'
+
+
+Parameters:
+
+  InfrastructureStackName:
+    Type: String
+    Default: mellon-infrastructure
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+
+  AcmCertificateArn:
+    Type: String
+    Description: Arn for ACM Certificate
+    Default: ''
+
+  FQDN:
+    Type: String
+    Description: DNS name for the website to publish
+    MaxLength: 63
+    AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: must be a valid DNS zone name
+    Default: ''
+
+  EnvType:
+    Type: String
+    Description: The type of environment to create.
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    ConstraintDescription: must specify prod or dev.
+
+Mappings:
+  # Cache settings to use for each environment
+  CacheSettings:
+    dev:
+      DefaultTTL: 0
+    prod:
+      DefaultTTL: 86400
+
+Conditions:
+
+  NoFQDN: !Equals
+    - !Ref FQDN
+    - ''
+
+  NoSSL: !Equals
+    - !Ref AcmCertificateArn
+    - ''
+
+Outputs:
+
+  BucketName:
+    Description: Name of S3 bucket to hold website content
+    Value: !Ref Bucket
+
+  CNAME:
+    Description: Website CNAME target
+    Value: !GetAtt Distribution.DomainName
+
+Resources:
+
+  OriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: IIIF Web Component Origin Access Identity
+
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LoggingConfiguration:
+        DestinationBucketName:
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
+        LogFilePrefix: !If
+          - NoFQDN
+          - s3/iiif-webcomponent/
+          - !Sub s3/${FQDN}/
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: OriginAccessIdentity
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub ${Bucket.Arn}/*
+            Principal:
+              CanonicalUser: !GetAtt OriginAccessIdentity.S3CanonicalUserId
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    DependsOn: OriginAccessIdentity
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2
+        PriceClass: PriceClass_100
+        ViewerCertificate: !If
+          - NoSSL
+          - !Ref AWS::NoValue
+          - AcmCertificateArn: !Ref AcmCertificateArn
+            MinimumProtocolVersion: TLSv1.1_2016
+            SslSupportMethod: sni-only
+        Comment: !If
+          - NoFQDN
+          - !Ref AWS::NoValue
+          - !Ref FQDN
+        Aliases: !If
+          - NoFQDN
+          - !Ref AWS::NoValue
+          - - !Ref FQDN
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: false
+          AllowedMethods:
+            - HEAD
+            - GET
+            - OPTIONS
+          Compress: true
+          DefaultTTL: !FindInMap [CacheSettings, !Ref EnvType, "DefaultTTL"]
+          ViewerProtocolPolicy: !If
+            - NoSSL
+            - allow-all
+            - redirect-to-https
+          TargetOriginId: Bucket
+        Origins:
+          - Id: Bucket
+            DomainName: !GetAtt Bucket.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Join
+                - /
+                - - origin-access-identity
+                  - cloudfront
+                  - !Ref OriginAccessIdentity
+        Logging:
+          # This should result in "logbucketname.s3.amazonaws.com", where "logbucketname" is the value from an export
+          # named "InfrastructureStackName:LogBucket"
+          Bucket: !Join
+            - .
+            - - !ImportValue
+                Fn::Join: [':', [!Ref InfrastructureStackName, 'LogBucket']]
+              - s3
+              - !Ref AWS::URLSuffix
+          Prefix: !If
+            - NoFQDN
+            - web/iiif-webcomponent/
+            - !Sub web/${FQDN}/
+          IncludeCookies: true

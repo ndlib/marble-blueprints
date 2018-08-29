@@ -67,6 +67,68 @@ Parameters:
     Type: String
     Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
 
+Outputs:
+
+  ClusterName:
+    Description: The name of the ECS Cluster created by this CloudFormation
+    Value: !Ref ContainerCluster
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ClusterName']]
+
+  PublicSubnet1ID:
+    Description: The subnet ID of the 1st public subnet
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet1ID']]
+
+  PublicSubnet2ID:
+    Description: The subnet ID of the 2nd public subnet
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet2ID']]
+
+  PrivateSubnet1ID:
+    Description: The subnet ID of the 1st private subnet
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet1ID']]
+
+  PrivateSubnet2ID:
+    Description: The subnet ID of the 2nd private subnet
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet2ID']]
+
+  IIIFSecurityGroupID:
+    Description: The Security Group ID for the IIIF Service
+    Value: !Ref IIIFSecurityGroup
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'IIIFSecurityGroupID']]
+
+  ContainerTaskExecutionRoleArn:
+    Description: The ARN (Amazon Resource Name) of the Container Task Execution Role
+    Value: !GetAtt ContainerTaskExecutionRole.Arn
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ContainerTaskExecutionRoleArn']]
+
+  VPCID:
+    Description: The ID of the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'VPCID']]
+
+  PublicLoadBalancerSecurityGroupID:
+    Description: The ID of the load balancer security group
+    Value: !Ref PublicLoadBalancerSecurityGroup
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicLoadBalancerSecurityGroup']]
+
+  LogBucket:
+    Description: Bucket to put all logs into for this application
+    Value: !Ref LogBucket
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogBucket']]
+
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -252,9 +314,9 @@ Resources:
       VpcId: !Ref VPC
       GroupDescription: Access to a public facing load balancer
       SecurityGroupIngress:
-          # Allow access to ALB from anywhere on the internet
-          - CidrIp: 0.0.0.0/0
-            IpProtocol: "-1"
+        # Allow access to ALB from anywhere on the internet
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
 
       Tags:
         - Key: Name
@@ -341,59 +403,14 @@ Resources:
               - logs:CreateLogStream
               - logs:PutLogEvents
             Resource: "*"
-
-Outputs:
-
-  ClusterName:
-    Description: The name of the ECS Cluster created by this CloudFormation
-    Value: !Ref ContainerCluster
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ClusterName']]
-
-  PublicSubnet1ID:
-    Description: The subnet ID of the 1st public subnet
-    Value: !Ref PublicSubnet1
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet1ID']]
-
-  PublicSubnet2ID:
-    Description: The subnet ID of the 2nd public subnet
-    Value: !Ref PublicSubnet2
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet2ID']]
-
-  PrivateSubnet1ID:
-    Description: The subnet ID of the 1st private subnet
-    Value: !Ref PrivateSubnet1
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet1ID']]
-
-  PrivateSubnet2ID:
-    Description: The subnet ID of the 2nd private subnet
-    Value: !Ref PrivateSubnet2
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet2ID']]
-
-  IIIFSecurityGroupID:
-    Description: The Security Group ID for the IIIF Service
-    Value: !Ref IIIFSecurityGroup
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'IIIFSecurityGroupID']]
-
-  ContainerTaskExecutionRoleArn:
-    Description: The ARN (Amazon Resource Name) of the Container Task Execution Role
-    Value: !GetAtt ContainerTaskExecutionRole.Arn
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ContainerTaskExecutionRoleArn']]
-
-  VPCID:
-    Description: The ID of the created VPC
-    Value: !Ref VPC
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'VPCID']]
-
-  PublicLoadBalancerSecurityGroupID:
-    Description: The ID of the load balancer security group
-    Value: !Ref PublicLoadBalancerSecurityGroup
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicLoadBalancerSecurityGroup']]
+  LogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+      VersioningConfiguration:
+        Status: Suspended
+      LifecycleConfiguration:
+        Rules:
+        - Status: Enabled
+          ExpirationInDays: 3653
+          NoncurrentVersionExpirationInDays: 1

@@ -20,8 +20,13 @@ Description: >
     - NetworkStackName:PublicSubnet1ID
     - NetworkStackName:PublicSubnet2ID
 
+
 Parameters:
 
+  DataBrokerStackName:
+    Type: String
+    Description: The name of the parent networking stack created.
+    Default: "mellon-data-broker"
   NetworkStackName:
     Type: String
     Description: The name of the parent networking stack created.
@@ -32,8 +37,10 @@ Parameters:
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
   ImageSourceBucket:
-    Type: String
+    Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF service will read from for its assets.
+    Default: '/all/mellon/publicbucket'
+
   ImageUrl:
     Type: String
     Default: ndlib/image-service
@@ -86,6 +93,11 @@ Outputs:
   ImageDerivativeCacheBucketName:
     Description: The name of the bucket that will be used as the source/destination for derivative images
     Value: !Ref ImageDerivativeCacheBucket
+  ServiceName:
+    Description: The Name of the created ECS Service
+    Value: !Ref Service
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Service']]
 
 Resources:
 
@@ -263,7 +275,8 @@ Resources:
                   Fn::Join:
                     - ""
                     -
-                      - !Sub "arn:aws:s3:::${ImageSourceBucket}"
+                      - !Sub "arn:aws:s3:::"
+                      - !Ref ImageSourceBucket
                       - "/*"
         - PolicyName: ImageDerivativeCacheBucketPermissions
           PolicyDocument:

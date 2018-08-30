@@ -39,7 +39,7 @@ Outputs:
     Description: Name of the created container repository
     Value: !Ref AmazonContainerRepository
     Export:
-      Name: ContainerRepositoryName
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Repository']]
 
 Resources:
 
@@ -88,38 +88,6 @@ Resources:
                         - !GetAtt CodeS3Bucket.Arn
                         - "/*"
 
-  DockerBuilder:
-    Type: 'AWS::CodeBuild::Project'
-    Properties:
-      Name: mellon_docker
-      Description: 'Build Docker Image from GitHub'
-      ServiceRole: !Ref CodeBuildRole
-      TimeoutInMinutes: 10
-      Source:
-        Type: GITHUB
-        Location: 'https://github.com/ndlib/image-server.git'
-        GitCloneDepth: 1
-        ReportBuildStatus: true
-        BuildSpec: deploy/aws/build/buildspec.yml
-      Artifacts:
-        Type: NO_ARTIFACTS
-      Triggers:
-        Webhook: true
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/docker:17.09.0
-        EnvironmentVariables:
-          - Name: APPLICATION_NAME
-            Value: ndlib-image-server
-          - Name: IMAGE_REPO_NAME
-            Value: !Ref AmazonContainerRepository
-          - Name: IMAGE_TAG
-            Value: latest
-          - Name: AWS_DEFAULT_REGION
-            Value: !Ref AWS::Region
-          - Name: AWS_ACCOUNT_ID
-            Value: !Ref AWS::AccountId
 
   DockerCodePipelineBuilder:
     Type: 'AWS::CodeBuild::Project'
@@ -216,11 +184,6 @@ Resources:
               - s3:GetObjectVersion
               - s3:GetBucketVersioning
             Resource: "*"
-          - Effect: Allow
-            Action:
-              - codebuild:StartBuild
-              - codebuild:BatchGetBuilds
-            Resource: !GetAtt DockerBuilder.Arn
           - Effect: Allow
             Action:
               - codebuild:StartBuild

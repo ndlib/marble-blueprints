@@ -9,11 +9,6 @@ Description: >
   this file.
 
 Parameters:
-  InfrastructureStackName:
-    Type: String
-    Default: mellon-infrastructure
-    Description: The name of the parent infrastructure/networking stack that you created. Necessary
-                 to locate and reference resources created by that stack.
   NameTag:
     Type: String
     Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
@@ -31,7 +26,7 @@ Parameters:
   ContainerPipelineStackName:
     Type: String
     Description: The name of the stack that build the CodePipeline, needed to import the repository value to ensure proper tagging
-
+    Default: 'mellon-container-pipeline'
 Resources:
 
   CodeBuildRole:

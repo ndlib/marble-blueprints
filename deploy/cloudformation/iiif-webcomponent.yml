@@ -9,7 +9,7 @@ Parameters:
 
   InfrastructureStackName:
     Type: String
-    Default: mellon-infrastructure
+    Default: mellon-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
 

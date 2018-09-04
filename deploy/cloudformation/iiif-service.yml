@@ -5,27 +5,42 @@ Description: >
     - The IIIF ECS Task and Service (via Fargate)
     - A Public Load Balancer to access the private IIIF resource over open Internet
 
-  Expects the following exports from the infrastructure stack:
+  Expects the following exports from the app-infrastructure stack:
     - InfrastructureStackName:ContainerTaskExecutionRoleArn
     - InfrastructureStackName:ClusterName
     - InfrastructureStackName:IIIFSecurityGroupID
-    - InfrastructureStackName:PrivateSubnet1ID
-    - InfrastructureStackName:PrivateSubnet2ID
-    - InfrastructureStackName:VPCID
-    - InfrastructureStackName:PublicLoadBalancerSecurityGroup
-    - InfrastructureStackName:PublicSubnet1ID
-    - InfrastructureStackName:PublicSubnet2ID
     - InfrastructureStackName:ContainerTaskExecutionRoleArn
+    - InfrastructureStackName:PublicLoadBalancerSecurityGroup
+
+
+  Expects the following exports ftom the network stack:
+    - NetworkStackName:PrivateSubnet1ID
+    - NetworkStackName:PrivateSubnet2ID
+    - NetworkStackName:VPCID
+    - NetworkStackName:PublicSubnet1ID
+    - NetworkStackName:PublicSubnet2ID
+
 
 Parameters:
+
+  DataBrokerStackName:
+    Type: String
+    Description: The name of the parent networking stack created.
+    Default: "mellon-data-broker"
+  NetworkStackName:
+    Type: String
+    Description: The name of the parent networking stack created.
+    Default: "mellon-network"
   InfrastructureStackName:
     Type: String
-    Default: mellon-infrastructure
+    Default: "mellon-app-infrastructure"
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
   ImageSourceBucket:
-    Type: String
+    Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF service will read from for its assets.
+    Default: '/all/mellon/publicbucket'
+
   ImageUrl:
     Type: String
     Default: ndlib/image-service
@@ -78,6 +93,11 @@ Outputs:
   ImageDerivativeCacheBucketName:
     Description: The name of the bucket that will be used as the source/destination for derivative images
     Value: !Ref ImageDerivativeCacheBucket
+  ServiceName:
+    Description: The Name of the created ECS Service
+    Value: !Ref Service
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Service']]
 
 Resources:
 
@@ -86,7 +106,6 @@ Resources:
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     DependsOn:
-      - ImageServiceLogGroup
       - ImageServiceTaskRole
     Properties:
       Family: !Sub '${AWS::StackName}-ImageService'
@@ -113,9 +132,10 @@ Resources:
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group : /ecs/image-service
+              awslogs-group :
+                Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogGroup']]
               awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: !Ref InfrastructureStackName
+              awslogs-stream-prefix: !Sub '${AWS::StackName}-Task'
 
   # The service. The service is a resource which allows you to run multiple
   # copies of a type of task, and gather up their logs and metrics, as well
@@ -137,8 +157,8 @@ Resources:
           SecurityGroups:
             - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'IIIFSecurityGroupID']]
           Subnets:
-            - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PrivateSubnet1ID']]
-            - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PrivateSubnet2ID']]
+            - Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'PrivateSubnet1ID']]
+            - Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'PrivateSubnet2ID']]
       TaskDefinition: !Ref 'TaskDefinition'
       LoadBalancers:
         - ContainerName: !Sub '${AWS::StackName}-ImageService'
@@ -164,7 +184,7 @@ Resources:
       Protocol: HTTP
       UnhealthyThresholdCount: 3
       VpcId:
-        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'VPCID']]
+        Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'VPCID']]
       Tags:
         - Key: Name
           Value: !Ref NameTag
@@ -186,9 +206,9 @@ Resources:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicLoadBalancerSecurityGroup']]
       Subnets:
         -
-          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicSubnet1ID']]
+          Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'PublicSubnet1ID']]
         -
-          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicSubnet2ID']]
+          Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'PublicSubnet2ID']]
       Tags:
         - Key: Name
           Value: !Ref NameTag
@@ -226,12 +246,6 @@ Resources:
     Type: AWS::S3::Bucket
     Description: This is the target bucket that the IIIF service will write to when it generates its cache of derivative.
 
-  ImageServiceLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 7
-      LogGroupName: /ecs/image-service
-
   ImageServiceTaskRole:
     Type: AWS::IAM::Role
     DependsOn:
@@ -261,7 +275,8 @@ Resources:
                   Fn::Join:
                     - ""
                     -
-                      - !Sub "arn:aws:s3:::${ImageSourceBucket}"
+                      - !Sub "arn:aws:s3:::"
+                      - !Ref ImageSourceBucket
                       - "/*"
         - PolicyName: ImageDerivativeCacheBucketPermissions
           PolicyDocument:

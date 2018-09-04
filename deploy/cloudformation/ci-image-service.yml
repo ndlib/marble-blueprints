@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  - Creates a CodeBuild Project to pull the GitHub repository,
+  build a Docker Image based on the repository.
+  - Creates a CodePipeline that has a specific CodeBuild associated,
+  which on a merge to master will build the Docker image, push it to
+  a created ECR repository, and deploy it to a test stack.
+  - The CodeBuild configurations are stored in ndlib/image-service rather than
+  this file.
+
+Parameters:
+  NameTag:
+    Type: String
+    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
+    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
+    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
+
+  OwnerTag:
+    Type: String
+    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
+
+  ContactTag:
+    Type: String
+    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
+
+  ContainerPipelineStackName:
+    Type: String
+    Description: The name of the stack that build the CodePipeline, needed to import the repository value to ensure proper tagging
+    Default: 'mellon-container-pipeline'
+Resources:
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: "TrustPolicyAllowCodeBuildToAssume"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+      Policies:
+        -
+          PolicyName: "AllowCloudWatchLogsForCodeBuild"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Action: logs:*
+                Effect: Allow
+                Resource:
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*:*:*
+              -
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt CodeS3Bucket.Arn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt CodeS3Bucket.Arn
+                        - "/*"
+
+  DockerBuilder:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: mellon_docker
+      Description: 'Build Docker Image from GitHub'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: GITHUB
+        Location: 'https://github.com/ndlib/image-server.git'
+        GitCloneDepth: 1
+        ReportBuildStatus: true
+        BuildSpec: deploy/aws/build/buildspec.yml
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Triggers:
+        Webhook: true
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:17.09.0
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Value: ndlib-image-server
+          - Name: IMAGE_REPO_NAME
+            Value:
+              Fn::ImportValue: !Join [':', [!Ref ContainerPipelineStackName, 'Repository']]
+          - Name: IMAGE_TAG
+            Value: latest
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+
+  CodeS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256

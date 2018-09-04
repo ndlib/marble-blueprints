@@ -1,0 +1,94 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >
+  This CloudFormation will create the following:
+
+    - Exports for the current VPCID and SubnetIDs that exist in LibND,
+    with consistency for the rest of the Mellon project
+
+Parameters:
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: The VPC ID where the required networking exists
+    Default: ''
+
+  EnvironmentName:
+    Type: String
+    Description: Any value that describes where the service exists
+    Default: "dev"
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: One of the private subnets in LibND
+    Default: ''
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: A second of the private subnets in LibND
+    Default: ''
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: One of the public subnets in LibND
+    Default: ''
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: A second of the public subnets in LibND
+    Default: ''
+
+  NameTag:
+    Type: String
+    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
+    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
+    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
+
+  OwnerTag:
+    Type: String
+    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
+
+  ContactTag:
+    Type: String
+    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
+
+Resources:
+  VPCIDParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: /all/vpcid
+      Description: The VPCID to use for LIBND Resources
+      Value: !Ref VPC
+
+Outputs:
+
+  PublicSubnet1ID:
+    Description: The subnet ID of the 1st public subnet
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet1ID']]
+
+  PublicSubnet2ID:
+    Description: The subnet ID of the 2nd public subnet
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicSubnet2ID']]
+
+  PrivateSubnet1ID:
+    Description: The subnet ID of the 1st private subnet
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet1ID']]
+
+  PrivateSubnet2ID:
+    Description: The subnet ID of the 2nd private subnet
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateSubnet2ID']]
+
+  VPCID:
+    Description: The ID of the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'VPCID']]

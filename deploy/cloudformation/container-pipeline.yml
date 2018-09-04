@@ -1,0 +1,322 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  - Creates a CodeBuild Project to pull the GitHub repository,
+  build a Docker Image based on the repository.
+  - Creates a CodePipeline that has a specific CodeBuild associated,
+  which on a merge to master will build the Docker image, push it to
+  a created ECR repository, and deploy it to a test stack.
+  - The CodeBuild configurations are stored in ndlib/image-service rather than
+  this file.
+
+  Expects the following exports from the iiif-service stack(s):
+    - IIIFProdServiceStackName:Service
+    - IIIFTestServiceStackName:Service
+
+Parameters:
+  Approvers:
+    Type: String
+    Default: ''
+    Description: An e-mail address of someone who can approve test environment
+  IIIFProdServiceStackName:
+    Type: String
+    Default: mellon-iiif-service
+    Description: The name of the CloudFormation stack that created the production ECS Service
+  IIIFTestServiceStackName:
+    Type: String
+    Default: mellon-iiif-test-service
+    Description: The name of the CloudFormation stack that created the test ECS Service
+  InfrastructureStackName:
+    Type: String
+    Default: mellon-app-infrastructure
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+  NameTag:
+    Type: String
+    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
+    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
+    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
+
+  OwnerTag:
+    Type: String
+    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
+
+  ContactTag:
+    Type: String
+    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
+
+  OAuth:
+    Type: String
+    NoEcho: true
+    Description: The OAuth Token Value to connect CodePipeline to GitHub. Passed in at Runtime.
+
+Outputs:
+
+  ContainerRepositoryName:
+    Description: Name of the created container repository
+    Value: !Ref AmazonContainerRepository
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Repository']]
+
+Resources:
+  SNSTopic:
+    Type: AWS::SNS::Topic
+
+  SNSTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref SNSTopic
+      Protocol: email
+      Endpoint: !Ref Approvers
+
+  AmazonContainerRepository:
+    Type: AWS::ECR::Repository
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: "TrustPolicyAllowCodeBuildToAssume"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+      Policies:
+        -
+          PolicyName: "AllowCloudWatchLogsForCodeBuild"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Action: logs:*
+                Effect: Allow
+                Resource:
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*:*:*
+              -
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt CodeS3Bucket.Arn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt CodeS3Bucket.Arn
+                        - "/*"
+
+
+  DockerCodePipelineBuilder:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: mellon_docker_codepipeline
+      Description: 'Build Docker Image from GitHub for CodePipeline'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        GitCloneDepth: 1
+        BuildSpec: deploy/aws/buildspec.yml
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:17.09.0
+        EnvironmentVariables:
+          - Name: APPLICATION_NAME
+            Value: ndlib-image-server
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref AmazonContainerRepository
+          - Name: IMAGE_TAG
+            Value: latest
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: TEST_CONTAINER_NAME
+            Value:
+              Fn::Join: [ '-', [ !Ref 'IIIFTestServiceStackName', 'ImageService']]
+          - Name: PROD_CONTAINER_NAME
+            Value:
+              Fn::Join: [ '-', [ !Ref 'IIIFProdServiceStackName', 'ImageService']]
+
+
+  CodeS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: "TrustPolicyAllowCodePipelineToAssume"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "codepipeline.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerServiceFullAccess
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  CodePipelinePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: "Policy to Allow CodePipeline to do its work"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - codepipeline:*
+              - sns:Publish
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource:
+              - !GetAtt CodeS3Bucket.Arn
+              - Fn::Join:
+                  - ""
+                  -
+                    - !GetAtt CodeS3Bucket.Arn
+                    - "/*"
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:GetBucketVersioning
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - codebuild:StartBuild
+              - codebuild:BatchGetBuilds
+            Resource: !GetAtt DockerCodePipelineBuilder.Arn
+          - Effect: Allow
+            Action:
+              - ecs:UpdateService
+              - ecs:RegisterTaskDefinition
+              - ecs:List*
+              - ecs:CreateService
+            Resource: "*"
+      Roles:
+        - !Ref CodePipelineRole
+
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Location: !Ref CodeS3Bucket
+        Type: S3
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      Stages:
+        -
+          Name: Source
+          Actions:
+            -
+              Name: "RetrieveSourceCode"
+              ActionTypeId:
+                Owner: ThirdParty
+                Category: Source
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: ndlib
+                Repo: image-server
+                Branch: master
+                OAuthToken: !Ref OAuth
+              OutputArtifacts:
+                - Name: SourceCode
+        -
+          Name: Build
+          Actions:
+            -
+              Name: "BuildDockerImage"
+              InputArtifacts:
+                - Name: SourceCode
+              OutputArtifacts:
+                - Name: BuiltCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Build
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref DockerCodePipelineBuilder
+        -
+          Name: DeployToTest
+          Actions:
+            -
+              Name: "DeployAsTestTask"
+              InputArtifacts:
+                - Name: BuiltCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Deploy
+                Provider: ECS
+                Version: "1"
+              Configuration:
+                ClusterName:
+                  Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ClusterName']]
+                ServiceName:
+                  Fn::Join: ['-', [!Ref IIIFTestServiceStackName, 'ImageService']]
+                FileName: imagedefinitionstest.json
+        -
+          Name: Approval
+          Actions:
+            -
+              Name: "ManualApprovalOfTestEnvironment"
+              ActionTypeId:
+                Owner: AWS
+                Category: Approval
+                Provider: Manual
+                Version: "1"
+              Configuration:
+                NotificationArn: !Ref SNSTopic
+                CustomData: Approval or Reject this change after running Exploratory Tests
+        -
+          Name: DeployToProduction
+          Actions:
+            -
+              Name: "DeployToProduction"
+              InputArtifacts:
+                - Name: BuiltCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Deploy
+                Provider: ECS
+                Version: "1"
+              Configuration:
+                ClusterName:
+                  Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ClusterName']]
+                ServiceName:
+                  Fn::Join: ['-', [!Ref IIIFProdServiceStackName, 'ImageService']]
+                FileName: imagedefinitionsprod.json

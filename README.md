@@ -11,7 +11,7 @@ Before you can deploy any of the other stacks, you must deploy some prerequisite
 
 ### Network stack
 ```console
-aws --region us-east-2 cloudformation deploy \
+aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --template-file deploy/cloudformation/network.yml \
   --stack-name mellon-network \
@@ -22,7 +22,7 @@ TODO: Add example of exporting an existing network
 
 ### Infrastructure stack
 ```console
-aws --region us-east-2 cloudformation deploy \
+aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --template-file deploy/cloudformation/app-infrastructure.yml \
   --stack-name mellon-app-infrastructure \
@@ -34,7 +34,6 @@ aws --region us-east-2 cloudformation deploy \
 ### Data Broker stack
 ```console
 aws cloudformation deploy \
-  --region us-east-2 \
   --stack-name mellon-data-broker-dev \
   --template-file deploy/cloudformation/data-broker.yml \
   --parameter-overrides NameTag='testaccount-mellondatabroker-dev' ContactTag='me@myhost.com' OwnerTag='myid'
@@ -44,7 +43,6 @@ aws cloudformation deploy \
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
-  --region us-east-2 \
   --stack-name mellon-image-service-dev \
   --template-file deploy/cloudformation/iiif-service.yml \
   --parameter-overrides NameTag='testaccount-mellonimageservice-dev' ContactTag='me@myhost.com' OwnerTag='myid' \
@@ -54,7 +52,6 @@ aws cloudformation deploy \
 ### IIIF Image Viewer Webcomponent stack
 ```console
 aws cloudformation deploy \
-  --region us-east-2 \
   --stack-name mellon-image-webcomponent-dev \
   --template-file deploy/cloudformation/iiif-webcomponent.yml \
   --parameter-overrides NameTag='testaccount-mellonimagewebcomponent-dev' ContactTag='me@myhost.com' OwnerTag='myid'

@@ -343,7 +343,8 @@ Resources:
                 Category: Build
                 Provider: CodeBuild
                 Version: "1"
-              Configuration: !Ref DockerQABuilder
+              Configuration:
+                ProjectName: !Ref DockerQABuilder
               RunOrder: 1
             -
               Name: "ManualApprovalOfTestEnvironment"

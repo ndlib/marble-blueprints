@@ -261,7 +261,10 @@ Resources:
             Action:
               - codebuild:StartBuild
               - codebuild:BatchGetBuilds
-            Resource: !GetAtt DockerCodePipelineBuilder.Arn
+            Resource:
+              - !GetAtt DockerCodePipelineBuilder.Arn
+              - !GetAtt DockerQABuilder.Arn
+
           - Effect: Allow
             Action:
               - ecs:UpdateService

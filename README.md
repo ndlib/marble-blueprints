@@ -58,7 +58,18 @@ aws cloudformation deploy \
 ```
 
 ## Deploy CI/CD
+Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines.
 
 ### IIIF Image Service Pipeline
 
 ### IIIF Image Viewer Pipeline
+This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "mellon-image-webcomponent-test" and "mellon-image-webcomponent-prod". If custom stack names were used for the image-viewer stacks, you'll need to override the default parameter store paths for TestDeployBucket, TestURL, ProdDeployBucket, and ProdURL.
+
+```console
+aws cloudformation deploy \
+  --capabilities CAPABILITY_IAM \
+  --stack-name mellon-image-webcomponent-pipeline-prod \
+  --template-file deploy/cloudformation/iiif-webcomponent-pipeline.yml \
+  --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
+    NameTag='testaccount-mellonimagewebcomponentpipeline-prod' ContactTag='me@myhost.com' OwnerTag='myid'
+```console

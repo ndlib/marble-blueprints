@@ -65,6 +65,22 @@ Outputs:
 
 Resources:
 
+  BucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/bucket"
+      Value: !Ref Bucket
+      Description: The name of the bucket that will serve the component files
+
+  URLParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/url"
+      Value: !GetAtt Distribution.DomainName
+      Description: The URL endpoint for this component
+
   OriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:

@@ -163,7 +163,7 @@ Resources:
           - Name: PIPELINE_NAME
             Value: !Ref NameTag
 
-  CodeDeployRole:
+  CodeTestDeployRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -219,6 +219,52 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:s3:::${TestDeployBucket}"
                   - !Sub "arn:aws:s3:::${TestDeployBucket}/*"
+
+  CodeProdDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: "TrustPolicyAllowCodeBuildToAssume"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+      Policies:
+        -
+          PolicyName: "AllowCloudWatchLogsForCodeBuild"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Action: logs:*
+                Effect: Allow
+                Resource:
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*
+                  - arn:aws:logs:*:*:log-group:/aws/codebuild/*:*:*
+              -
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource:
+                  - !GetAtt CodeS3Bucket.Arn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt CodeS3Bucket.Arn
+                        - "/*"
+        -
+          PolicyName: "WriteToDeploymentBuckets"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
               -
                 Effect: Allow
                 Action:
@@ -231,12 +277,12 @@ Resources:
                   - !Sub "arn:aws:s3:::${ProdDeployBucket}"
                   - !Sub "arn:aws:s3:::${ProdDeployBucket}/*"
 
-  CodeDeployer:
+  CodeTestDeployer:
     Type: 'AWS::CodeBuild::Project'
     Properties:
-      Name: mellon_iiif_webcomponent_codepipeline_deployer
+      Name: mellon_iiif_webcomponent_codepipeline_test_deployer
       Description: 'Build Image Viewer Webcomponent from GitHub for CodePipeline'
-      ServiceRole: !Ref CodeDeployRole
+      ServiceRole: !Ref CodeTestDeployRole
       TimeoutInMinutes: 10
       Source:
         Type: CODEPIPELINE
@@ -258,6 +304,34 @@ Resources:
         EnvironmentVariables:
           - Name: DEST_BUCKET
             Value: !Ref TestDeployBucket
+
+  CodeProdDeployer:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: mellon_iiif_webcomponent_codepipeline_prod_deployer
+      Description: 'Build Image Viewer Webcomponent from GitHub for CodePipeline'
+      ServiceRole: !Ref CodeProdDeployRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+
+          phases:
+            post_build:
+              commands:
+                - echo Beginning deploy on `date`
+                - aws s3 sync --delete . s3://$DEST_BUCKET/
+
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/ubuntu-base:14.04
+        EnvironmentVariables:
+          - Name: DEST_BUCKET
+            Value: !Ref ProdDeployBucket
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket
@@ -330,7 +404,8 @@ Resources:
               - codebuild:BatchGetBuilds
             Resource:
               - !GetAtt CodeBuilder.Arn
-              - !GetAtt CodeDeployer.Arn
+              - !GetAtt CodeTestDeployer.Arn
+              - !GetAtt CodeProdDeployer.Arn
           - Effect: Allow
             Action:
               - ecs:UpdateService
@@ -383,7 +458,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuilder
         -
-          Name: Deploy
+          Name: DeployToTest
           Actions:
             - Name: "DeployToTest"
               ActionTypeId:
@@ -394,9 +469,9 @@ Resources:
               InputArtifacts:
               - Name: BuiltCode
               OutputArtifacts:
-              - Name: DeployOutput
+              - Name: TestDeployOutput
               Configuration:
-                ProjectName: !Ref CodeDeployer
+                ProjectName: !Ref CodeTestDeployer
               RunOrder: 1
         -
           Name: Approval
@@ -411,3 +486,19 @@ Resources:
               Configuration:
                 NotificationArn: !Ref SNSTopic
                 CustomData: !Sub "You can review these changes at https://${TestURL}"
+        -
+          Name: DeployToProduction
+          Actions:
+            - Name: "DeployToProduction"
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              InputArtifacts:
+              - Name: BuiltCode
+              OutputArtifacts:
+              - Name: ProdDeployOutput
+              Configuration:
+                ProjectName: !Ref CodeProdDeployer
+              RunOrder: 1

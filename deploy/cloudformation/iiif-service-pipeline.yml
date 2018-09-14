@@ -13,6 +13,10 @@ Description: >
     - IIIFTestServiceStackName:Service
 
 Parameters:
+
+  TestUrl:
+    Type: String
+    Description: The URL to test against for newman QA specs
   Approvers:
     Type: String
     Default: ''
@@ -114,6 +118,45 @@ Resources:
                         - "/*"
 
 
+  DockerQABuilder:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: mellon_docker_newman_tests
+      Description: 'Run Newman Tests against Image Server'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: GITHUB
+        Location: 'https://github.com/ndlib/image-server.git'
+        GitCloneDepth: 1
+        ReportBuildStatus: true
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Pre-build started on `date`
+                - npm install -g newman
+            build:
+              commands:
+                - echo Build started on `date`
+                - |
+                  printf '{"name": "image_server.test","values": [{"key": "image-server-host","value": "%s:8182","description": "This is the hostname to my environment","type": "text","enabled": true}],"_postman_variable_scope": "environment","_postman_exported_at": "2018-08-29T20:49:10.416Z","_postman_exported_using": "Postman/6.2.5"}' $TESTING_URL >> test_env.json
+                - cat test_env.json
+                - newman run spec/image-server.postman_collection.json -e test_env.json
+            post_build:
+              commands:
+                - echo Beginning post build on `date`
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/nodejs:10.1.0
+        EnvironmentVariables:
+          - Name: TESTING_URL
+            Value: !Ref TestUrl
+
   DockerCodePipelineBuilder:
     Type: 'AWS::CodeBuild::Project'
     Properties:
@@ -148,7 +191,6 @@ Resources:
           - Name: PROD_CONTAINER_NAME
             Value:
               Fn::Join: [ '-', [ !Ref 'IIIFProdServiceStackName', 'ImageService']]
-
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket
@@ -293,6 +335,18 @@ Resources:
           Name: Approval
           Actions:
             -
+              Name: "RunQATests"
+              InputArtifacts:
+                - Name: SourceCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Build
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref DockerQABuilder
+              RunOrder: 1
+            -
               Name: "ManualApprovalOfTestEnvironment"
               ActionTypeId:
                 Owner: AWS
@@ -302,6 +356,7 @@ Resources:
               Configuration:
                 NotificationArn: !Ref SNSTopic
                 CustomData: Approval or Reject this change after running Exploratory Tests
+              RunOrder: 2
         -
           Name: DeployToProduction
           Actions:

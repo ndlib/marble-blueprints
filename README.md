@@ -71,5 +71,6 @@ aws cloudformation deploy \
   --stack-name mellon-image-webcomponent-pipeline-prod \
   --template-file deploy/cloudformation/iiif-webcomponent-pipeline.yml \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
+    TestManifestURL='http://wellcomelibrary.org/iiif/b17502792' \
     NameTag='testaccount-mellonimagewebcomponentpipeline-prod' ContactTag='me@myhost.com' OwnerTag='myid'
 ```console

@@ -9,6 +9,7 @@ Description: >
     - An IAM Role to allow ECS Task Execution
     - An S3 Bucket for Logging
     - A Log Group for aggregarion of logs
+    - A certificate for use with components in this region
 
 Parameters:
 
@@ -21,6 +22,11 @@ Parameters:
     Type: String
     Description: Any value that describes where the service exists
     Default: "dev"
+
+  DomainName:
+    Type: String
+    Description: 'The FQDN to use for the certificate, see: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-certificatemanager-certificate.html'
+    Default: '*.library.nd.edu'
 
   NameTag:
     Type: String
@@ -131,6 +137,22 @@ Resources:
       RetentionInDays: 7
       LogGroupName: !Join [ '-', [ !Ref 'AWS::StackName', 'LogGroup']]
 
+  ACMCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          ValidationDomain: !Ref DomainName
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
+      ValidationMethod: DNS
+
 Outputs:
 
   SharedLogGroup:
@@ -138,6 +160,7 @@ Outputs:
     Value: !Ref SharedLogGroup
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogGroup']]
+
   ClusterName:
     Description: The name of the ECS Cluster created by this CloudFormation
     Value: !Ref ContainerCluster
@@ -167,3 +190,9 @@ Outputs:
     Value: !Ref LogBucket
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogBucket']]
+
+  AcmArnParameter:
+    Description: The ARN of the generated certificate
+    Value: !Ref ACMCertificate
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ACMCertificateARN']]

@@ -21,7 +21,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: /all/mellon/publicbucket
+      Name: !Sub '/all/stacks/${AWS::StackName}/publicbucket'
       Value: !Ref PublicBucket
       Description: The name of the public bucket for IIIF Services
 

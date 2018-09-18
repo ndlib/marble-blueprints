@@ -136,19 +136,20 @@ Resources:
             install:
               commands:
                 - echo Install started on `date`
-                - sh build/install.sh
+                - chmod -R 755 build/*
+                - ./build/install.sh
             pre_build:
               commands:
                 - echo Pre-build started on `date`
-                - sh build/pre_build.sh
+                - ./build/pre_build.sh
             build:
               commands:
                 - echo Build started on `date`
-                - sh build/build.sh
+                - ./build/build.sh
             post_build:
               commands:
                 - echo Beginning post build on `date`
-                - sh build/post_build.sh
+                - ./build/post_build.sh
           artifacts:
             base-directory: dist
             files:

@@ -56,15 +56,15 @@ Parameters:
     Description: The path to the param that stores the test URL.
     Default: "/all/stacks/mellon-image-webcomponent-test/url"
 
-  TestManifestURL:
-    Type: String
-    Description: The URL of the manifest to use when notifying approvers of a change
-    Default: ""
-
   ProdDeployBucket:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The path to the param that stores the test deployment bucket.
     Default: "/all/stacks/mellon-image-webcomponent-prod/bucket"
+
+  ProdURL:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: The path to the param that stores the test URL.
+    Default: "/all/stacks/mellon-image-webcomponent-prod/url"
 
 Resources:
   SNSTopic:
@@ -491,7 +491,7 @@ Resources:
                 Version: "1"
               Configuration:
                 NotificationArn: !Ref SNSTopic
-                CustomData: !Sub "You can review these changes at https://${TestURL}/universalviewer/index.html#?manifest=${TestManifestURL}"
+                CustomData: !Sub "You can review these changes at https://${TestURL}. Once approved, this will be deployed to https://${ProdURL}."
 
         -
           Name: DeployToProduction

@@ -7,13 +7,34 @@ Parameters:
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
 
+  EnvType:
+    Type: String
+    Description: The type of environment to create.
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    ConstraintDescription: must specify prod or dev.
+
+Mappings:
+  # Settings to use for each environment.
+  EnvTypeSettings:
+    dev:
+      CorsOrigins:
+        - "*.library.nd.edu"
+        - "*.cloudfront.net"
+        - "http://universalviewer.io"
+    prod:
+      CorsOrigins:
+        # This will probably need to change to allow overrides via params somehow,
+        # but not going to fight it now since this is a place holder for data-broker
+        - "*.library.nd.edu"
+
 Outputs:
 
   PublicBucket:
     Description: A temporary bucket to share assets publicly for Mellon project
     Value: !Ref PublicBucket
-    # Export:
-    #   Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicBucket']]
 
 Resources:
 
@@ -31,7 +52,7 @@ Resources:
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ['*']
-            AllowedOrigins: ['http://universalviewer.io', '*.cloudfront.net']
+            AllowedOrigins: !FindInMap [EnvTypeSettings, !Ref EnvType, "CorsOrigins"]
             AllowedMethods: [GET]
             MaxAge: 3600
       LoggingConfiguration:

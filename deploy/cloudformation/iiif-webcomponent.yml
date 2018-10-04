@@ -36,7 +36,10 @@ Parameters:
     ConstraintDescription: must specify prod or dev.
 
 Mappings:
-  # Cache settings to use for each environment
+  # Cache settings to use for each environment.
+  # Note: Our current pipeline's deploy cannot do an atomic cutover when deploying a new version to production.
+  # It's best to make sure that the DefaultTTL in production covers the gap between the delete->copy commands.
+  # See CodeProdDeployer within https://github.com/ndlib/mellon-blueprints/blob/master/deploy/cloudformation/iiif-webcomponent-pipeline.yml
   CacheSettings:
     dev:
       DefaultTTL: 0

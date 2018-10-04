@@ -14,18 +14,10 @@ Parameters:
     Type: String
     Description: An e-mail address of someone who can approve test environment
 
-  InfrastructureStackName:
-    Type: String
-    Default: mellon-app-infrastructure
-    Description: The name of the parent infrastructure/networking stack that you created. Necessary
-                 to locate and reference resources created by that stack.
-
   CDBranchName:
     Type: String
     Default: master
     Description: The name of the branch to watch for continuous deployment
-
-  # TODO: Optional param to stop at continuous delivery vs deployment?
 
   NameTag:
     Type: String
@@ -66,14 +58,22 @@ Parameters:
     Description: The path to the param that stores the test URL.
     Default: "/all/stacks/mellon-image-webcomponent-prod/url"
 
+Outputs:
+
+  PipelineName:
+    Description: The name of the pipeline created by this stack
+    Value: !Ref CodePipeline
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PipelineName']]
+
 Resources:
-  SNSTopic:
+  ApproversTopic:
     Type: AWS::SNS::Topic
 
-  SNSTopicSubscription:
+  ApproversTopicSubscription:
     Type: AWS::SNS::Subscription
     Properties:
-      TopicArn: !Ref SNSTopic
+      TopicArn: !Ref ApproversTopic
       Protocol: email
       Endpoint: !Ref Approvers
 
@@ -292,14 +292,21 @@ Resources:
       TimeoutInMinutes: 10
       Source:
         Type: CODEPIPELINE
+        # This buildspec will first empty the bucket, then copy all files into it
+        # This may be the only way to reliably sync the complete state of the
+        # files to the bucket. Multiple back to back invocations of the pipeline
+        # has caused new changes to fail to deploy when using aws s3 sync, possibly
+        # due to the eventual consistency nature of s3.
         BuildSpec: |
           version: 0.2
 
           phases:
-            post_build:
+            pre_build:
               commands:
-                - echo Beginning deploy on `date`
-                - aws s3 sync --delete . s3://$DEST_BUCKET/
+                - aws s3 rm s3://$DEST_BUCKET --recursive
+            build:
+              commands:
+                - aws s3 cp --recursive . s3://$DEST_BUCKET/
 
       Artifacts:
         Type: CODEPIPELINE
@@ -320,14 +327,22 @@ Resources:
       TimeoutInMinutes: 10
       Source:
         Type: CODEPIPELINE
+        # This buildspec will first empty the bucket, then copy all files into it
+        # This may be the only way to reliably sync the complete state of the
+        # files to the bucket. Multiple back to back invocations of the pipeline
+        # has caused new changes to fail to deploy when using aws s3 sync, possibly
+        # due to the eventual consistency nature of s3. See
+        # https://docs.aws.amazon.com/AmazonS3/latest/dev/Introduction.html#ConsistencyModel
         BuildSpec: |
           version: 0.2
 
           phases:
-            post_build:
+            pre_build:
               commands:
-                - echo Beginning deploy on `date`
-                - aws s3 sync --delete . s3://$DEST_BUCKET/
+                - aws s3 rm s3://$DEST_BUCKET --recursive
+            build:
+              commands:
+                - aws s3 cp --recursive . s3://$DEST_BUCKET/
 
       Artifacts:
         Type: CODEPIPELINE
@@ -490,7 +505,7 @@ Resources:
                 Provider: Manual
                 Version: "1"
               Configuration:
-                NotificationArn: !Ref SNSTopic
+                NotificationArn: !Ref ApproversTopic
                 CustomData: !Sub "You can review these changes at https://${TestURL}. Once approved, this will be deployed to https://${ProdURL}."
 
         -

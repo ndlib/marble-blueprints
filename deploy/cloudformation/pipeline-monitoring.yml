@@ -1,0 +1,265 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Creates set of CloudWatch Event Rules to monitor a CI/CD pipeline.
+  The target pipleine must have the following build stages:
+    Source, Build, DeployToTest, Approval, DeployToProduction
+
+  Expects the following exports from the target pipeline stack:
+    - PipelineStackName:PipelineName
+
+Parameters:
+  PipelineStackName:
+    Type: String
+    Description: The name of the parent stack that created the pipeline to observe.
+
+  Receivers:
+    Type: String
+    Description: An e-mail address to send the notifications to
+
+Resources:
+
+  PipelineEventsTopic:
+    Type: AWS::SNS::Topic
+
+  PipelineEventsTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref PipelineEventsTopic
+      Protocol: email
+      Endpoint: !Ref Receivers
+
+  # Allow events below to publish to the pipeline events topic
+  EventTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: 'sns:Publish'
+            Resource: !Ref PipelineEventsTopic
+      Topics:
+        - !Ref PipelineEventsTopic
+
+  # Top level pipeline change events
+  PipelineStartedEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends pipeline started message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Pipeline Execution State Change"
+        detail:
+          pipeline:
+            - Fn::ImportValue: !Join [':', [!Ref PipelineStackName, 'PipelineName']]
+          state:
+            - STARTED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"The pipeline ${AWS::StackName} has started. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  PipelineSuccessEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends pipeline succeeded message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Pipeline Execution State Change"
+        detail:
+          pipeline:
+            - Fn::ImportValue: !Join [':', [!Ref PipelineStackName, 'PipelineName']]
+          state:
+            - SUCCEEDED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"The pipeline ${AWS::StackName} has successfully deployed to production. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  # This is just a catch all for other states.
+  # I'm not entirely sure we care about them yet.
+  PipelineGenericEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends generic pipeline state change messages to the pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Pipeline Execution State Change"
+        detail:
+          pipeline:
+            - Fn::ImportValue: !Join [':', [!Ref PipelineStackName, 'PipelineName']]
+          state:
+            - RESUMED
+            - CANCELED
+            - SUPERSEDED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+              PipelineState: "$.detail.state"
+            InputTemplate: !Sub '"The pipeline ${AWS::StackName} has changed state to <PipelineState>. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  # Stage failure events
+  # I couldn't get anything meaningful out of a generic pipeline-level failure
+  # so I am adding one for each stage. This may eventually need to go through
+  # a more sophisticated event processor to give more useful information.
+  SourceFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends source code stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - Fn::ImportValue: !Join [':', [!Ref PipelineStackName, 'PipelineName']]
+          stage:
+            - "Source"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+              Json: "$"
+            InputTemplate: !Sub '"Failed to pull the source code for ${AWS::StackName}. To view the current execution, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  BuildFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends build stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - Fn::ImportValue: !Join [':', [!Ref PipelineStackName, 'PipelineName']]
+          stage:
+            - "Build"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+              Json: "$"
+            InputTemplate: !Sub '"Failed to build ${AWS::StackName}. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  DeployToTestFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends deploy to test stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - Fn::ImportValue: !Join [':', [!Ref PipelineStackName, 'PipelineName']]
+          stage:
+            - "DeployToTest"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"Build for ${AWS::StackName} failed to deploy to test stack. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  ApprovalFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends approval stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - Fn::ImportValue: !Join [':', [!Ref PipelineStackName, 'PipelineName']]
+          stage:
+            - "Approval"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"Build for ${AWS::StackName} was rejected by an approver. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  DeployToProdFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends deploy to production stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - Fn::ImportValue: !Join [':', [!Ref PipelineStackName, 'PipelineName']]
+          stage:
+            - "DeployToProduction"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"Build for ${AWS::StackName} failed to deploy to production stack. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'

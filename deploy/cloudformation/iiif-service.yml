@@ -98,6 +98,14 @@ Outputs:
 
 Resources:
 
+  URLParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/url"
+      Value: !GetAtt PublicLoadBalancer.DNSName
+      Description: The URL endpoint for this component
+
   # The task definition. This is a simple metadata description of what
   # container to run, and what resource requirements it has.
   TaskDefinition:

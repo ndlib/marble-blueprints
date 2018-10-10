@@ -235,7 +235,7 @@ Resources:
           InputTransformer:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
-            InputTemplate: !Sub '"Build for ${AWS::StackName} was rejected by an approver. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"Build for ${AWS::StackName} was rejected either due to a QA failure or UAT rejection. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
 
   DeployToProdFailureEventRule:
     Type: AWS::Events::Rule

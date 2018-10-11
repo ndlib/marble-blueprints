@@ -14,20 +14,21 @@ Description: >
 
 Parameters:
 
-  TestUrl:
-    Type: String
-    Description: The URL to test against for newman QA specs
+  TestURL:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: The path to the param that stores the test URL.
+    Default: "/all/stacks/mellon-image-service-test/url"
   Approvers:
     Type: String
     Default: ''
     Description: An e-mail address of someone who can approve test environment
   IIIFProdServiceStackName:
     Type: String
-    Default: mellon-iiif-service
+    Default: mellon-image-service-prod
     Description: The name of the CloudFormation stack that created the production ECS Service
   IIIFTestServiceStackName:
     Type: String
-    Default: mellon-iiif-test-service
+    Default: mellon-image-service-test
     Description: The name of the CloudFormation stack that created the test ECS Service
   InfrastructureStackName:
     Type: String
@@ -54,6 +55,12 @@ Parameters:
     Description: The OAuth Token Value to connect CodePipeline to GitHub. Passed in at Runtime.
 
 Outputs:
+
+  PipelineName:
+    Description: The name of the pipeline created by this stack
+    Value: !Ref CodePipeline
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PipelineName']]
 
   ContainerRepositoryName:
     Description: Name of the created container repository
@@ -155,7 +162,7 @@ Resources:
         Image: aws/codebuild/nodejs:10.1.0
         EnvironmentVariables:
           - Name: TESTING_URL
-            Value: !Ref TestUrl
+            Value: !Ref TestURL
 
   DockerCodePipelineBuilder:
     Type: 'AWS::CodeBuild::Project'

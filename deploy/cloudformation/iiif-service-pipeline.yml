@@ -18,23 +18,33 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The path to the param that stores the test URL.
     Default: "/all/stacks/mellon-image-service-test/url"
+
   Approvers:
     Type: String
     Default: ''
     Description: An e-mail address of someone who can approve test environment
+
   IIIFProdServiceStackName:
     Type: String
     Default: mellon-image-service-prod
     Description: The name of the CloudFormation stack that created the production ECS Service
+
   IIIFTestServiceStackName:
     Type: String
     Default: mellon-image-service-test
     Description: The name of the CloudFormation stack that created the test ECS Service
+
   InfrastructureStackName:
     Type: String
     Default: mellon-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
+
+  CDBranchName:
+    Type: String
+    Default: master
+    Description: The name of the branch to watch for continuous deployment
+
   NameTag:
     Type: String
     Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
@@ -303,7 +313,7 @@ Resources:
               Configuration:
                 Owner: ndlib
                 Repo: image-server
-                Branch: master
+                Branch: !Ref CDBranchName
                 OAuthToken: !Ref OAuth
               OutputArtifacts:
                 - Name: SourceCode

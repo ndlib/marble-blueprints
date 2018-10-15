@@ -66,7 +66,7 @@ Resources:
           InputTransformer:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
-            InputTemplate: !Sub '"The pipeline ${AWS::StackName} has started. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"The pipeline <Pipeline> has started. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
 
   PipelineSuccessEventRule:
     Type: AWS::Events::Rule
@@ -91,7 +91,7 @@ Resources:
           InputTransformer:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
-            InputTemplate: !Sub '"The pipeline ${AWS::StackName} has successfully deployed to production. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"The pipeline <Pipeline> has successfully deployed to production. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
 
   # This is just a catch all for other states.
   # I'm not entirely sure we care about them yet.
@@ -121,7 +121,7 @@ Resources:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
               PipelineState: "$.detail.state"
-            InputTemplate: !Sub '"The pipeline ${AWS::StackName} has changed state to <PipelineState>. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"The pipeline <Pipeline> has changed state to <PipelineState>. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
 
   # Stage failure events
   # I couldn't get anything meaningful out of a generic pipeline-level failure
@@ -153,7 +153,7 @@ Resources:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
               Json: "$"
-            InputTemplate: !Sub '"Failed to pull the source code for ${AWS::StackName}. To view the current execution, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"Failed to pull the source code for <Pipeline>. To view the current execution, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
 
   BuildFailureEventRule:
     Type: AWS::Events::Rule
@@ -181,7 +181,7 @@ Resources:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
               Json: "$"
-            InputTemplate: !Sub '"Failed to build ${AWS::StackName}. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"Failed to build <Pipeline>. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
 
   DeployToTestFailureEventRule:
     Type: AWS::Events::Rule
@@ -208,7 +208,7 @@ Resources:
           InputTransformer:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
-            InputTemplate: !Sub '"Build for ${AWS::StackName} failed to deploy to test stack. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"Build for <Pipeline> failed to deploy to test stack. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
 
   ApprovalFailureEventRule:
     Type: AWS::Events::Rule
@@ -235,7 +235,7 @@ Resources:
           InputTransformer:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
-            InputTemplate: !Sub '"Build for ${AWS::StackName} was rejected either due to a QA failure or UAT rejection. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"Build for <Pipeline> was rejected either due to a QA failure or UAT rejection. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
 
   DeployToProdFailureEventRule:
     Type: AWS::Events::Rule
@@ -262,4 +262,4 @@ Resources:
           InputTransformer:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
-            InputTemplate: !Sub '"Build for ${AWS::StackName} failed to deploy to production stack. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+            InputTemplate: !Sub '"Build for <Pipeline> failed to deploy to production stack. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'

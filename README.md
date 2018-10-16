@@ -69,16 +69,25 @@ aws cloudformation deploy \
 ```console
 aws cloudformation deploy \
   --stack-name mellon-image-webcomponent-dev \
-  --template-file deploy/cloudformation/iiif-webcomponent.yml \
+  --template-file deploy/cloudformation/static-host.yml \
   --tags ProjectName=mellon \
   --parameter-overrides NameTag='testaccount-mellonimagewebcomponent-dev' ContactTag='me@myhost.com' OwnerTag='myid'
+```
+
+### Main Website stack
+```console
+aws cloudformation deploy \
+  --stack-name mellon-website-dev \
+  --template-file deploy/cloudformation/static-host.yml \
+  --tags ProjectName=mellon \
+  --parameter-overrides NameTag='testaccount-mellonwebsite-dev' ContactTag='me@myhost.com' OwnerTag='myid'
 ```
 
 ## Deploy CI/CD
 Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines.
 
 ### IIIF Image Service Pipeline
-This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "mellon-image-webcomponent-test" and "mellon-image-webcomponent-prod". If custom stack names were used for the image-viewer stacks, you'll need to override the default parameter store paths for TestDeployBucket, TestURL, ProdDeployBucket, and ProdURL.
+This will deploy to test, then to production, so it expects two different image-service stacks to exist, ex: "mellon-image-service-test" and "mellon-image-service-prod". If custom stack names were used for the image-service stacks, you'll need to override the default parameters for IIIFProdServiceStackName and IIIFTestServiceStackName.
 
 ```console
 aws cloudformation deploy \
@@ -97,12 +106,26 @@ This will deploy to test, then to production, so it expects two different image-
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --stack-name mellon-image-webcomponent-pipeline \
-  --template-file deploy/cloudformation/iiif-webcomponent-pipeline.yml \
+  --template-file deploy/cloudformation/static-host-pipeline.yml \
   --tags ProjectName=mellon \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
+    SourceRepoOwner=ndlib SourceRepoName=image-viewer \
     NameTag='testaccount-mellonimagewebcomponentpipeline' ContactTag='me@myhost.com' OwnerTag='myid'
 ```
 
+### Main Website Pipeline
+This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "mellon-image-webcomponent-test" and "mellon-image-webcomponent-prod". If custom stack names were used for the image-viewer stacks, you'll need to override the default parameter store paths for TestDeployBucket, TestURL, ProdDeployBucket, and ProdURL.
+
+```console
+aws cloudformation deploy \
+  --capabilities CAPABILITY_IAM \
+  --stack-name mellon-image-webcomponent-pipeline \
+  --template-file deploy/cloudformation/static-host-pipeline.yml \
+  --tags ProjectName=mellon \
+  --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
+    SourceRepoOwner=ndlib SourceRepoName=mellon-website \
+    NameTag='testaccount-mellonimagewebcomponentpipeline' ContactTag='me@myhost.com' OwnerTag='myid'
+```
 
 #### Approval message
 Once the pipeline reaches the UAT step, it will send an email to the approvers list and wait until it's either approved or rejected. Here's an example of the message.

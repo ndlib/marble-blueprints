@@ -109,7 +109,7 @@ aws cloudformation deploy \
   --template-file deploy/cloudformation/static-host-pipeline.yml \
   --tags ProjectName=mellon \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
-    SourceRepoOwner=ndlib SourceRepoName=image-viewer \
+    SourceRepoOwner=ndlib SourceRepoName=image-viewer BuildScriptsDir='build' BuildOutputDir='dist' \
     TestStackName=mellon-image-webcomponent-test ProdStackName=mellon-image-webcomponent-prod \
     NameTag='testaccount-mellonimagewebcomponentpipeline' ContactTag='me@myhost.com' OwnerTag='myid'
 ```

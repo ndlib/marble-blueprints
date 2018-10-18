@@ -69,16 +69,25 @@ aws cloudformation deploy \
 ```console
 aws cloudformation deploy \
   --stack-name mellon-image-webcomponent-dev \
-  --template-file deploy/cloudformation/iiif-webcomponent.yml \
+  --template-file deploy/cloudformation/static-host.yml \
   --tags ProjectName=mellon \
   --parameter-overrides NameTag='testaccount-mellonimagewebcomponent-dev' ContactTag='me@myhost.com' OwnerTag='myid'
+```
+
+### Main Website stack
+```console
+aws cloudformation deploy \
+  --stack-name mellon-website-dev \
+  --template-file deploy/cloudformation/static-host.yml \
+  --tags ProjectName=mellon \
+  --parameter-overrides NameTag='testaccount-mellonwebsite-dev' ContactTag='me@myhost.com' OwnerTag='myid'
 ```
 
 ## Deploy CI/CD
 Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines.
 
 ### IIIF Image Service Pipeline
-This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "mellon-image-webcomponent-test" and "mellon-image-webcomponent-prod". If custom stack names were used for the image-viewer stacks, you'll need to override the default parameter store paths for TestDeployBucket, TestURL, ProdDeployBucket, and ProdURL.
+This will deploy to test, then to production, so it expects two different image-service stacks to exist, ex: "mellon-image-service-test" and "mellon-image-service-prod". If custom stack names were used for the image-service stacks, you'll need to override the default parameters for IIIFProdServiceStackName and IIIFTestServiceStackName.
 
 ```console
 aws cloudformation deploy \
@@ -91,18 +100,34 @@ aws cloudformation deploy \
 ```
 
 ### IIIF Image Viewer Pipeline
-This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "mellon-image-webcomponent-test" and "mellon-image-webcomponent-prod". If custom stack names were used for the image-viewer stacks, you'll need to override the default parameter store paths for TestDeployBucket, TestURL, ProdDeployBucket, and ProdURL.
+This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "mellon-image-webcomponent-test" and "mellon-image-webcomponent-prod".
 
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --stack-name mellon-image-webcomponent-pipeline \
-  --template-file deploy/cloudformation/iiif-webcomponent-pipeline.yml \
+  --template-file deploy/cloudformation/static-host-pipeline.yml \
   --tags ProjectName=mellon \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
+    SourceRepoOwner=ndlib SourceRepoName=image-viewer BuildScriptsDir='build' BuildOutputDir='dist' \
+    TestStackName=mellon-image-webcomponent-test ProdStackName=mellon-image-webcomponent-prod \
     NameTag='testaccount-mellonimagewebcomponentpipeline' ContactTag='me@myhost.com' OwnerTag='myid'
 ```
 
+### Website Pipeline
+This will deploy to test, then to production, so it expects two different website stacks to exist, ex: "mellon-website-test" and "mellon-website-prod".
+
+```console
+aws cloudformation deploy \
+  --capabilities CAPABILITY_IAM \
+  --stack-name mellon-website-pipeline \
+  --template-file deploy/cloudformation/static-host-pipeline.yml \
+  --tags ProjectName=mellon \
+  --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
+    SourceRepoOwner=ndlib SourceRepoName=mellon-website \
+    TestStackName=mellon-website-test ProdStackName=mellon-website-prod \
+    NameTag='testaccount-mellonwebsitepipeline' ContactTag='me@myhost.com' OwnerTag='myid'
+```
 
 #### Approval message
 Once the pipeline reaches the UAT step, it will send an email to the approvers list and wait until it's either approved or rejected. Here's an example of the message.
@@ -129,6 +154,15 @@ aws cloudformation deploy \
   --template-file deploy/cloudformation/pipeline-monitoring.yml \
   --tags ProjectName=mellon \
   --parameter-overrides PipelineStackName=mellon-image-webcomponent-pipeline Receivers=me@myhost.com
+```
+
+Here's an example of adding monitoring to the website-pipeline
+```console
+aws cloudformation deploy \
+  --stack-name mellon-website-pipeline-monitoring \
+  --template-file deploy/cloudformation/pipeline-monitoring.yml \
+  --tags ProjectName=mellon \
+  --parameter-overrides PipelineStackName=mellon-website-pipeline Receivers=me@myhost.com
 ```
 
 Here's an example of adding monitoring to the image-service-pipeline

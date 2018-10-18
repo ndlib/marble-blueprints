@@ -2,7 +2,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
 
-Description: 'Static host for IIIF webcomponents'
+Description: 'Static host for webcomponents and single-page applications'
 
 
 Parameters:
@@ -35,11 +35,21 @@ Parameters:
       - prod
     ConstraintDescription: must specify prod or dev.
 
+  NameTag:
+    Type: String
+    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
+    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
+    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
+
+  OwnerTag:
+    Type: String
+    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
+
+  ContactTag:
+    Type: String
+    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
+
 Mappings:
-  # Cache settings to use for each environment.
-  # Note: Our current pipeline's deploy cannot do an atomic cutover when deploying a new version to production.
-  # It's best to make sure that the DefaultTTL in production covers the gap between the delete->copy commands.
-  # See CodeProdDeployer within https://github.com/ndlib/mellon-blueprints/blob/master/deploy/cloudformation/iiif-webcomponent-pipeline.yml
   CacheSettings:
     dev:
       DefaultTTL: 0
@@ -61,34 +71,29 @@ Outputs:
   BucketName:
     Description: Name of S3 bucket to hold website content
     Value: !Ref Bucket
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'BucketName']]
 
-  CNAME:
-    Description: Website CNAME target
+  URL:
+    Description: The FQDN if one is given, otherwise the cloudfront distribution domain name.
+    Value: !If
+      - NoFQDN
+      - !GetAtt Distribution.DomainName
+      - !Ref FQDN
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'URL']]
+
+  DistributionDomainName:
+    Description: The cloudfront distribution domain name.
     Value: !GetAtt Distribution.DomainName
 
 Resources:
-
-  BucketParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/bucket"
-      Value: !Ref Bucket
-      Description: The name of the bucket that will serve the component files
-
-  URLParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/url"
-      Value: !GetAtt Distribution.DomainName
-      Description: The URL endpoint for this component
 
   OriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: IIIF Web Component Origin Access Identity
+        Comment: !Sub Static assets in ${AWS::StackName}
 
   Bucket:
     Type: AWS::S3::Bucket
@@ -98,8 +103,15 @@ Resources:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
         LogFilePrefix: !If
           - NoFQDN
-          - s3/iiif-webcomponent/
+          - !Sub s3/${AWS::StackName}/
           - !Sub s3/${FQDN}/
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -173,6 +185,13 @@ Resources:
               - !Ref AWS::URLSuffix
           Prefix: !If
             - NoFQDN
-            - web/iiif-webcomponent/
+            - !Sub web/${AWS::StackName}/
             - !Sub web/${FQDN}/
           IncludeCookies: true
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag

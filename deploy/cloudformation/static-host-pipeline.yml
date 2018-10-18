@@ -5,7 +5,7 @@ Description: >
   - Creates a CodePipeline that has a specific CodeBuild associated,
   which on a merge to master will build the project, push it to
   a bucket, and deploy it to a test stack.
-  - The scripts that are used at each phase of the CodeBuild are stored in ndlib/image-viewer rather than
+  - The scripts that are used at each phase of the CodeBuild are stored in the source repo rather than
   this file.
 
 
@@ -14,10 +14,29 @@ Parameters:
     Type: String
     Description: An e-mail address of someone who can approve test environment
 
+  SourceRepoOwner:
+    Type: String
+    Description: The owner of the repository in Github
+
+  SourceRepoName:
+    Type: String
+    Description: The name of the repository in Github
+
   CDBranchName:
     Type: String
     Default: master
     Description: The name of the branch to watch for continuous deployment
+
+  BuildScriptsDir:
+    Type: String
+    Default: scripts/codebuild
+    Description: The location of all codebuild scripts, relative to the root of the project. Expects to find the following scripts
+      install.sh, pre_build.sh, build.sh, and post_build.sh.
+
+  BuildOutputDir:
+    Type: String
+    Default: build
+    Description: The location of the final build artifacts for the project. Everything in this directory will get copied to the target bucket.
 
   NameTag:
     Type: String
@@ -38,25 +57,13 @@ Parameters:
     NoEcho: true
     Description: The OAuth Token Value to connect CodePipeline to GitHub. Passed in at Runtime.
 
-  TestDeployBucket:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: The path to the param that stores the test deployment bucket.
-    Default: "/all/stacks/mellon-image-webcomponent-test/bucket"
+  ProdStackName:
+    Type: String
+    Description: The name of the CloudFormation stack that created the production static host
 
-  TestURL:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: The path to the param that stores the test URL.
-    Default: "/all/stacks/mellon-image-webcomponent-test/url"
-
-  ProdDeployBucket:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: The path to the param that stores the test deployment bucket.
-    Default: "/all/stacks/mellon-image-webcomponent-prod/bucket"
-
-  ProdURL:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: The path to the param that stores the test URL.
-    Default: "/all/stacks/mellon-image-webcomponent-prod/url"
+  TestStackName:
+    Type: String
+    Description: The name of the CloudFormation stack that created the test static host
 
 Outputs:
 
@@ -123,35 +130,35 @@ Resources:
   CodeBuilder:
     Type: 'AWS::CodeBuild::Project'
     Properties:
-      Name: mellon_iiif_webcomponent_codepipeline_builder
-      Description: 'Build Image Viewer Webcomponent from GitHub for CodePipeline'
+      Name: !Sub '${AWS::StackName}-CodeBuilder'
+      Description: 'Builds source web component from GitHub'
       ServiceRole: !Ref CodeBuildRole
       TimeoutInMinutes: 10
       Source:
         Type: CODEPIPELINE
-        BuildSpec: |
+        BuildSpec: !Sub |
           version: 0.2
 
           phases:
             install:
               commands:
                 - echo Install started on `date`
-                - chmod -R 755 build/*
-                - ./build/install.sh
+                - chmod -R 755 ${BuildScriptsDir}/*
+                - ${BuildScriptsDir}/install.sh
             pre_build:
               commands:
                 - echo Pre-build started on `date`
-                - ./build/pre_build.sh
+                - ${BuildScriptsDir}/pre_build.sh
             build:
               commands:
                 - echo Build started on `date`
-                - ./build/build.sh
+                - ${BuildScriptsDir}/build.sh
             post_build:
               commands:
                 - echo Beginning post build on `date`
-                - ./build/post_build.sh
+                - ${BuildScriptsDir}/post_build.sh
           artifacts:
-            base-directory: dist
+            base-directory: ${BuildOutputDir}
             files:
               - '**/*'
 
@@ -168,6 +175,13 @@ Resources:
             Value: !Ref AWS::AccountId
           - Name: PIPELINE_NAME
             Value: !Ref NameTag
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
 
   CodeTestDeployRole:
     Type: AWS::IAM::Role
@@ -223,8 +237,14 @@ Resources:
                   - s3:DeleteObject
                   - s3:ListBucket
                 Resource:
-                  - !Sub "arn:aws:s3:::${TestDeployBucket}"
-                  - !Sub "arn:aws:s3:::${TestDeployBucket}/*"
+                  - Fn::Sub:
+                    - "arn:aws:s3:::${DeployBucket}"
+                    - DeployBucket:
+                        Fn::ImportValue: !Join [':', [!Ref TestStackName, 'BucketName']]
+                  - Fn::Sub:
+                    - "arn:aws:s3:::${DeployBucket}/*"
+                    - DeployBucket:
+                        Fn::ImportValue: !Join [':', [!Ref TestStackName, 'BucketName']]
 
   CodeProdDeployRole:
     Type: AWS::IAM::Role
@@ -280,14 +300,20 @@ Resources:
                   - s3:DeleteObject
                   - s3:ListBucket
                 Resource:
-                  - !Sub "arn:aws:s3:::${ProdDeployBucket}"
-                  - !Sub "arn:aws:s3:::${ProdDeployBucket}/*"
+                  - Fn::Sub:
+                    - "arn:aws:s3:::${DeployBucket}"
+                    - DeployBucket:
+                        Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
+                  - Fn::Sub:
+                    - "arn:aws:s3:::${DeployBucket}/*"
+                    - DeployBucket:
+                        Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
 
   CodeTestDeployer:
     Type: 'AWS::CodeBuild::Project'
     Properties:
-      Name: mellon_iiif_webcomponent_codepipeline_test_deployer
-      Description: 'Build Image Viewer Webcomponent from GitHub for CodePipeline'
+      Name: !Sub '${AWS::StackName}-CodeTestDeployer'
+      Description: 'Deploys built source web component to test bucket'
       ServiceRole: !Ref CodeTestDeployRole
       TimeoutInMinutes: 10
       Source:
@@ -316,13 +342,21 @@ Resources:
         Image: aws/codebuild/ubuntu-base:14.04
         EnvironmentVariables:
           - Name: DEST_BUCKET
-            Value: !Ref TestDeployBucket
+            Value:
+              Fn::ImportValue: !Join [':', [!Ref TestStackName, 'BucketName']]
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
 
   CodeProdDeployer:
     Type: 'AWS::CodeBuild::Project'
     Properties:
-      Name: mellon_iiif_webcomponent_codepipeline_prod_deployer
-      Description: 'Build Image Viewer Webcomponent from GitHub for CodePipeline'
+      Name: !Sub '${AWS::StackName}-CodeProdDeployer'
+      Description: 'Deploys built source web component to production bucket'
       ServiceRole: !Ref CodeProdDeployRole
       TimeoutInMinutes: 10
       Source:
@@ -352,7 +386,15 @@ Resources:
         Image: aws/codebuild/ubuntu-base:14.04
         EnvironmentVariables:
           - Name: DEST_BUCKET
-            Value: !Ref ProdDeployBucket
+            Value:
+              Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Owner
+          Value: !Ref OwnerTag
+        - Key: Contact
+          Value: !Ref ContactTag
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket
@@ -456,8 +498,8 @@ Resources:
                 Provider: GitHub
                 Version: "1"
               Configuration:
-                Owner: ndlib
-                Repo: image-viewer
+                Owner: !Ref SourceRepoOwner
+                Repo: !Ref SourceRepoName
                 Branch: !Ref CDBranchName
                 OAuthToken: !Ref OAuth
               OutputArtifacts:
@@ -506,7 +548,13 @@ Resources:
                 Version: "1"
               Configuration:
                 NotificationArn: !Ref ApproversTopic
-                CustomData: !Sub "You can review these changes at https://${TestURL}. Once approved, this will be deployed to https://${ProdURL}."
+                CustomData:
+                  Fn::Sub:
+                    - "You can review these changes at https://${TestURL}. Once approved, this will be deployed to https://${ProdURL}."
+                    - TestURL:
+                        Fn::ImportValue: !Join [':', [!Ref TestStackName, 'URL']]
+                      ProdURL:
+                        Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'URL']]
 
         -
           Name: DeployToProduction

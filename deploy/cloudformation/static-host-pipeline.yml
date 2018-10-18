@@ -33,6 +33,11 @@ Parameters:
     Description: The location of all codebuild scripts, relative to the root of the project. Expects to find the following scripts
       install.sh, pre_build.sh, build.sh, and post_build.sh.
 
+  BuildOutputDir:
+    Type: String
+    Default: build
+    Description: The location of the final build artifacts for the project. Everything in this directory will get copied to the target bucket.
+
   NameTag:
     Type: String
     Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
@@ -131,29 +136,29 @@ Resources:
       TimeoutInMinutes: 10
       Source:
         Type: CODEPIPELINE
-        BuildSpec: |
+        BuildSpec: !Sub |
           version: 0.2
 
           phases:
             install:
               commands:
                 - echo Install started on `date`
-                - chmod -R 755 $BUILD_SCRIPTS/*
-                - $BUILD_SCRIPTS/install.sh
+                - chmod -R 755 ${BuildScriptsDir}/*
+                - ${BuildScriptsDir}/install.sh
             pre_build:
               commands:
                 - echo Pre-build started on `date`
-                - $BUILD_SCRIPTS/pre_build.sh
+                - ${BuildScriptsDir}/pre_build.sh
             build:
               commands:
                 - echo Build started on `date`
-                - $BUILD_SCRIPTS/build.sh
+                - ${BuildScriptsDir}/build.sh
             post_build:
               commands:
                 - echo Beginning post build on `date`
-                - $BUILD_SCRIPTS/post_build.sh
+                - ${BuildScriptsDir}/post_build.sh
           artifacts:
-            base-directory: build
+            base-directory: ${BuildOutputDir}
             files:
               - '**/*'
 
@@ -170,8 +175,6 @@ Resources:
             Value: !Ref AWS::AccountId
           - Name: PIPELINE_NAME
             Value: !Ref NameTag
-          - Name: BUILD_SCRIPTS
-            Value: !Ref BuildScriptsDir
       Tags:
         - Key: Name
           Value: !Ref NameTag

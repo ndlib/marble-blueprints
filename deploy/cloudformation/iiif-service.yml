@@ -178,16 +178,21 @@ Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      # It takes on average almost 60 seconds to start this in ECS
-      HealthCheckIntervalSeconds: 30
       HealthCheckPath: /
       HealthCheckProtocol: HTTP
+      # It takes on average almost 60 seconds to start this in ECS
+      HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 4
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      TargetGroupAttributes:
+        # Under no load, it takes less than 2 seconds for the Cantaloupe container to stop.
+        # Giving 30s as a reasonable starting point
+        - Key: deregistration_delay.timeout_seconds
+          Value: '30'
       TargetType: ip
       Port: !Ref 'ContainerPort'
       Protocol: HTTP
-      UnhealthyThresholdCount: 3
       VpcId:
         Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'VPCID']]
       Tags:

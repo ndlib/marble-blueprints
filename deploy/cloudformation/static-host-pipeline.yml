@@ -157,6 +157,7 @@ Resources:
               commands:
                 - echo Beginning post build on `date`
                 - ${BuildScriptsDir}/post_build.sh
+                - printf $CODEBUILD_RESOLVED_SOURCE_VERSION > ${BuildOutputDir}/sha.txt
           artifacts:
             base-directory: ${BuildOutputDir}
             files:
@@ -262,6 +263,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+        - !ImportValue ReadESUPolicy
       Policies:
         -
           PolicyName: "AllowCloudWatchLogsForCodeBuild"
@@ -332,7 +334,7 @@ Resources:
                 - aws s3 rm s3://$DEST_BUCKET --recursive
             build:
               commands:
-                - aws s3 cp --recursive . s3://$DEST_BUCKET/
+                - aws s3 cp --recursive . s3://$DEST_BUCKET/ --exclude "sha.txt"
 
       Artifacts:
         Type: CODEPIPELINE
@@ -376,7 +378,12 @@ Resources:
                 - aws s3 rm s3://$DEST_BUCKET --recursive
             build:
               commands:
-                - aws s3 cp --recursive . s3://$DEST_BUCKET/
+                - SOURCE_SHA=$(cat sha.txt)
+                - aws s3 cp --recursive . s3://$DEST_BUCKET/ --exclude "sha.txt"
+                - DATE=$(date)
+            post_build:
+              commands:
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "https://api.github.com/repos/ndlib/mellon-blueprints/statuses/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://url_to_production\"}"
 
       Artifacts:
         Type: CODEPIPELINE
@@ -388,6 +395,9 @@ Resources:
           - Name: DEST_BUCKET
             Value:
               Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
+          - Name: OAUTH_TOKEN
+            Type: PARAMETER_STORE
+            Value: /esu/github/ndlib-git/oauth
       Tags:
         - Key: Name
           Value: !Ref NameTag

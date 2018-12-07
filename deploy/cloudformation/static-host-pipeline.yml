@@ -423,7 +423,7 @@ Resources:
                 - DATE=$(date)
             post_build:
               commands:
-                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "https://api.github.com/repos/ndlib/mellon-website/statuses/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://mellon-unified.library.nd.edu\"}"
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "https://api.github.com/repos/ndlib/mellon-image-viewer/statuses/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://mellon-unified.library.nd.edu\"}"
 
       Artifacts:
         Type: CODEPIPELINE

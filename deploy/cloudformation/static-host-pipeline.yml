@@ -263,7 +263,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
-        - !ImportValue ReadESUPolicy
+        - !Ref ReadESUPolicy
       Policies:
         -
           PolicyName: "AllowCloudWatchLogsForCodeBuild"
@@ -582,3 +582,45 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeProdDeployer
               RunOrder: 1
+  ReadEsuPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Ability to read parameters prefixed with ESU
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -   Effect: Allow
+              Action:
+              -   ssm:DescribeParameters
+              Resource: '*'
+          -   Effect: Allow
+              Action:
+              -   ssm:GetParameterHistory
+              -   ssm:GetParametersByPath
+              -   ssm:GetParameters
+              -   ssm:GetParameter
+              Resource:
+                Fn::Join:
+                - ""
+                -
+                  - "arn:aws:ssm:"
+                  -
+                    Ref: "AWS::Region"
+                  - ":"
+                  -
+                    Ref: "AWS::AccountId"
+                  - ":parameter/esu/*"
+          -   Effect: Allow
+              Action:
+              -   kms:Decrypt
+              Resource:
+                Fn::Join:
+                - ""
+                -
+                  - "arn:aws:kms:"
+                  -
+                    Ref: "AWS::Region"
+                  - ":"
+                  -
+                    Ref: "AWS::AccountId"
+                  - ":key/CMK"

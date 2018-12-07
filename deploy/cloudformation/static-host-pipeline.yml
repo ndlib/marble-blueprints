@@ -84,49 +84,6 @@ Resources:
       Protocol: email
       Endpoint: !Ref Approvers
 
-  ReadEsuPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      Description: Ability to read parameters prefixed with ESU
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          -   Effect: Allow
-              Action:
-              -   ssm:DescribeParameters
-              Resource: '*'
-          -   Effect: Allow
-              Action:
-              -   ssm:GetParameterHistory
-              -   ssm:GetParametersByPath
-              -   ssm:GetParameters
-              -   ssm:GetParameter
-              Resource:
-                Fn::Join:
-                - ""
-                -
-                  - "arn:aws:ssm:"
-                  -
-                    Ref: "AWS::Region"
-                  - ":"
-                  -
-                    Ref: "AWS::AccountId"
-                  - ":parameter/esu/*"
-          -   Effect: Allow
-              Action:
-              -   kms:Decrypt
-              Resource:
-                Fn::Join:
-                - ""
-                -
-                  - "arn:aws:kms:"
-                  -
-                    Ref: "AWS::Region"
-                  - ":"
-                  -
-                    Ref: "AWS::AccountId"
-                  - ":key/CMK"
-
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -352,25 +309,27 @@ Resources:
                     - "arn:aws:s3:::${DeployBucket}/*"
                     - DeployBucket:
                         Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
-       -
+        -
           PolicyName: "ReadEsuParameters"
           PolicyDocument:
-             Version: '2012-10-17'
-             Statement:
-               -   Effect: Allow
-                   Action:
-                   -   ssm:DescribeParameters
-                   Resource: '*'
-               -   Effect: Allow
-                   Action:
-                   -   ssm:GetParameterHistory
-                   -   ssm:GetParametersByPath
-                   -   ssm:GetParameters
-                   -   ssm:GetParameter
-                   Resource:
-                     Fn::Join:
-                     - ""
-                     -
+            Version: '2012-10-17'
+            Statement:
+              - 
+                Effect: Allow
+                Action:
+                   - ssm:DescribeParameters
+                Resource: '*'
+              -   
+                Effect: Allow
+                Action:
+                   - ssm:GetParameterHistory
+                   - ssm:GetParametersByPath
+                   - ssm:GetParameters
+                   - ssm:GetParameter
+                Resource:
+                  Fn::Join:
+                    - ""
+                    -
                        - "arn:aws:ssm:"
                        -
                          Ref: "AWS::Region"
@@ -378,10 +337,11 @@ Resources:
                        -
                          Ref: "AWS::AccountId"
                        - ":parameter/esu/*"
-               -   Effect: Allow
-                   Action:
-                   -   kms:Decrypt
-                   Resource:
+               -
+                Effect: Allow
+                Action:
+                   - kms:Decrypt
+                Resource:
                      Fn::Join:
                      - ""
                      -

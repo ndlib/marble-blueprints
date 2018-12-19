@@ -25,8 +25,8 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --template-file deploy/cloudformation/network.yml \
   --stack-name mellon-network \
-  --tags ProjectName=mellon \
-  --parameter-overrides NameTag='testaccount-mellonnetwork-dev' ContactTag='me@myhost.com' OwnerTag='me'
+  --tags ProjectName=mellon Name='testaccount-mellonnetwork-dev' Contact='me@myhost.org' Owner='myid' \
+    Description='brief-description-of-purpose'
 ```
 
 TODO: Add example of exporting an existing network
@@ -39,8 +39,8 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --template-file deploy/cloudformation/app-infrastructure.yml \
   --stack-name mellon-app-infrastructure \
-  --tags ProjectName=mellon \
-  --parameter-overrides NameTag='testaccount-mellonappinfrastructure-dev' ContactTag='me@myhost.com' OwnerTag='me'
+  --tags ProjectName=mellon Name='testaccount-mellonappinfrastructure-dev' Contact='me@myhost.com' Owner='myid'\
+  Description='brief-description-of-purpose'
 ```
 
 ## Deploy Application Components
@@ -50,8 +50,8 @@ aws cloudformation deploy \
 aws cloudformation deploy \
   --stack-name mellon-data-broker-dev \
   --template-file deploy/cloudformation/data-broker.yml \
-  --tags ProjectName=mellon \
-  --parameter-overrides NameTag='testaccount-mellondatabroker-dev' ContactTag='me@myhost.com' OwnerTag='myid'
+  --tags ProjectName=mellon Name='testaccount-mellondatabroker-dev' Contact='me@myhost.com' Owner='myid'\
+  Description='brief-description-of-purpose'
 ```
 
 ### IIIF Image Service stack
@@ -60,8 +60,10 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --stack-name mellon-image-service-dev \
   --template-file deploy/cloudformation/iiif-service.yml \
-  --tags ProjectName=mellon \
-  --parameter-overrides NameTag='testaccount-mellonimageservice-dev' ContactTag='me@myhost.com' OwnerTag='myid' \
+  --tags ProjectName=mellon NameTag='testaccount-mellonimageservice-dev' \
+    ContactTag='me@myhost.com' OwnerTag='myid' \
+    Description='brief-description-of-purpose' \
+  --parameter-overrides
     ContainerCpu='1024' ContainerMemory='2048' DesiredCount=1
 ```
 
@@ -70,8 +72,9 @@ aws cloudformation deploy \
 aws cloudformation deploy \
   --stack-name mellon-image-webcomponent-dev \
   --template-file deploy/cloudformation/static-host.yml \
-  --tags ProjectName=mellon \
-  --parameter-overrides NameTag='testaccount-mellonimagewebcomponent-dev' ContactTag='me@myhost.com' OwnerTag='myid'
+  --tags ProjectName=mellon Name='testaccount-mellonimagewebcomponent-dev' \
+    Contact='me@myhost.com' Owner='myid' \
+    Description='brief-description-of-purpose'
 ```
 
 ### Main Website stack
@@ -79,8 +82,9 @@ aws cloudformation deploy \
 aws cloudformation deploy \
   --stack-name mellon-website-dev \
   --template-file deploy/cloudformation/static-host.yml \
-  --tags ProjectName=mellon \
-  --parameter-overrides NameTag='testaccount-mellonwebsite-dev' ContactTag='me@myhost.com' OwnerTag='myid'
+  --tags ProjectName=mellon Name='testaccount-mellonimagewebsite-dev' \
+    Contact='me@myhost.com' Owner='myid' \
+    Description='brief-description-of-purpose'
 ```
 
 ## Deploy CI/CD
@@ -94,9 +98,10 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --stack-name mellon-image-service-pipeline \
   --template-file deploy/cloudformation/iiif-service-pipeline.yml \
-  --tags ProjectName=mellon \
+  --tags ProjectName=mellon Name='testaccount-mellonimageservicepipeline' \
+    Contact='me@myhost.com' Owner='myid' \
+    Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
-    NameTag='testaccount-mellonimageservicepipeline' ContactTag='me@myhost.com' OwnerTag='myid'
 ```
 
 ### IIIF Image Viewer Pipeline
@@ -107,11 +112,12 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --stack-name mellon-image-webcomponent-pipeline \
   --template-file deploy/cloudformation/static-host-pipeline.yml \
-  --tags ProjectName=mellon \
+  --tags ProjectName=mellon Name='testaccount-mellonimagewebcomponentpipeline' \
+    Contact='me@myhost.com' Owner='myid' \
+    Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
     SourceRepoOwner=ndlib SourceRepoName=image-viewer BuildScriptsDir='build' BuildOutputDir='dist' \
-    TestStackName=mellon-image-webcomponent-test ProdStackName=mellon-image-webcomponent-prod \
-    NameTag='testaccount-mellonimagewebcomponentpipeline' ContactTag='me@myhost.com' OwnerTag='myid'
+    TestStackName=mellon-image-webcomponent-test ProdStackName=mellon-image-webcomponent-prod
 ```
 
 ### Website Pipeline
@@ -122,11 +128,12 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --stack-name mellon-website-pipeline \
   --template-file deploy/cloudformation/static-host-pipeline.yml \
-  --tags ProjectName=mellon \
+  --tags ProjectName=mellon Name='testaccount-mellonimagewebsitepipeline' \
+    Contact='me@myhost.com' Owner='myid' \
+    Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
     SourceRepoOwner=ndlib SourceRepoName=mellon-website \
-    TestStackName=mellon-website-test ProdStackName=mellon-website-prod \
-    NameTag='testaccount-mellonwebsitepipeline' ContactTag='me@myhost.com' OwnerTag='myid'
+    TestStackName=mellon-website-test ProdStackName=mellon-website-prod
 ```
 
 #### Approval message
@@ -152,7 +159,8 @@ Here's an example of adding monitoring to the image-webcomponent-pipeline
 aws cloudformation deploy \
   --stack-name mellon-image-webcomponent-pipeline-monitoring \
   --template-file deploy/cloudformation/pipeline-monitoring.yml \
-  --tags ProjectName=mellon \
+  --tags ProjectName=mellon Name='testaccount-mellonimagewebcomponentpipeline-monitoring' \
+    Contact='me@myhost.com' Owner='myid' Description='brief-description-of-purpose' \
   --parameter-overrides PipelineStackName=mellon-image-webcomponent-pipeline Receivers=me@myhost.com
 ```
 
@@ -161,7 +169,8 @@ Here's an example of adding monitoring to the website-pipeline
 aws cloudformation deploy \
   --stack-name mellon-website-pipeline-monitoring \
   --template-file deploy/cloudformation/pipeline-monitoring.yml \
-  --tags ProjectName=mellon \
+  --tags ProjectName=mellon Name='testaccount-mellonimagewebsitepipeline-monitoring' \
+    Contact='me@myhost.com' Owner='myid' Description='brief-description-of-purpose' \
   --parameter-overrides PipelineStackName=mellon-website-pipeline Receivers=me@myhost.com
 ```
 
@@ -170,7 +179,8 @@ Here's an example of adding monitoring to the image-service-pipeline
 aws cloudformation deploy \
   --stack-name mellon-image-service-pipeline-monitoring \
   --template-file deploy/cloudformation/pipeline-monitoring.yml \
-  --tags ProjectName=mellon \
+  --tags ProjectName=mellon Name='testaccount-mellonimageservicepipeline-monitoring' \
+    Contact='me@myhost.com' Owner='myid' Description='brief-description-of-purpose' \
   --parameter-overrides PipelineStackName=mellon-image-service-pipeline Receivers=me@myhost.com
 ```
 

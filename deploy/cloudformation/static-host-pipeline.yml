@@ -38,20 +38,6 @@ Parameters:
     Default: build
     Description: The location of the final build artifacts for the project. Everything in this directory will get copied to the target bucket.
 
-  NameTag:
-    Type: String
-    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
-    AllowedPattern: ".+-.+(-.+)*"
-    ConstraintDescription: "Name should match the pattern [infra]-{service}{-etc}. Ex: mellon-image-webcomponent-pipeline"
-
-  OwnerTag:
-    Type: String
-    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
-
-  ContactTag:
-    Type: String
-    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
-
   OAuth:
     Type: String
     NoEcho: true
@@ -173,15 +159,6 @@ Resources:
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
             Value: !Ref AWS::AccountId
-          - Name: PIPELINE_NAME
-            Value: !Ref NameTag
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
 
   CodeTestDeployRole:
     Type: AWS::IAM::Role
@@ -344,13 +321,6 @@ Resources:
           - Name: DEST_BUCKET
             Value:
               Fn::ImportValue: !Join [':', [!Ref TestStackName, 'BucketName']]
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
 
   CodeProdDeployer:
     Type: 'AWS::CodeBuild::Project'
@@ -388,24 +358,10 @@ Resources:
           - Name: DEST_BUCKET
             Value:
               Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:

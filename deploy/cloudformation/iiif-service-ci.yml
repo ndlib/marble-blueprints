@@ -9,7 +9,7 @@ Description: >
   this file.
 
 Parameters:
-    ContainerPipelineStackName:
+  ContainerPipelineStackName:
     Type: String
     Description: The name of the stack that build the CodePipeline, needed to import the repository value to ensure proper tagging
     Default: 'mellon-container-pipeline'

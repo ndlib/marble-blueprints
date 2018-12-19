@@ -401,7 +401,7 @@ Resources:
                 - DATE=$(date)
             post_build:
               commands:
-                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${ApiURL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"${TargetURL}\"}"
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"${TARGET_URL}\"}"
 
       Artifacts:
         Type: CODEPIPELINE
@@ -416,7 +416,10 @@ Resources:
           - Name: OAUTH_TOKEN
             Type: PARAMETER_STORE
             Value: /esu/github/ndlib-git/oauth
-
+          - Name: API_URL
+            Value: !Ref ApiURL
+          - Name: TARGET_URL
+            Value: !Ref TargetURL
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket

@@ -46,33 +46,12 @@ Parameters:
     ConstraintDescription: "Must be a valid IP CIDR range in the form x.x.x.x/x"
     Default: 10.0.3.0/24
 
-  NameTag:
-    Type: String
-    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
-    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
-    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
-
-  OwnerTag:
-    Type: String
-    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
-
-  ContactTag:
-    Type: String
-    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
-
 Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref DesiredVPCCIDRBlock
       EnableDnsHostnames: true
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
@@ -83,11 +62,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
+          Value: !Sub '${AWS::StackName}-PublicSubnet1'
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -98,11 +73,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
+          Value: !Sub '${AWS::StackName}-PublicSubnet2'
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -113,11 +84,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
+          Value: !Sub '${AWS::StackName}-PrivateSubnet1'
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -128,22 +95,10 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
+          Value: !Sub '${AWS::StackName}-PrivateSubnet2'
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
 
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -164,11 +119,7 @@ Resources:
       SubnetId: !Ref PublicSubnet1
       Tags:
         - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
+          Value: !Sub '${AWS::StackName}-NatGateway-PublicSubnet1'
 
   NATGateway2EIP:
     Type: AWS::EC2::EIP
@@ -183,23 +134,13 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       Tags:
         - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
+          Value: !Sub '${AWS::StackName}-NatGateway-PublicSubnet2'
 
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
+
 
   DefaultPrivateRoute1:
     Type: AWS::EC2::Route
@@ -218,13 +159,6 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
 
   DefaultPrivateRoute2:
     Type: AWS::EC2::Route

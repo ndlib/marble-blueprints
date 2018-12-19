@@ -35,20 +35,6 @@ Parameters:
       - prod
     ConstraintDescription: must specify prod or dev.
 
-  NameTag:
-    Type: String
-    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
-    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
-    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
-
-  OwnerTag:
-    Type: String
-    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
-
-  ContactTag:
-    Type: String
-    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
-
 Mappings:
   CacheSettings:
     dev:
@@ -105,13 +91,6 @@ Resources:
           - NoFQDN
           - !Sub s3/${AWS::StackName}/
           - !Sub s3/${FQDN}/
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -188,10 +167,3 @@ Resources:
             - !Sub web/${AWS::StackName}/
             - !Sub web/${FQDN}/
           IncludeCookies: true
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag

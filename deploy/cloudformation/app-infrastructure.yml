@@ -28,20 +28,6 @@ Parameters:
     Description: 'The FQDN to use for the certificate, see: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-certificatemanager-certificate.html'
     Default: '*.library.nd.edu'
 
-  NameTag:
-    Type: String
-    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
-    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
-    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
-
-  OwnerTag:
-    Type: String
-    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
-
-  ContactTag:
-    Type: String
-    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
-
 Resources:
 
   PublicLoadBalancerSecurityGroup:
@@ -55,14 +41,6 @@ Resources:
           - CidrIp: 0.0.0.0/0
             IpProtocol: "-1"
 
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
-
   IIIFSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -75,13 +53,6 @@ Resources:
           FromPort: 8182
           ToPort: 8182
           CidrIp: 0.0.0.0/0 # This may need to be changed for security purposes
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
 
   ContainerCluster:
     Type: AWS::ECS::Cluster
@@ -144,13 +115,6 @@ Resources:
       DomainValidationOptions:
         - DomainName: !Ref DomainName
           ValidationDomain: !Ref DomainName
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
       ValidationMethod: DNS
 
 Outputs:

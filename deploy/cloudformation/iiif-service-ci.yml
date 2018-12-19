@@ -9,24 +9,11 @@ Description: >
   this file.
 
 Parameters:
-  NameTag:
-    Type: String
-    Description: The value to add for the "Name" tag. This should share a value with all stacks associated with this project
-    AllowedPattern: ".+-.+-(dev|prod|prep)(-.+)*"
-    ConstraintDescription: "Name should match the pattern [infra]-{service}-[env]-{etc}. Ex: libnd-myservice-dev-myname"
-
-  OwnerTag:
-    Type: String
-    Description: The value to add for the "Owner" tag. This should be the individual that owns or created this stack.
-
-  ContactTag:
-    Type: String
-    Description: The value to add for the "Contact" tag. This should be an email or phone of someone to contact for information about this stack
-
-  ContainerPipelineStackName:
+    ContainerPipelineStackName:
     Type: String
     Description: The name of the stack that build the CodePipeline, needed to import the repository value to ensure proper tagging
     Default: 'mellon-container-pipeline'
+
 Resources:
 
   CodeBuildRole:
@@ -108,13 +95,6 @@ Resources:
   CodeS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      Tags:
-        - Key: Name
-          Value: !Ref NameTag
-        - Key: Owner
-          Value: !Ref OwnerTag
-        - Key: Contact
-          Value: !Ref ContactTag
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:

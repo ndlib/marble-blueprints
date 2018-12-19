@@ -14,6 +14,14 @@ Parameters:
     Type: String
     Description: An e-mail address of someone who can approve test environment
 
+  ApiURL:
+    Type: String
+    Description: URL of API without trailing slash.
+
+  TargetURL:
+    Type: String
+    Description: The URL of the image viewer we are using.
+
   SourceRepoOwner:
     Type: String
     Description: The owner of the repository in Github
@@ -423,7 +431,7 @@ Resources:
                 - DATE=$(date)
             post_build:
               commands:
-                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "https://api.github.com/repos/ndlib/mellon-image-viewer/statuses/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://image-viewer.library.nd.edu\"}"
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${ApiURL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"${TargetURL} "}"
 
       Artifacts:
         Type: CODEPIPELINE

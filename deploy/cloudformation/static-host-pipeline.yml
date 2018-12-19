@@ -401,7 +401,7 @@ Resources:
                 - DATE=$(date)
             post_build:
               commands:
-                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${ApiURL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"${TargetURL} "}"
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${ApiURL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"${TargetURL}\"}"
 
       Artifacts:
         Type: CODEPIPELINE

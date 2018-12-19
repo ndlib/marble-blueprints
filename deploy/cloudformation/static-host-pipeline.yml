@@ -413,6 +413,10 @@ Resources:
           - Name: DEST_BUCKET
             Value:
               Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
+          - Name: OAUTH_TOKEN
+            Type: PARAMETER_STORE
+            Value: /esu/github/ndlib-git/oauth
+
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket

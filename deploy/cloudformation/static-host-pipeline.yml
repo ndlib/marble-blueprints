@@ -393,7 +393,7 @@ Resources:
                 - DATE=$(date)
             post_build:
               commands:
-                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"${TARGET_URL}\"}"
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://${TARGET_URL}\"}"
 
       Artifacts:
         Type: CODEPIPELINE
@@ -412,7 +412,7 @@ Resources:
             Value: !Sub "https://api.github.com/repos/${SourceRepoOwner}/${SourceRepoName}/statuses"
           - Name: TARGET_URL
             Value: 
-              Fn::ImportValue: !Join ['https://', [!Ref ProdStackName, 'URL']]
+              Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'URL']]
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket

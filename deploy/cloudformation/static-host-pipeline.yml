@@ -411,7 +411,8 @@ Resources:
           - Name: API_URL
             Value: !Sub "https://api.github.com/repos/${SourceRepoOwner}/${SourceRepoName}/statuses
           - Name: TARGET_URL
-            Value: Fn::ImportValue: !Join ['https://', [!Ref ProdStackName, 'URL']]
+            Value: 
+              Fn::ImportValue: !Join ['https://', [!Ref ProdStackName, 'URL']]
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket

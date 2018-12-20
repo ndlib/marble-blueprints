@@ -117,8 +117,7 @@ aws cloudformation deploy \
     Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
     SourceRepoOwner=ndlib SourceRepoName=image-viewer BuildScriptsDir='build' BuildOutputDir='dist' \
-    TestStackName=mellon-image-webcomponent-test ProdStackName=mellon-image-webcomponent-prod \
-    TargetURL='https://image-viewer-test.library.nd.edu' ApiURL='https://api.github.com/repos/ndlib/mellon-image-viewer-test/statuses'
+    TestStackName=mellon-image-webcomponent-test ProdStackName=mellon-image-webcomponent-prod
 ```
 
 ### Website Pipeline
@@ -134,8 +133,7 @@ aws cloudformation deploy \
     Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
     SourceRepoOwner=ndlib SourceRepoName=mellon-website \
-    TestStackName=mellon-website-test ProdStackName=mellon-website-prod \
-    TargetURL='https://image-viewer.library.nd.edu' ApiURL='https://api.github.com/repos/ndlib/mellon-image-viewer/statuses'
+    TestStackName=mellon-website-test ProdStackName=mellon-website-prod
 ```
 
 #### Approval message

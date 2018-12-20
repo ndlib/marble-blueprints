@@ -143,6 +143,7 @@ Resources:
               commands:
                 - echo Beginning post build on `date`
                 - ${BuildScriptsDir}/post_build.sh
+                - printf $CODEBUILD_RESOLVED_SOURCE_VERSION > ${BuildOutputDir}/sha.txt
           artifacts:
             base-directory: ${BuildOutputDir}
             files:
@@ -285,6 +286,47 @@ Resources:
                     - "arn:aws:s3:::${DeployBucket}/*"
                     - DeployBucket:
                         Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
+        -
+          PolicyName: "ReadEsuParameters"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -   Effect: Allow
+                  Action:
+                  -   ssm:DescribeParameters
+                  Resource: '*'
+              -   Effect: Allow
+                  Action:
+                  -   ssm:GetParameterHistory
+                  -   ssm:GetParametersByPath
+                  -   ssm:GetParameters
+                  -   ssm:GetParameter
+                  Resource:
+                     Fn::Join:
+                     - ""
+                     -
+                      - "arn:aws:ssm:"
+                      -
+                        Ref: "AWS::Region"
+                      - ":"
+                      -
+                        Ref: "AWS::AccountId"
+                      - ":parameter/esu/*"
+              -   Effect: Allow
+                  Action:
+                  -   kms:Decrypt
+                  Resource:
+                    Fn::Join:
+                    - ""
+                    -
+                      - "arn:aws:kms:"
+                      -
+                        Ref: "AWS::Region"
+                      - ":"
+                      -
+                        Ref: "AWS::AccountId"
+                      - ":key/CMK"
+
 
   CodeTestDeployer:
     Type: 'AWS::CodeBuild::Project'
@@ -309,7 +351,7 @@ Resources:
                 - aws s3 rm s3://$DEST_BUCKET --recursive
             build:
               commands:
-                - aws s3 cp --recursive . s3://$DEST_BUCKET/
+                - aws s3 cp --recursive . s3://$DEST_BUCKET/ --exclude "sha.txt"
 
       Artifacts:
         Type: CODEPIPELINE
@@ -346,7 +388,12 @@ Resources:
                 - aws s3 rm s3://$DEST_BUCKET --recursive
             build:
               commands:
-                - aws s3 cp --recursive . s3://$DEST_BUCKET/
+                - SOURCE_SHA=$(cat sha.txt)
+                - aws s3 cp --recursive . s3://$DEST_BUCKET/ --exclude "sha.txt"
+                - DATE=$(date)
+            post_build:
+              commands:
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://${TARGET_URL}\"}"
 
       Artifacts:
         Type: CODEPIPELINE
@@ -358,6 +405,14 @@ Resources:
           - Name: DEST_BUCKET
             Value:
               Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
+          - Name: OAUTH_TOKEN
+            Type: PARAMETER_STORE
+            Value: /esu/github/ndlib-git/oauth
+          - Name: API_URL
+            Value: !Sub "https://api.github.com/repos/${SourceRepoOwner}/${SourceRepoName}/statuses"
+          - Name: TARGET_URL
+            Value: 
+              Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'URL']]
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket

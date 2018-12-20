@@ -14,14 +14,6 @@ Parameters:
     Type: String
     Description: An e-mail address of someone who can approve test environment
 
-  ApiURL:
-    Type: String
-    Description: URL of API without trailing slash.
-
-  TargetURL:
-    Type: String
-    Description: The URL of the image viewer we are using.
-
   SourceRepoOwner:
     Type: String
     Description: The owner of the repository in Github
@@ -417,9 +409,9 @@ Resources:
             Type: PARAMETER_STORE
             Value: /esu/github/ndlib-git/oauth
           - Name: API_URL
-            Value: !Ref ApiURL
+            Value: !Sub "https://api.github.com/repos/${SourceRepoOwner}/${SourceRepoName}/statuses
           - Name: TARGET_URL
-            Value: !Ref TargetURL
+            Value: Fn::ImportValue: !Join ['https://', [!Ref ProdStackName, 'URL']]
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket

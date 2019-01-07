@@ -135,6 +135,16 @@ Resources:
                       -
                         - !GetAtt CodeS3Bucket.Arn
                         - "/*"
+        -
+          PolicyName: "ReadGitOauth"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/github/ndlib-git/oauth"
 
 
   DockerQABuilder:

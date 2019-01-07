@@ -195,6 +195,82 @@ Resources:
             Value:
               Fn::Join: [ '-', [ !Ref 'IIIFProdServiceStackName', 'ImageService']]
 
+  PostDeployDocker:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: image_server_docker_add_tag
+      Description: 'CodeBuild to update the current_release tag in ECR'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        GitCloneDepth: 1
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Pre-build started on `date`
+                - echo Logging in to Amazon ECR...
+                - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+                - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+            build:
+              commands:
+                - DEPLOYED_VERSION=$(cat deployed_tag.txt)
+                - docker pull $DEPLOYED_VERSION
+                - docker tag $DEPLOYED_VERSION $REPOSITORY_URI:current_release
+            post_build:
+              commands:
+                - echo Beginning post build on `date`
+                - docker push $REPOSITORY_URI:current_release
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:17.09.0
+        EnvironmentVariables:
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref AmazonContainerRepository
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+
+  PostDeployGitHub:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: image_server_docker_add_github_status
+      Description: 'CodeBuild to tag the latest commit in repo post-deploy'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        GitCloneDepth: 1
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Pre-build started on `date`
+            build:
+              commands:
+                - SOURCE_SHA=$(cat sha.txt)
+                - DATE=$(date)
+            post_build:
+              commands:
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "https://api.github.com/repos/ndlib/image-server/statuses/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://viceroy.library.nd.edu\"}"
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/ubuntu-base:14.04
+        EnvironmentVariables:
+          - Name: OAUTH_TOKEN
+            Type: PARAMETER_STORE
+            Value: /esu/github/ndlib-git/oauth
+
   CodeS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -374,3 +450,30 @@ Resources:
                 ServiceName:
                   Fn::Join: ['-', [!Ref IIIFProdServiceStackName, 'ImageService']]
                 FileName: imagedefinitionsprod.json
+        -
+          Name: PostDeployActions
+          Actions:
+            -
+              Name: "AddDockerTag"
+              InputArtifacts:
+                - Name: BuiltCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Build
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref PostDeployDocker
+              RunOrder: 1
+            -
+              Name: "AddGitHubStatus"
+              InputArtifacts:
+                - Name: BuiltCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Build
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref PostDeployGitHub
+              RunOrder: 1

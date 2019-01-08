@@ -72,10 +72,21 @@ Parameters:
     Default: 1
     Description: How many copies of the service task to run
 
+  ServiceURL:
+    Type: String
+    Default: ''
+    Description: The URL of the service
+
 Outputs:
   PublicLoadBalancerDNSName:
     Description: The dns name of the load balancer
     Value: !GetAtt PublicLoadBalancer.DNSName
+
+  WebURL:
+    Description: The URL of the service, often in CNAME form
+    Value: !Ref ServiceURL
+    Export:
+      Name: !Join [ ':', [!Ref 'AWS::StackName', 'URL']]
 
   ImageDerivativeCacheBucketName:
     Description: The name of the bucket that will be used as the source/destination for derivative images

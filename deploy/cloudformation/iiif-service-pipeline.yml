@@ -359,6 +359,8 @@ Resources:
             Resource:
               - !GetAtt DockerCodePipelineBuilder.Arn
               - !GetAtt DockerQABuilder.Arn
+              - !GetAtt PostDeployDocker.Arn
+              - !GetAtt PostDeployGitHub.Arn
 
           - Effect: Allow
             Action:

@@ -58,14 +58,6 @@ Parameters:
     NoEcho: true
     Description: The OAuth Token Value to connect CodePipeline to GitHub. Passed in at Runtime.
 
-  ProdStackName:
-    Type: String
-    Description: The name of the CloudFormation stack that created the production Image Server
-
-  TestStackName:
-    Type: String
-    Description: The name of the CloudFormation stack that created the test static Image Server
-
 Outputs:
 
   PipelineName:
@@ -300,7 +292,7 @@ Resources:
             Value: !Sub "https://api.github.com/repos/${SourceRepoOwner}/${SourceRepoName}/statuses"
           - Name: TARGET_URL
             Value:
-              Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'URL']]
+              Fn::ImportValue: !Join [':', [!Ref IIIFProdServiceStackName, 'URL']]
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket

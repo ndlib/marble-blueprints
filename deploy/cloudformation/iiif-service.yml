@@ -77,6 +77,12 @@ Parameters:
     Default: ''
     Description: The URL of the service
 
+Conditions:
+
+  NoServiceURL: !Equals
+    - !Ref ServiceURL
+    - ''
+
 Outputs:
   PublicLoadBalancerDNSName:
     Description: The dns name of the load balancer
@@ -84,7 +90,10 @@ Outputs:
 
   WebURL:
     Description: The URL of the service, often in CNAME form
-    Value: !Ref ServiceURL
+    Value: !If
+      - NoServiceURL
+      - !GetAtt PublicLoadBalancer.DNSName
+      - !Ref ServiceURL
     Export:
       Name: !Join [ ':', [!Ref 'AWS::StackName', 'URL']]
 

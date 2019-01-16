@@ -58,6 +58,22 @@ Parameters:
     NoEcho: true
     Description: The OAuth Token Value to connect CodePipeline to GitHub. Passed in at Runtime.
 
+  EnvType:
+    Type: String
+    Description: The type of environment to create.
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    ConstraintDescription: must specify prod or dev.
+
+Mappings:
+  NewmanTests:
+    dev:
+      Flags: " -k "
+    prod:
+      Flags: ""
+
 Outputs:
 
   PipelineName:
@@ -151,23 +167,26 @@ Resources:
         Location: 'https://github.com/ndlib/image-server.git'
         GitCloneDepth: 1
         ReportBuildStatus: true
-        BuildSpec: |
-          version: 0.2
-          phases:
-            pre_build:
-              commands:
-                - echo Pre-build started on `date`
-                - npm install -g newman
-            build:
-              commands:
-                - echo Build started on `date`
-                - |
-                  printf '{"name": "image_server.test","values": [{"key": "image-server-host","value": "%s:8182"}, {"key": "image-server-protocol","value": "https"}],"_postman_variable_scope": "environment"}' $TESTING_URL >> test_env.json
-                - cat test_env.json
-                - newman run spec/image-server.postman_collection.json -e test_env.json
-            post_build:
-              commands:
-                - echo Beginning post build on `date`
+        BuildSpec:
+          !Sub
+          - |-
+            version: 0.2
+            phases:
+              pre_build:
+                commands:
+                  - echo Pre-build started on `date`
+                  - npm install -g newman
+              build:
+                commands:
+                  - echo Build started on `date`
+                  - |
+                    printf '{"name": "image_server.test","values": [{"key": "image-server-host","value": "%s:8182"}, {"key": "image-server-protocol","value": "https"}],"_postman_variable_scope": "environment"}' $TESTING_URL >> test_env.json
+                  - cat test_env.json
+                  - newman run spec/image-server.postman_collection.json -e test_env.json ${flags}
+              post_build:
+                commands:
+                  - echo Beginning post build on `date`
+          - { flags: !FindInMap [NewmanTests, !Ref EnvType, "Flags"] } 
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:

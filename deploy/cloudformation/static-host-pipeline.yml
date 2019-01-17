@@ -111,6 +111,16 @@ Resources:
                       -
                         - !GetAtt CodeS3Bucket.Arn
                         - "/*"
+        -
+          PolicyName: "ReadGitOauth"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/github/ndlib-git/oauth"
 
 
   CodeBuilder:
@@ -390,11 +400,6 @@ Resources:
               commands:
                 - SOURCE_SHA=$(cat sha.txt)
                 - aws s3 cp --recursive . s3://$DEST_BUCKET/ --exclude "sha.txt"
-                - DATE=$(date)
-            post_build:
-              commands:
-                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://${TARGET_URL}\"}"
-
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -405,13 +410,44 @@ Resources:
           - Name: DEST_BUCKET
             Value:
               Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'BucketName']]
+
+  PostDeployGitHub:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: add_github_status
+      Description: 'CodeBuild to tag the latest commit in repo post-deploy'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        GitCloneDepth: 1
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Pre-build started on `date`
+            build:
+              commands:
+                - SOURCE_SHA=$(cat sha.txt)
+                - DATE=$(date)
+            post_build:
+              commands:
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://${TARGET_URL}\"}"
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/ubuntu-base:14.04
+        EnvironmentVariables:
           - Name: OAUTH_TOKEN
             Type: PARAMETER_STORE
             Value: /esu/github/ndlib-git/oauth
           - Name: API_URL
             Value: !Sub "https://api.github.com/repos/${SourceRepoOwner}/${SourceRepoName}/statuses"
           - Name: TARGET_URL
-            Value: 
+            Value:
               Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'URL']]
 
   CodeS3Bucket:
@@ -480,6 +516,7 @@ Resources:
               - !GetAtt CodeBuilder.Arn
               - !GetAtt CodeTestDeployer.Arn
               - !GetAtt CodeProdDeployer.Arn
+              - !GetAtt PostDeployGitHub.Arn
           - Effect: Allow
             Action:
               - ecs:UpdateService
@@ -582,4 +619,18 @@ Resources:
               - Name: ProdDeployOutput
               Configuration:
                 ProjectName: !Ref CodeProdDeployer
+              RunOrder: 1
+        -
+          Name: PostDeployActions
+          Actions:
+            - Name: "UpdateGitHubStatus"
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              InputArtifacts:
+                - Name: BuiltCode
+              Configuration:
+                ProjectName: !Ref PostDeployGitHub
               RunOrder: 1

@@ -28,9 +28,20 @@ Parameters:
     Type: String
     Default: "aws/codebuild/nodejs:7.0.0"
     Description: Image used for CodeBuild project.
+
+  ConfigurationRepoName:
+    Type: String
+    Description: The GitHub repo for the cloudfromation blueprints
+    Default: mellon-blueprints
+  ConfigurationRepoBranchName:
+    Type: String
+    Description: The GitHub repo branch the codepipeline should checkout to run blueprints from
+    Default: master
+
   GitHubRepoName:
     Type: String
     Description: The GitHub repo name
+    Default: mellon-manifest-pipeline
   GitHubRepoBranch:
     Type: String
     Description: The GitHub repo branch code pipelines should watch for changes on
@@ -38,6 +49,7 @@ Parameters:
   GitHubUser:
     Type: String
     Description: GitHub UserName. This username must have access to the GitHubToken.
+    Default: ndlib
   GitHubToken:
     NoEcho: true
     Type: String
@@ -397,11 +409,28 @@ Resources:
             OAuthToken: !Ref GitHubToken
             Owner: !Ref GitHubUser
           RunOrder: 1
+        -
+          Name: "RetrieveConfigCode"
+          ActionTypeId:
+            Owner: ThirdParty
+            Category: Source
+            Provider: GitHub
+            Version: "1"
+          Configuration:
+            Repo: !Ref ConfigurationRepoName
+            Branch: !Ref ConfigurationRepoBranchName
+            Owner: !Ref GitHubUser
+            OAuthToken: !Ref GitHubToken
+            PollForSourceChanges: false
+          OutputArtifacts:
+            - Name: ConfigCode
+          RunOrder: 1
       - Name: Build
         Actions:
         - Name: BuildFromRepo
           InputArtifacts:
           - Name: SourceFromRepo
+          - Name: ConfigCode
           ActionTypeId:
             Category: Build
             Owner: AWS
@@ -411,6 +440,7 @@ Resources:
           - Name: BuildFromRepo
           Configuration:
             ProjectName: !Sub "${AppName}-build"
+            PrimarySource: SourceFromRepo
           RunOrder: 1
 
       - Name: DeployToTest

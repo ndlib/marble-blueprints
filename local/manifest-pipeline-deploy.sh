@@ -18,9 +18,9 @@ stage=$1
 path=$2
 
 export S3_BUCKET=mellon-manifest-pipeline-dev2-s3bucket-1urf7wn3aoy37
-export FROM_PATH=`pwd`/../deploy/cloudformation/manifest-pipeline.yml
-export TO_PATH=./manifest-pipeline.yml
 
+export CODEBUILD_SRC_DIR=`pwd`/$path
+export CODEBUILD_SRC_DIR_ConfigCode=`pwd`/../
 pushd .
 
 cd $path
@@ -30,9 +30,5 @@ cd $path
 ./scripts/codebuild/post_build.sh
 
 # aws cloudformation deploy --template-file output.yml --stack-name mellon-manifest-pipeline-$staged
-
-# clean up
-rm $TO_PATH
-rm ./output.yml
 
 popd

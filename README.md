@@ -184,6 +184,15 @@ aws cloudformation deploy \
   --parameter-overrides PipelineStackName=mellon-image-service-pipeline Receivers=me@myhost.com
 ```
 
+How to build the Manifest Pipeline Pipleine
+aws cloudformation deploy \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --stack-name mellon-manifest-pipeline \
+  --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
+  --tags Name='mellon-manifest-pipeline' Contact='lib-esu-group@nd.edu' Owner='jhartzle' Description='CF for AppStream Lambda Function and Api Gateway.' \
+  --parameter-overrides AppName=mellon-manifest-pipeline \
+    GitHubToken=ADDME! Receivers=email@email.com
+
 #### Examples of the notifications:
 ##### Started
 The pipeline mellon-image-webcomponent-pipeline has started. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.

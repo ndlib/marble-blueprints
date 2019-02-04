@@ -1,6 +1,12 @@
 Transform: 'AWS::Serverless-2016-10-31'
-Description: "Manifest Pipeline"
-
+Description: >
+  - Creates a series of lambdas and a step function to process manifests.
+  - The lambdas create iiif manifest and pyramid tiffs out of images.
+  - The finished product are copied to a bucket to serve manifests out of and an image server
+    to display the iiif images.
+  - Creates a bucket for to serve manifests out of
+  - Creates a bucket that the step functions use as an in process location.
+  - Requires the iiif-service and mellon-data-broker pipelines to be built.  Uses ssm keys from those services
 Parameters:
   EnvType:
     Type: String

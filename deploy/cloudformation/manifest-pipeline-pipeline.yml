@@ -1,5 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Main template for a CI/CD Serverless application."
+Description: >
+  - Creates a CodeBuild Project to pull the manifest pipeline GitHub repository,
+  build the lambdas and StepFunctions and package them for deployment.
+  - Creates a CodePipeline that has a specific CodeBuild associated,
+  which creates a changed set from the package and deploys it to test and production.
+  - Requires the iiif-service pipeline to be built.
 
 Parameters:
   AppName:
@@ -12,23 +17,10 @@ Parameters:
   Receivers:
     Type: String
     Description: An e-mail address to send the monitoring notifications
-  SAMInputFile:
-    Type: String
-    Description: The filename for the SAM file.
-    Default: sam.yml
-  SAMOutputFile:
-    Type: String
-    Description: The filename for the output SAM file from the buildspec file.
-    Default: output.yml
-  StagingFile:
-    Type: String
-    Description: The cloudformation staging file. Leave empty if no staging file is needed.
-    Default: beta.json
   CodeBuildImage:
     Type: String
     Default: "aws/codebuild/nodejs:7.0.0"
     Description: Image used for CodeBuild project.
-
   ConfigurationRepoName:
     Type: String
     Description: The GitHub repo for the cloudfromation blueprints
@@ -37,7 +29,6 @@ Parameters:
     Type: String
     Description: The GitHub repo branch the codepipeline should checkout to run blueprints from
     Default: master
-
   GitHubRepoName:
     Type: String
     Description: The GitHub repo name
@@ -62,11 +53,6 @@ Parameters:
     Default: prod-stack-configuration.json
     Description: The configuration file name for the production stack
     Type: String
-
-Conditions:
-  HasStagingVariables:
-    !Not
-      - !Equals [!Ref StagingFile, ""]
 
 Outputs:
   CodePipelineRole:

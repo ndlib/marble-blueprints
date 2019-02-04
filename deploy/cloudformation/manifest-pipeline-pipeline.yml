@@ -1,0 +1,753 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Main template for a CI/CD Serverless application."
+
+Parameters:
+  AppName:
+    Type: String
+    Description: Name of the application.
+    MinLength: "1"
+    MaxLength: "80"
+    AllowedPattern: "[A-Za-z0-9-]+"
+    ConstraintDescription: Malformed input parameter. AppName must only contain upper and lower case letters, numbers, and -.
+  Receivers:
+    Type: String
+    Description: An e-mail address to send the monitoring notifications
+  SAMInputFile:
+    Type: String
+    Description: The filename for the SAM file.
+    Default: sam.yml
+  SAMOutputFile:
+    Type: String
+    Description: The filename for the output SAM file from the buildspec file.
+    Default: output.yml
+  StagingFile:
+    Type: String
+    Description: The cloudformation staging file. Leave empty if no staging file is needed.
+    Default: beta.json
+  CodeBuildImage:
+    Type: String
+    Default: "aws/codebuild/nodejs:7.0.0"
+    Description: Image used for CodeBuild project.
+  GitHubRepoName:
+    Type: String
+    Description: The GitHub repo name
+  GitHubRepoBranch:
+    Type: String
+    Description: The GitHub repo branch code pipelines should watch for changes on
+    Default: master
+  GitHubUser:
+    Type: String
+    Description: GitHub UserName. This username must have access to the GitHubToken.
+  GitHubToken:
+    NoEcho: true
+    Type: String
+    Description: "Secret. OAuthToken with access to Repo. Long string of characters and digits. Go to https://github.com/settings/tokens"
+  TestStackConfig:
+    Default: test-stack-configuration.json
+    Description: The configuration file name for the test stack
+    Type: String
+  ProdStackConfig:
+    Default: prod-stack-configuration.json
+    Description: The configuration file name for the production stack
+    Type: String
+
+Conditions:
+  HasStagingVariables:
+    !Not
+      - !Equals [!Ref StagingFile, ""]
+
+Outputs:
+  CodePipelineRole:
+    Description: Role for code pipeline
+    Value: !GetAtt
+      - CodePipelineTrustRole
+      - Arn
+  CloudFormationDeployRole:
+    Description: Role for cloudformation to deploy with.
+    Value: !GetAtt
+      - CloudFormationTrustRole
+      - Arn
+  CodeBuildRole:
+    Description: Role for code build to build
+    Value: !GetAtt
+      - CodeBuildTrustRole
+      - Arn
+  StackName:
+    Description: The name of this stack
+    Value: !Ref 'AWS::StackName'
+
+  PipelineName:
+    Description: The name of this stack
+    Value: !Ref 'AWS::StackName'
+
+  StackName:
+    Description: The name of this stack
+    Value: !Ref 'AWS::StackName'
+
+  PipelineS3Bucket:
+    Description: The bucket that codepipeline uses
+    Value: !Ref S3Bucket
+
+Resources:
+  CodeBuildTrustRole:
+    Description: Creating service role in IAM for AWS CodeBuild
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+  CodeBuildRolePolicy:
+    Type: 'AWS::IAM::Policy'
+    DependsOn: CodeBuildTrustRole
+    Description: Setting IAM policy for the service role for AWS CodeBuild
+    Properties:
+      PolicyName: CodeBuildRolePolicy
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource:
+              - '*'
+          - Effect: Allow
+            Resource:
+              - '*'
+            Action:
+              - 's3:*'
+          - Effect: Allow
+            Resource:
+              - '*'
+            Action:
+              - 'kms:GenerateDataKey*'
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+          - Effect: Allow
+            Resource:
+              - '*'
+            Action:
+              - 'sns:SendMessage'
+      Roles:
+        - !Ref CodeBuildTrustRole
+  CloudFormationTrustRole:
+    Description: Creating service role in IAM for AWS CloudFormation HERE
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+  CloudFormationRolePolicy:
+    Type: 'AWS::IAM::Policy'
+    DependsOn: CloudFormationTrustRole
+    Description: Setting IAM policy for the service role for AWS CloudFormation
+    Properties:
+      PolicyName: CloudFormationRolePolicy
+      PolicyDocument:
+        Statement:
+          - Action:
+              - 'States:CreateStateMachine'
+              - 'States:DeleteStateMachine'
+            Resource: '*'
+            Effect: 'Allow'
+          - Action:
+              - 's3:CreateBucket'
+              - 's3:DeleteBucket'
+              - 's3:PutBucketLogging'
+              - 's3:GetBucketCORS'
+              - 's3:PutBucketCORS'
+              - 's3:PutBucketAcl'
+              - 's3:GetBucketAcl'
+              - 's3:PutBucketWebsite'
+            Resource:
+              - 'arn:aws:s3:::mellon-manifest-pipeline*'
+            Effect: 'Allow'
+          - Action:
+              - 's3:GetObject'
+              - 's3:GetObjectVersion'
+              - 's3:GetBucketVersioning'
+            Resource:
+              - 'arn:aws:s3:::mellon-manifest-pipeline*/*'
+            Effect: 'Allow'
+          - Action:
+              - 'ssm:GetParameters'
+            Resource: '*'
+            Effect: Allow
+          - Action:
+              - 's3:PutObject'
+            Resource:
+              - 'arn:aws:s3:::codepipeline*'
+            Effect: Allow
+          - Action:
+              - 'lambda:*'
+            Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*'
+            Effect: Allow
+          - Action:
+              - 'apigateway:*'
+            Resource: !Sub 'arn:aws:apigateway:${AWS::Region}::*'
+            Effect: Allow
+          - Action:
+              - 'iam:GetRole'
+              - 'iam:CreateRole'
+              - 'iam:DeleteRole'
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AppName}-*'
+            Effect: Allow
+          - Action:
+              - 'iam:AttachRolePolicy'
+              - 'iam:DetachRolePolicy'
+              - 'iam:DeleteRolePolicy'
+              - 'iam:PutRolePolicy'
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AppName}-*'
+            Effect: Allow
+          - Action:
+              - 'iam:PassRole'
+            Resource:
+              - '*'
+            Effect: Allow
+          - Action:
+              - 'cloudformation:CreateChangeSet'
+            Resource: !Sub >-
+              arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+            Effect: Allow
+      Roles:
+        - !Ref CloudFormationTrustRole
+  CodePipelineTrustRole:
+    Description: Creating service role in IAM for AWS CodePipeline
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+  CodePipelineRolePolicy:
+    Type: 'AWS::IAM::Policy'
+    DependsOn: CodePipelineTrustRole
+    Description: Setting IAM policy for the service role for AWS CodePipeline
+    Properties:
+      PolicyName: CodePipelineRolePolicy
+      PolicyDocument:
+        Statement:
+          - Action:
+              - 's3:CreateBucket'
+              - 's3:DeleteBucket'
+              - 's3:PutBucketLogging'
+            Resource:
+              - 'arn:aws:s3:::mellon-manifest-pipeline*'
+            Effect: 'Allow'
+          - Action:
+              - 's3:GetObject'
+              - 's3:GetObjectVersion'
+              - 's3:GetBucketVersioning'
+            Resource:
+              - 'arn:aws:s3:::mellon-manifest-pipeline*/*'
+              - 'arn:aws:s3:::codepipeline*'
+            Effect: 'Allow'
+          - Action:
+              - 's3:PutObject'
+            Resource:
+              - 'arn:aws:s3:::codepipeline*'
+            Effect: Allow
+          - Action:
+              - 'codebuild:StartBuild'
+              - 'codebuild:BatchGetBuilds'
+            Resource: '*'
+            Effect: Allow
+          - Action:
+              - 'cloudwatch:*'
+              - 's3:*'
+              - 'sns:*'
+              - 'cloudformation:*'
+              - 'rds:*'
+              - 'sqs:*'
+              - 'iam:PassRole'
+            Resource: '*'
+            Effect: Allow
+          - Action:
+              - 'lambda:InvokeFunction'
+              - 'lambda:ListFunctions'
+            Resource: '*'
+            Effect: Allow
+      Roles:
+        - !Ref CodePipelineTrustRole
+
+  PipelineEventsTopic:
+    Type: AWS::SNS::Topic
+
+  PipelineEventsTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref PipelineEventsTopic
+      Protocol: email
+      Endpoint: !Ref Receivers
+
+  CodeBuildProject:
+    Description: Creating AWS CodeBuild project
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: !Sub "Building stage for ${AppName}."
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: S3_BUCKET
+            Value: !Ref S3Bucket
+        Image: !Ref CodeBuildImage
+        Type: LINUX_CONTAINER
+      Name: !Sub "${AppName}-build"
+      ServiceRole: !GetAtt
+        - CodeBuildTrustRole
+        - Arn
+      Source:
+        Type: CODEPIPELINE
+      Tags:
+        - Key: app-name
+          Value: !Ref AppName
+      TimeoutInMinutes: 5
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - echo "Ensure that the codebuild directory is executable"
+                - chmod -R 755 ./scripts/codebuild/*
+                - ./scripts/codebuild/install.sh
+            pre_build:
+              commands:
+                - ./scripts/codebuild/pre_build.sh
+            build:
+              commands:
+                - ./scripts/codebuild/build.sh
+            post_build:
+              commands:
+                - ./scripts/codebuild/post_build.sh
+          artifacts:
+            files:
+              - output.yml
+              - test-stack-configuration.json
+              - prod-stack-configuration.json
+
+  S3Bucket:
+    Description: Creating Amazon S3 bucket for AWS CodePipeline artifacts
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+
+  S3ArtifactBucketPolicy:
+    DependsOn: [S3Bucket]
+    Description: Setting Amazon S3 bucket policy for AWS CodePipeline access
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: SSEAndSSLPolicy
+        Statement:
+        - Sid: DenyInsecureConnections
+          Effect: Deny
+          Principal: "*"
+          Action: s3:*
+          Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+          Condition:
+            Bool:
+              aws:SecureTransport: false
+
+  ProjectPipeline:
+    DependsOn: [S3Bucket, CodeBuildProject]
+    Description: Creating a deployment pipeline for your project in AWS CodePipeline
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub "${AppName}-pipeline"
+      RoleArn: !GetAtt
+        - CodePipelineTrustRole
+        - Arn
+      Stages:
+      - Name: Source
+        Actions:
+        - Name: SourceFromRepo
+          InputArtifacts: []
+          ActionTypeId:
+            Version: "1"
+            Category: Source
+            Owner: ThirdParty
+            Provider: GitHub
+          OutputArtifacts:
+          - Name: SourceFromRepo
+          Configuration:
+            Repo: !Ref GitHubRepoName
+            Branch: !Ref GitHubRepoBranch
+            OAuthToken: !Ref GitHubToken
+            Owner: !Ref GitHubUser
+          RunOrder: 1
+      - Name: Build
+        Actions:
+        - Name: BuildFromRepo
+          InputArtifacts:
+          - Name: SourceFromRepo
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: "1"
+            Provider: CodeBuild
+          OutputArtifacts:
+          - Name: BuildFromRepo
+          Configuration:
+            ProjectName: !Sub "${AppName}-build"
+          RunOrder: 1
+
+      - Name: DeployToTest
+        Actions:
+          - Name: CreateChangeSet
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Provider: CloudFormation
+              Version: '1'
+            InputArtifacts:
+              - Name: BuildFromRepo
+            Configuration:
+              ActionMode: CHANGE_SET_REPLACE
+              Capabilities: CAPABILITY_IAM
+              RoleArn: !GetAtt
+                - CloudFormationTrustRole
+                - Arn
+              StackName: !Sub "${AppName}-test"
+              ChangeSetName: TestChangeSetName
+              TemplateConfiguration: !Sub "BuildFromRepo::${TestStackConfig}"
+              TemplatePath: !Sub "BuildFromRepo::${SAMOutputFile}"
+            RunOrder: '1'
+          - Name: ExecuteChangeSet
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Provider: CloudFormation
+              Version: '1'
+            Configuration:
+              ActionMode: CHANGE_SET_EXECUTE
+              Capabilities: CAPABILITY_IAM
+              ChangeSetName: TestChangeSetName
+              RoleArn: !GetAtt
+                - CloudFormationTrustRole
+                - Arn
+              StackName: !Sub "${AppName}-test"
+            RunOrder: '2'
+
+      - Name: Approval
+        Actions:
+          -
+            Name: "ManualApprovalOfTestEnvironment"
+            ActionTypeId:
+              Owner: AWS
+              Category: Approval
+              Provider: Manual
+              Version: "1"
+            Configuration:
+              NotificationArn: !Ref PipelineEventsTopic
+              CustomData: Approval or Reject this change after running Exploratory Tests
+            RunOrder: '1'
+          - Name: DeleteTestStack
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Provider: CloudFormation
+              Version: '1'
+            Configuration:
+              ActionMode: DELETE_ONLY
+              RoleArn: !GetAtt
+                - CloudFormationTrustRole
+                - Arn
+              StackName: !Sub "${AppName}-test"
+            RunOrder: '2'
+
+      - Name: DeployToProduction
+        Actions:
+          - Name: CreateChangeSet
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Provider: CloudFormation
+              Version: '1'
+            InputArtifacts:
+              - Name: BuildFromRepo
+            Configuration:
+              ActionMode: CHANGE_SET_REPLACE
+              Capabilities: CAPABILITY_IAM
+              RoleArn: !GetAtt
+                - CloudFormationTrustRole
+                - Arn
+              StackName: !Sub "${AppName}-prod"
+              ChangeSetName: ProdChangeSetName
+              TemplateConfiguration: !Sub "BuildFromRepo::${ProdStackConfig}"
+              TemplatePath: !Sub "BuildFromRepo::${SAMOutputFile}"
+            RunOrder: '1'
+          - Name: ExecuteChangeSet
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Provider: CloudFormation
+              Version: '1'
+            Configuration:
+              ActionMode: CHANGE_SET_EXECUTE
+              ChangeSetName: ProdChangeSetName
+              RoleArn: !GetAtt
+                - CloudFormationTrustRole
+                - Arn
+              StackName: !Sub "${AppName}-prod"
+            RunOrder: '2'
+
+      ArtifactStore:
+        Type: S3
+        Location: !Ref S3Bucket
+  # Allow events below to publish to the pipeline events topic
+  EventTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: 'sns:Publish'
+            Resource: !Ref PipelineEventsTopic
+      Topics:
+        - !Ref PipelineEventsTopic
+
+  # Top level pipeline change events
+  PipelineStartedEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends pipeline started message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Pipeline Execution State Change"
+        detail:
+          pipeline:
+            - !Ref 'AWS::StackName'
+          state:
+            - STARTED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"The pipeline <Pipeline> has started. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  PipelineSuccessEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends pipeline succeeded message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Pipeline Execution State Change"
+        detail:
+          pipeline:
+            - !Ref 'AWS::StackName'
+          state:
+            - SUCCEEDED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"The pipeline <Pipeline> has successfully deployed to production. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  # This is just a catch all for other states.
+  # I'm not entirely sure we care about them yet.
+  PipelineGenericEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends gene  ric pipeline state change messages to the pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Pipeline Execution State Change"
+        detail:
+          pipeline:
+            - !Ref 'AWS::StackName'
+          state:
+            - RESUMED
+            - CANCELED
+            - SUPERSEDED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+              PipelineState: "$.detail.state"
+            InputTemplate: !Sub '"The pipeline <Pipeline> has changed state to <PipelineState>. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  # Stage failure events
+  # I couldn't get anything meaningful out of a generic pipeline-level failure
+  # so I am adding one for each stage. This may eventually need to go through
+  # a more sophisticated event processor to give more useful information.
+  SourceFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends source code stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - !Ref 'AWS::StackName'
+          stage:
+            - "Source"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+              Json: "$"
+            InputTemplate: !Sub '"Failed to pull the source code for <Pipeline>. To view the current execution, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  BuildFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends build stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - !Ref 'AWS::StackName'
+          stage:
+            - "Build"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+              Json: "$"
+            InputTemplate: !Sub '"Failed to build <Pipeline>. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  DeployToTestFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends deploy to test stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - !Ref 'AWS::StackName'
+          stage:
+            - "DeployToTest"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"Build for <Pipeline> failed to deploy to test stack. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  ApprovalFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends approval stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - !Ref 'AWS::StackName'
+          stage:
+            - "Approval"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"Build for <Pipeline> was rejected either due to a QA failure or UAT rejection. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
+
+  DeployToProdFailureEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Sends deploy to production stage failure message to pipeline events topic."
+      EventPattern:
+        source:
+          - aws.codepipeline
+        detail-type:
+          - "CodePipeline Stage Execution State Change"
+        detail:
+          pipeline:
+            - !Ref 'AWS::StackName'
+          stage:
+            - "DeployToProduction"
+          state:
+            - FAILED
+      State: "ENABLED"
+      Targets:
+        -
+          Arn:
+            Ref: "PipelineEventsTopic"
+          Id: "PipelineEventsTopic"
+          InputTransformer:
+            InputPathsMap:
+              Pipeline: "$.detail.pipeline"
+            InputTemplate: !Sub '"Build for <Pipeline> failed to deploy to production stack. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'

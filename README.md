@@ -185,6 +185,7 @@ aws cloudformation deploy \
 ```
 
 How to build the Manifest Pipeline Pipleine
+```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --stack-name mellon-manifest-pipeline \
@@ -192,6 +193,7 @@ aws cloudformation deploy \
   --tags Name='mellon-manifest-pipeline' Contact='lib-esu-group@nd.edu' Owner='jhartzle' Description='CF for AppStream Lambda Function and Api Gateway.' \
   --parameter-overrides AppName=mellon-manifest-pipeline \
     GitHubToken=ADDME! Receivers=email@email.com
+```
 
 #### Examples of the notifications:
 ##### Started

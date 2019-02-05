@@ -8,19 +8,24 @@ usage() {
   cat << EOF >&2
 Usage: $PROGNAME stage
 
-deployes the pipeline to the stage
+Deployes the pipeline to the stage
+Note: Ensure you have an env variable S3_BUCKET as the bucket to deploy to.
 
 EOF
   exit 1
 }
-
+``
 stage=$1
 path=$2
 
-export S3_BUCKET=mellon-manifest-pipeline-dev2-s3bucket-1urf7wn3aoy37
+if [ -z ${S3_BUCKET+x} ]; then
+  usage
+  exit
+fi
 
 export CODEBUILD_SRC_DIR=`pwd`/$path
 export CODEBUILD_SRC_DIR_ConfigCode=`pwd`/../
+
 pushd .
 
 cd $path

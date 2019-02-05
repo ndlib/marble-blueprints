@@ -191,8 +191,7 @@ aws cloudformation deploy \
   --stack-name mellon-manifest-pipeline \
   --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
   --tags Name='mellon-manifest-pipeline' Contact='me@myhost.com' Owner='myid' Description='CF for Manifest Pipeline.' \
-  --parameter-overrides AppName=mellon-manifest-pipeline \
-    GitHubToken=ADDME! Receivers=email@email.com
+  --parameter-overrides GitHubToken=ADDME! Receivers=email@email.com
 ```
 
 #### Examples of the notifications:

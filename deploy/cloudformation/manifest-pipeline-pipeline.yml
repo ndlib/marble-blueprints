@@ -14,9 +14,14 @@ Parameters:
     MaxLength: "80"
     AllowedPattern: "[A-Za-z0-9-]+"
     ConstraintDescription: Malformed input parameter. AppName must only contain upper and lower case letters, numbers, and -.
+    Default: "mellon-manifest-pipeline"
   Receivers:
     Type: String
     Description: An e-mail address to send the monitoring notifications
+  SAMOutputFile:
+    Type: String
+    Description: The output file from the cloudformation package command
+    Default: output.yml
   CodeBuildImage:
     Type: String
     Default: "aws/codebuild/nodejs:7.0.0"
@@ -271,7 +276,6 @@ Resources:
             Resource: '*'
             Effect: Allow
           - Action:
-              - 'lambda:InvokeFunction'
               - 'lambda:ListFunctions'
             Resource: '*'
             Effect: Allow
@@ -321,7 +325,7 @@ Resources:
               commands:
                 - echo "Ensure that the codebuild directory is executable"
                 - chmod -R 755 ./scripts/codebuild/*
-                - `./scripts/codebuild/install.sh`
+                - ./scripts/codebuild/install.sh
             pre_build:
               commands:
                 - ./scripts/codebuild/pre_build.sh
@@ -488,7 +492,7 @@ Resources:
               RoleArn: !GetAtt
                 - CloudFormationTrustRole
                 - Arn
-              StackName: !Sub "${AppName}-prod"
+              StackName: !Sub "${AppName}"
               ChangeSetName: ProdChangeSetName
               TemplateConfiguration: !Sub "BuildFromRepo::${ProdStackConfig}"
               TemplatePath: !Sub "BuildFromRepo::${SAMOutputFile}"
@@ -505,7 +509,7 @@ Resources:
               RoleArn: !GetAtt
                 - CloudFormationTrustRole
                 - Arn
-              StackName: !Sub "${AppName}-prod"
+              StackName: !Sub "${AppName}"
             RunOrder: '2'
 
       ArtifactStore:

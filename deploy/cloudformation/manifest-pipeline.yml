@@ -131,12 +131,7 @@ Resources:
           MANIFEST_BUCKET: !Ref ManifestBucket
           IMAGE_BUCKET: !Ref ImageSourceBucket
           IMAGE_SERVER_URL: !Ref ImageServerUrl
-          MANIFEST_URL:
-            Fn::Join:
-              - ""
-              -
-                - !Ref ManifestBucket
-                - ".s3-website-us-east-1.amazonaws.com"
+          MANIFEST_URL: !GetAtt ManifestBucket.WebsiteURL
 
   ManifestLambdaFunction:
     Type: AWS::Serverless::Function

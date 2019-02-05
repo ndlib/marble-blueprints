@@ -78,10 +78,6 @@ Outputs:
     Description: The name of this stack
     Value: !Ref 'AWS::StackName'
 
-  StackName:
-    Description: The name of this stack
-    Value: !Ref 'AWS::StackName'
-
   PipelineS3Bucket:
     Description: The bucket that codepipeline uses
     Value: !Ref S3Bucket
@@ -325,7 +321,7 @@ Resources:
               commands:
                 - echo "Ensure that the codebuild directory is executable"
                 - chmod -R 755 ./scripts/codebuild/*
-                - ./scripts/codebuild/install.sh
+                - `./scripts/codebuild/install.sh`
             pre_build:
               commands:
                 - ./scripts/codebuild/pre_build.sh
@@ -350,7 +346,6 @@ Resources:
         Status: Enabled
 
   S3ArtifactBucketPolicy:
-    DependsOn: [S3Bucket]
     Description: Setting Amazon S3 bucket policy for AWS CodePipeline access
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -465,9 +460,6 @@ Resources:
                 - Arn
               StackName: !Sub "${AppName}-test"
             RunOrder: '2'
-
-      - Name: Approval
-        Actions:
           -
             Name: "ManualApprovalOfTestEnvironment"
             ActionTypeId:
@@ -478,20 +470,7 @@ Resources:
             Configuration:
               NotificationArn: !Ref PipelineEventsTopic
               CustomData: Approval or Reject this change after running Exploratory Tests
-            RunOrder: '1'
-          - Name: DeleteTestStack
-            ActionTypeId:
-              Category: Deploy
-              Owner: AWS
-              Provider: CloudFormation
-              Version: '1'
-            Configuration:
-              ActionMode: DELETE_ONLY
-              RoleArn: !GetAtt
-                - CloudFormationTrustRole
-                - Arn
-              StackName: !Sub "${AppName}-test"
-            RunOrder: '2'
+            RunOrder: '3'
 
       - Name: DeployToProduction
         Actions:

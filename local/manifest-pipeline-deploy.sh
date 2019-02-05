@@ -20,7 +20,7 @@ path=$2
 
 if [ -z ${S3_BUCKET+x} ]; then
   usage
-  exit
+  exit 1
 fi
 
 export CODEBUILD_SRC_DIR=`pwd`/$path

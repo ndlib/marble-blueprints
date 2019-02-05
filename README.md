@@ -190,7 +190,7 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --stack-name mellon-manifest-pipeline \
   --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
-  --tags Name='mellon-manifest-pipeline' Contact='lib-esu-group@nd.edu' Owner='jhartzle' Description='CF for AppStream Lambda Function and Api Gateway.' \
+  --tags Name='mellon-manifest-pipeline' Contact='me@myhost.com' Owner='myid' Description='CF for Manifest Pipeline.' \
   --parameter-overrides AppName=mellon-manifest-pipeline \
     GitHubToken=ADDME! Receivers=email@email.com
 ```

@@ -182,7 +182,7 @@ Resources:
               - 'ssm:GetParameters'
               - 'ssm:PutParameters'
               - 'ssm:DeleteParameters'
-            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon-manifest-pipeline*"
+            Resource: '*'
             Effect: Allow
           - Action:
               - 's3:PutObject'

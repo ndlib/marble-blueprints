@@ -18,10 +18,6 @@ Parameters:
   Receivers:
     Type: String
     Description: An e-mail address to send the monitoring notifications
-  CodeBuildImage:
-    Type: String
-    Default: "aws/codebuild/nodejs:7.0.0"
-    Description: Image used for CodeBuild project.
   ConfigurationRepoName:
     Type: String
     Description: The GitHub repo for the cloudfromation blueprints
@@ -46,9 +42,6 @@ Parameters:
     NoEcho: true
     Type: String
     Description: "Secret. OAuthToken with access to Repo. Long string of characters and digits. Go to https://github.com/settings/tokens"
-
-Outputs:
-
 
 Resources:
   CodeBuildTrustRole:
@@ -142,8 +135,10 @@ Resources:
               - 'arn:aws:s3:::mellon-manifest-pipeline*/*'
             Effect: 'Allow'
           - Action:
-              - 'ssm:*'
-            Resource: '*'
+              - 'ssm:Get*'
+              - 'ssm:Delete*'
+              - 'ssm:Put*'
+            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon*"
             Effect: Allow
           - Action:
               - 's3:PutObject'
@@ -204,8 +199,10 @@ Resources:
       PolicyDocument:
         Statement:
           - Action:
-              - 'ssm:*'
-            Resource: '*'
+              - 'ssm:Get*'
+              - 'ssm:Delete*'
+              - 'ssm:Put*'
+            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon*"
             Effect: Allow
           - Action:
               - 'codebuild:StartBuild'
@@ -261,7 +258,7 @@ Resources:
         EnvironmentVariables:
           - Name: S3_BUCKET
             Value: !Ref S3Bucket
-        Image: !Ref CodeBuildImage
+        Image: "aws/codebuild/nodejs:7.0.0"
         Type: LINUX_CONTAINER
       Name: !Sub "${AppName}-build"
       ServiceRole: !GetAtt
@@ -403,8 +400,8 @@ Resources:
                 - Arn
               StackName: !Sub "${AppName}-test"
               ChangeSetName: TestChangeSetName
-              TemplateConfiguration: "BuildFromRepo::test-stack-configuration.json"
-              TemplatePath: BuildFromRepo::output.yml"
+              TemplateConfiguration: BuildFromRepo::test-stack-configuration.json
+              TemplatePath: BuildFromRepo::output.yml
             RunOrder: '1'
           - Name: ExecuteChangeSet
             ActionTypeId:
@@ -451,8 +448,8 @@ Resources:
                 - Arn
               StackName: !Sub "${AppName}"
               ChangeSetName: ProdChangeSetName
-              TemplateConfiguration: "BuildFromRepo::prod-stack-configuration.json"
-              TemplatePath: "BuildFromRepo::output.yml"
+              TemplateConfiguration: BuildFromRepo::prod-stack-configuration.json
+              TemplatePath: BuildFromRepo::output.yml
             RunOrder: '1'
           - Name: ExecuteChangeSet
             ActionTypeId:

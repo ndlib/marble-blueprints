@@ -179,9 +179,7 @@ Resources:
               - 'arn:aws:s3:::mellon-manifest-pipeline*/*'
             Effect: 'Allow'
           - Action:
-              - 'ssm:GetParameters'
-              - 'ssm:PutParameters'
-              - 'ssm:DeleteParameters'
+              - 'ssm:*'
             Resource: '*'
             Effect: Allow
           - Action:
@@ -242,6 +240,10 @@ Resources:
       PolicyName: CodePipelineRolePolicy
       PolicyDocument:
         Statement:
+          - Action:
+              - 'ssm:*'
+            Resource: '*'
+            Effect: Allow
           - Action:
               - 'codebuild:StartBuild'
               - 'codebuild:BatchGetBuilds'

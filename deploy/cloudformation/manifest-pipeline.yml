@@ -180,7 +180,7 @@ Resources:
             Statement:
               -
                 Action:
-                  - "ssm:GetParametersByPath"
+                  - "ssm:*"
                 Effect: "Allow"
                 Resource: '*'
         - PolicyName: ImageDerivativeCacheBucketPermissions

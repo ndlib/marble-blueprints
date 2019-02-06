@@ -180,9 +180,9 @@ Resources:
             Statement:
               -
                 Action:
-                  - "ssm:*"
+                  - "ssm:GetParametersByPath"
                 Effect: "Allow"
-                Resource: '*'
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon-manifest*"        
         - PolicyName: ImageDerivativeCacheBucketPermissions
           PolicyDocument:
             Version: 2012-10-17

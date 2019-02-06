@@ -36,6 +36,103 @@ Outputs:
     Value: !Ref ManifestBucket
 
 Resources:
+
+  CanvasDefaultWidth:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/canvas-default-width"
+      Value: "2000"
+      Description: Canvas default width
+
+  CanvasDefaultHeight:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/canvas-default-height"
+      Value: "2000"
+      Description: Canvas default height
+
+  ImageServerBaseUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/image-server-base-url"
+      Value: "https://STUB:8182/iiif/2"
+      Description: Image server base url
+
+  MainCsv:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/main-csv"
+      Value: "main.csv"
+      Description: CSV name
+
+  SequenceCsv:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/sequence-csv"
+      Value: "sequence.csv"
+      Description: CSV name
+
+  ManifestServerBaseUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/manifest-server-base-url"
+      Value: "https://"
+      Description: CSV name
+
+  ProcessBucketReadBasepath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/process-bucket-read-basepath"
+      Value: "process"
+      Description: S3 bucket read base path
+
+  ProcessBucketWriteBasepath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/process-bucket-write-basepath"
+      Value: "finished"
+      Description: S3 bucket write base path
+
+  ImageServerBucketBasepath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/image-server-bucket-basepath"
+      Value: "images"
+      Description: S3 bucket images base path
+
+  ManifestServerBucketBasepath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/manifest-server-bucket-basepath"
+      Value: "manifest"
+      Description: S3 bucket images base path
+
+  EventFile:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/mellon-manifest-pipeline/config/${EnvType}/event-file"
+      Value: "event.json"
+      Description: S3 event filename
+
+  ProcessBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LoggingConfiguration:
+        DestinationBucketName:
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
+        LogFilePrefix: s3/data-broker/
+
   ProcessBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -126,7 +223,7 @@ Resources:
       CodeUri: json-from-csv/
       Environment:
         Variables:
-          EnvType: !Ref EnvType
+          STAGE: !Ref EnvType
           PROCESS_BUCKET: !Ref ProcessBucket
           MANIFEST_BUCKET: !Ref ManifestBucket
           IMAGE_BUCKET: !Ref ImageSourceBucket

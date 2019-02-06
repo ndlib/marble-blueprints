@@ -180,7 +180,9 @@ Resources:
             Effect: 'Allow'
           - Action:
               - 'ssm:GetParameters'
-            Resource: '*'
+              - 'ssm:PutParameters'
+              - 'ssm:DeleteParameters'
+            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon-manifest-pipeline*"
             Effect: Allow
           - Action:
               - 's3:PutObject'
@@ -241,43 +243,33 @@ Resources:
       PolicyDocument:
         Statement:
           - Action:
-              - 's3:CreateBucket'
-              - 's3:DeleteBucket'
-              - 's3:PutBucketLogging'
-            Resource:
-              - 'arn:aws:s3:::mellon-manifest-pipeline*'
-            Effect: 'Allow'
-          - Action:
-              - 's3:GetObject'
-              - 's3:GetObjectVersion'
-              - 's3:GetBucketVersioning'
-            Resource:
-              - 'arn:aws:s3:::mellon-manifest-pipeline*/*'
-              - 'arn:aws:s3:::codepipeline*'
-            Effect: 'Allow'
-          - Action:
-              - 's3:PutObject'
-            Resource:
-              - 'arn:aws:s3:::codepipeline*'
-            Effect: Allow
-          - Action:
               - 'codebuild:StartBuild'
               - 'codebuild:BatchGetBuilds'
             Resource: '*'
             Effect: Allow
           - Action:
               - 'cloudwatch:*'
-              - 's3:*'
-              - 'sns:*'
               - 'cloudformation:*'
-              - 'rds:*'
-              - 'sqs:*'
               - 'iam:PassRole'
             Resource: '*'
             Effect: Allow
           - Action:
-              - 'lambda:ListFunctions'
-            Resource: '*'
+              - 'sns:Publish'
+              - 'sns:Subscribe'
+            Effect: Allow
+            Resource:
+              - !Ref PipelineEventsTopic
+          - Action:
+              - 's3:GetObject'
+              - 's3:GetObjectVersion'
+              - 's3:GetBucketVersioning'
+              - 's3:PutObject'
+            Resource:
+              - Fn::Join:
+                - ""
+                -
+                  - !GetAtt S3Bucket.Arn
+                  - "/*"
             Effect: Allow
       Roles:
         - !Ref CodePipelineTrustRole

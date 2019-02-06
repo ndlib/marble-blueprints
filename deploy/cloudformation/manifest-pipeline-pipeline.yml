@@ -18,10 +18,6 @@ Parameters:
   Receivers:
     Type: String
     Description: An e-mail address to send the monitoring notifications
-  SAMOutputFile:
-    Type: String
-    Description: The output file from the cloudformation package command
-    Default: output.yml
   CodeBuildImage:
     Type: String
     Default: "aws/codebuild/nodejs:7.0.0"
@@ -34,11 +30,11 @@ Parameters:
     Type: String
     Description: The GitHub repo branch the codepipeline should checkout to run blueprints from
     Default: master
-  GitHubRepoName:
+  ManifestPipelineRepoName:
     Type: String
     Description: The GitHub repo name
     Default: mellon-manifest-pipeline
-  GitHubRepoBranch:
+  ManifestPipelineRepoBranch:
     Type: String
     Description: The GitHub repo branch code pipelines should watch for changes on
     Default: master
@@ -50,42 +46,9 @@ Parameters:
     NoEcho: true
     Type: String
     Description: "Secret. OAuthToken with access to Repo. Long string of characters and digits. Go to https://github.com/settings/tokens"
-  TestStackConfig:
-    Default: test-stack-configuration.json
-    Description: The configuration file name for the test stack
-    Type: String
-  ProdStackConfig:
-    Default: prod-stack-configuration.json
-    Description: The configuration file name for the production stack
-    Type: String
 
 Outputs:
-  CodePipelineRole:
-    Description: Role for code pipeline
-    Value: !GetAtt
-      - CodePipelineTrustRole
-      - Arn
-  CloudFormationDeployRole:
-    Description: Role for cloudformation to deploy with.
-    Value: !GetAtt
-      - CloudFormationTrustRole
-      - Arn
-  CodeBuildRole:
-    Description: Role for code build to build
-    Value: !GetAtt
-      - CodeBuildTrustRole
-      - Arn
-  StackName:
-    Description: The name of this stack
-    Value: !Ref 'AWS::StackName'
 
-  PipelineName:
-    Description: The name of this stack
-    Value: !Ref 'AWS::StackName'
-
-  PipelineS3Bucket:
-    Description: The bucket that codepipeline uses
-    Value: !Ref S3Bucket
 
 Resources:
   CodeBuildTrustRole:
@@ -383,8 +346,8 @@ Resources:
           OutputArtifacts:
           - Name: SourceFromRepo
           Configuration:
-            Repo: !Ref GitHubRepoName
-            Branch: !Ref GitHubRepoBranch
+            Repo: !Ref ManifestPipelineRepoName
+            Branch: !Ref ManifestPipelineRepoBranch
             OAuthToken: !Ref GitHubToken
             Owner: !Ref GitHubUser
           RunOrder: 1
@@ -440,8 +403,8 @@ Resources:
                 - Arn
               StackName: !Sub "${AppName}-test"
               ChangeSetName: TestChangeSetName
-              TemplateConfiguration: !Sub "BuildFromRepo::${TestStackConfig}"
-              TemplatePath: !Sub "BuildFromRepo::${SAMOutputFile}"
+              TemplateConfiguration: "BuildFromRepo::test-stack-configuration.json"
+              TemplatePath: BuildFromRepo::output.yml"
             RunOrder: '1'
           - Name: ExecuteChangeSet
             ActionTypeId:
@@ -488,8 +451,8 @@ Resources:
                 - Arn
               StackName: !Sub "${AppName}"
               ChangeSetName: ProdChangeSetName
-              TemplateConfiguration: !Sub "BuildFromRepo::${ProdStackConfig}"
-              TemplatePath: !Sub "BuildFromRepo::${SAMOutputFile}"
+              TemplateConfiguration: "BuildFromRepo::prod-stack-configuration.json"
+              TemplatePath: "BuildFromRepo::output.yml"
             RunOrder: '1'
           - Name: ExecuteChangeSet
             ActionTypeId:

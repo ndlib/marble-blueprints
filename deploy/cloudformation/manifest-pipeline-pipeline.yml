@@ -199,9 +199,7 @@ Resources:
       PolicyDocument:
         Statement:
           - Action:
-              - 'ssm:Get*'
-              - 'ssm:Delete*'
-              - 'ssm:Put*'
+              - 'ssm:GetParameters*'
             Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon*"
             Effect: Allow
           - Action:

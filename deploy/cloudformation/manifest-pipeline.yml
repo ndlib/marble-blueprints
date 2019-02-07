@@ -232,7 +232,7 @@ Resources:
       CodeUri: json-from-csv/
       Environment:
         Variables:
-          STAGE: !Ref EnvType
+          SSM_KEY_BASE: !Ref AWS::StackName
           PROCESS_BUCKET: !Ref ProcessBucket
           MANIFEST_BUCKET: !Ref ManifestBucket
           IMAGE_BUCKET: !Ref ImageSourceBucket

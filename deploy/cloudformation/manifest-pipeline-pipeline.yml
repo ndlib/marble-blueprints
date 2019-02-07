@@ -7,14 +7,14 @@ Description: >
   - Requires the iiif-service pipeline to be built.
 
 Parameters:
-  AppName:
+  ProdStackName:
     Type: String
-    Description: Name of the application.
-    MinLength: "1"
-    MaxLength: "80"
-    AllowedPattern: "[A-Za-z0-9-]+"
-    ConstraintDescription: Malformed input parameter. AppName must only contain upper and lower case letters, numbers, and -.
+    Description: The name of the CloudFormation stack to use when creating the production resources
     Default: "mellon-manifest-pipeline"
+  TestStackName:
+    Type: String
+    Description: The name of the CloudFormation stack to use when creating the test resources
+    Default: "mellon-manifest-pipeline-test"
   Receivers:
     Type: String
     Description: An e-mail address to send the monitoring notifications
@@ -42,10 +42,21 @@ Parameters:
     NoEcho: true
     Type: String
     Description: "Secret. OAuthToken with access to Repo. Long string of characters and digits. Go to https://github.com/settings/tokens"
+  ImageServiceTestStackName:
+    Type: String
+    Default: "mellon-image-service-test"
+    Description: The name of the test IIIF image service stack
+  ImageServiceProdStackName:
+    Type: String
+    Default: "mellon-image-service"
+    Description: The name of the production IIIF image service stack
+  DataBrokerStackName:
+    Type: String
+    Default: "mellon-data-broker"
+    Description: The name of the shared data broker stack
 
 Resources:
   CodeBuildTrustRole:
-    Description: Creating service role in IAM for AWS CodeBuild
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -58,8 +69,6 @@ Resources:
       Path: /
   CodeBuildRolePolicy:
     Type: 'AWS::IAM::Policy'
-    DependsOn: CodeBuildTrustRole
-    Description: Setting IAM policy for the service role for AWS CodeBuild
     Properties:
       PolicyName: CodeBuildRolePolicy
       PolicyDocument:
@@ -91,7 +100,6 @@ Resources:
       Roles:
         - !Ref CodeBuildTrustRole
   CloudFormationTrustRole:
-    Description: Creating service role in IAM for AWS CloudFormation HERE
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -104,17 +112,18 @@ Resources:
       Path: /
   CloudFormationRolePolicy:
     Type: 'AWS::IAM::Policy'
-    DependsOn: CloudFormationTrustRole
-    Description: Setting IAM policy for the service role for AWS CloudFormation
     Properties:
       PolicyName: CloudFormationRolePolicy
       PolicyDocument:
         Statement:
+          # Allow the manifest-pipeline.yml to create any state machines it needs, using its stack name as a base for the name
           - Action:
-              - 'States:CreateStateMachine'
-              - 'States:DeleteStateMachine'
-            Resource: '*'
+              - 'states:CreateStateMachine'
+              - 'states:DeleteStateMachine'
+            Resource:
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'
             Effect: 'Allow'
+          # Allow the manifest-pipeline.yml to create any buckets it needs, using its stack name as a base for the name
           - Action:
               - 's3:CreateBucket'
               - 's3:DeleteBucket'
@@ -125,61 +134,62 @@ Resources:
               - 's3:GetBucketAcl'
               - 's3:PutBucketWebsite'
             Resource:
-              - 'arn:aws:s3:::mellon-manifest-pipeline*'
+              - !Sub 'arn:aws:s3:::${TestStackName}*'
+              - !Sub 'arn:aws:s3:::${ProdStackName}*'
             Effect: 'Allow'
+          # Allow reading from the Pipeline's artifact bucket. Required to deploy the built lambda zips
           - Action:
-              - 's3:GetObject'
-              - 's3:GetObjectVersion'
-              - 's3:GetBucketVersioning'
+              - s3:GetObject
             Resource:
-              - 'arn:aws:s3:::mellon-manifest-pipeline*/*'
-            Effect: 'Allow'
+              - !GetAtt S3Bucket.Arn
+              - Fn::Join:
+                  - ""
+                  -
+                    - !GetAtt S3Bucket.Arn
+                    - "/*"
+            Effect: Allow
+          # Allow the role to read from SSM for the specific template parameters that are needed by manifest-pipeline.yml
           - Action:
               - 'ssm:Get*'
-              - 'ssm:Delete*'
-              - 'ssm:Put*'
-            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon*"
-            Effect: Allow
-          - Action:
-              - 's3:PutObject'
             Resource:
-              - 'arn:aws:s3:::codepipeline*'
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${DataBrokerStackName}/*"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ImageServiceTestStackName}/*"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ImageServiceProdStackName}/*"
+            Effect: Allow
+          # Allow the role to create SSM resources specified by manifest-pipeline.yml
+          - Action:
+            - 'ssm:Delete*'
+            - 'ssm:Put*'
+            Resource:
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${TestStackName}/*"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ProdStackName}/*"
             Effect: Allow
           - Action:
               - 'lambda:*'
-            Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*'
-            Effect: Allow
-          - Action:
-              - 'apigateway:*'
-            Resource: !Sub 'arn:aws:apigateway:${AWS::Region}::*'
+            Resource:
+              - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TestStackName}-*'
+              - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ProdStackName}-*'
             Effect: Allow
           - Action:
               - 'iam:GetRole'
               - 'iam:CreateRole'
               - 'iam:DeleteRole'
-            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AppName}-*'
-            Effect: Allow
-          - Action:
               - 'iam:AttachRolePolicy'
               - 'iam:DetachRolePolicy'
               - 'iam:DeleteRolePolicy'
               - 'iam:PutRolePolicy'
-            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AppName}-*'
-            Effect: Allow
-          - Action:
               - 'iam:PassRole'
             Resource:
-              - '*'
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${TestStackName}-*'
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${ProdStackName}-*'
             Effect: Allow
           - Action:
               - 'cloudformation:CreateChangeSet'
-            Resource: !Sub >-
-              arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+            Resource: !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
             Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole
   CodePipelineTrustRole:
-    Description: Creating service role in IAM for AWS CodePipeline
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -192,26 +202,27 @@ Resources:
       Path: /
   CodePipelineRolePolicy:
     Type: 'AWS::IAM::Policy'
-    DependsOn: CodePipelineTrustRole
-    Description: Setting IAM policy for the service role for AWS CodePipeline
     Properties:
       PolicyName: CodePipelineRolePolicy
       PolicyDocument:
         Statement:
           - Action:
-              - 'ssm:GetParameters*'
-            Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon*"
-            Effect: Allow
-          - Action:
               - 'codebuild:StartBuild'
               - 'codebuild:BatchGetBuilds'
-            Resource: '*'
+            Resource: !Sub 'arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${AWS::StackName}*'
             Effect: Allow
           - Action:
-              - 'cloudwatch:*'
-              - 'cloudformation:*'
+              - 'cloudformation:DescribeStacks'
+              - 'cloudformation:DescribeChangeSet'
+              - 'cloudformation:CreateChangeSet'
+              - 'cloudformation:ExecuteChangeSet'
+            Resource:
+              - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${TestStackName}/*'
+              - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ProdStackName}/*'
+            Effect: Allow
+          - Action:
               - 'iam:PassRole'
-            Resource: '*'
+            Resource: !GetAtt CloudFormationTrustRole.Arn
             Effect: Allow
           - Action:
               - 'sns:Publish'
@@ -245,12 +256,12 @@ Resources:
       Endpoint: !Ref Receivers
 
   CodeBuildProject:
-    Description: Creating AWS CodeBuild project
     Type: AWS::CodeBuild::Project
     Properties:
+      Name: !Sub "${AWS::StackName}-build"
       Artifacts:
         Type: CODEPIPELINE
-      Description: !Sub "Building stage for ${AppName}."
+      Description: !Sub "Building stage for ${ProdStackName}."
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
@@ -258,15 +269,9 @@ Resources:
             Value: !Ref S3Bucket
         Image: "aws/codebuild/nodejs:7.0.0"
         Type: LINUX_CONTAINER
-      Name: !Sub "${AppName}-build"
       ServiceRole: !GetAtt
         - CodeBuildTrustRole
         - Arn
-      Source:
-        Type: CODEPIPELINE
-      Tags:
-        - Key: app-name
-          Value: !Ref AppName
       TimeoutInMinutes: 5
       Source:
         Type: CODEPIPELINE
@@ -277,6 +282,7 @@ Resources:
               commands:
                 - echo "Ensure that the codebuild directory is executable"
                 - chmod -R 755 ./scripts/codebuild/*
+                - export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_ConfigSource"
                 - ./scripts/codebuild/install.sh
             pre_build:
               commands:
@@ -287,6 +293,34 @@ Resources:
             post_build:
               commands:
                 - ./scripts/codebuild/post_build.sh
+                - >
+                    echo "{
+                      \"Parameters\" : {
+                        \"EnvType\" : \"test\",
+                        \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
+                        \"ImageServerUrl\" : \"/all/stacks/${ImageServiceTestStackName}/url\"
+                      },
+                      \"Tags\" : {
+                        \"Name\" : \"${TestStackName}\",
+                        \"Contact\" : \"${Receivers}\",
+                        \"Owner\" : \"Stack: ${AWS::StackName}\",
+                        \"Description\" : \"Test data pipeline for IIIF Manifests.\"
+                      }
+                    }" > test-stack-configuration.json
+                - >
+                    echo "{
+                      \"Parameters\" : {
+                        \"EnvType\" : \"test\",
+                        \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
+                        \"ImageServerUrl\" : \"/all/stacks/${ImageServiceProdStackName}/url\"
+                      },
+                      \"Tags\" : {
+                        \"Name\" : \"${ProdStackName}\",
+                        \"Contact\" : \"${Receivers}\",
+                        \"Owner\" : \"Stack: ${AWS::StackName}\",
+                        \"Description\" : \"Production data pipeline for IIIF Manifests.\"
+                      }
+                    }" > prod-stack-configuration.json
           artifacts:
             files:
               - output.yml
@@ -294,7 +328,6 @@ Resources:
               - prod-stack-configuration.json
 
   S3Bucket:
-    Description: Creating Amazon S3 bucket for AWS CodePipeline artifacts
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     Properties:
@@ -302,7 +335,6 @@ Resources:
         Status: Enabled
 
   S3ArtifactBucketPolicy:
-    Description: Setting Amazon S3 bucket policy for AWS CodePipeline access
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref S3Bucket
@@ -320,18 +352,13 @@ Resources:
               aws:SecureTransport: false
 
   ProjectPipeline:
-    DependsOn: [S3Bucket, CodeBuildProject]
-    Description: Creating a deployment pipeline for your project in AWS CodePipeline
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: !Sub "${AppName}-pipeline"
-      RoleArn: !GetAtt
-        - CodePipelineTrustRole
-        - Arn
+      RoleArn: !GetAtt CodePipelineTrustRole.Arn
       Stages:
       - Name: Source
         Actions:
-        - Name: SourceFromRepo
+        - Name: RetrieveAppCodeSource
           InputArtifacts: []
           ActionTypeId:
             Version: "1"
@@ -339,15 +366,16 @@ Resources:
             Owner: ThirdParty
             Provider: GitHub
           OutputArtifacts:
-          - Name: SourceFromRepo
+          - Name: AppCodeSource
           Configuration:
             Repo: !Ref ManifestPipelineRepoName
             Branch: !Ref ManifestPipelineRepoBranch
             OAuthToken: !Ref GitHubToken
             Owner: !Ref GitHubUser
+            PollForSourceChanges: true
           RunOrder: 1
         -
-          Name: "RetrieveConfigCode"
+          Name: "RetrieveConfigSource"
           ActionTypeId:
             Owner: ThirdParty
             Category: Source
@@ -360,24 +388,24 @@ Resources:
             OAuthToken: !Ref GitHubToken
             PollForSourceChanges: false
           OutputArtifacts:
-            - Name: ConfigCode
+            - Name: ConfigSource
           RunOrder: 1
       - Name: Build
         Actions:
-        - Name: BuildFromRepo
+        - Name: BuildFromSource
           InputArtifacts:
-          - Name: SourceFromRepo
-          - Name: ConfigCode
+          - Name: AppCodeSource
+          - Name: ConfigSource
           ActionTypeId:
             Category: Build
             Owner: AWS
             Version: "1"
             Provider: CodeBuild
           OutputArtifacts:
-          - Name: BuildFromRepo
+          - Name: BuiltCode
           Configuration:
-            ProjectName: !Sub "${AppName}-build"
-            PrimarySource: SourceFromRepo
+            ProjectName: !Ref CodeBuildProject
+            PrimarySource: AppCodeSource
           RunOrder: 1
 
       - Name: DeployToTest
@@ -389,18 +417,16 @@ Resources:
               Provider: CloudFormation
               Version: '1'
             InputArtifacts:
-              - Name: BuildFromRepo
+              - Name: BuiltCode
             Configuration:
               ActionMode: CHANGE_SET_REPLACE
-              Capabilities: CAPABILITY_IAM
-              RoleArn: !GetAtt
-                - CloudFormationTrustRole
-                - Arn
-              StackName: !Sub "${AppName}-test"
+              Capabilities: CAPABILITY_NAMED_IAM
+              RoleArn: !GetAtt CloudFormationTrustRole.Arn
+              StackName: !Ref TestStackName
               ChangeSetName: TestChangeSetName
-              TemplateConfiguration: BuildFromRepo::test-stack-configuration.json
-              TemplatePath: BuildFromRepo::output.yml
-            RunOrder: '1'
+              TemplateConfiguration: BuiltCode::test-stack-configuration.json
+              TemplatePath: BuiltCode::output.yml
+            RunOrder: 1
           - Name: ExecuteChangeSet
             ActionTypeId:
               Category: Deploy
@@ -409,13 +435,10 @@ Resources:
               Version: '1'
             Configuration:
               ActionMode: CHANGE_SET_EXECUTE
-              Capabilities: CAPABILITY_IAM
               ChangeSetName: TestChangeSetName
-              RoleArn: !GetAtt
-                - CloudFormationTrustRole
-                - Arn
-              StackName: !Sub "${AppName}-test"
-            RunOrder: '2'
+              RoleArn: !GetAtt CloudFormationTrustRole.Arn
+              StackName: !Ref TestStackName
+            RunOrder: 2
           -
             Name: "ManualApprovalOfTestEnvironment"
             ActionTypeId:
@@ -426,7 +449,7 @@ Resources:
             Configuration:
               NotificationArn: !Ref PipelineEventsTopic
               CustomData: Approval or Reject this change after running Exploratory Tests
-            RunOrder: '3'
+            RunOrder: 3
 
       - Name: DeployToProduction
         Actions:
@@ -437,18 +460,16 @@ Resources:
               Provider: CloudFormation
               Version: '1'
             InputArtifacts:
-              - Name: BuildFromRepo
+              - Name: BuiltCode
             Configuration:
               ActionMode: CHANGE_SET_REPLACE
-              Capabilities: CAPABILITY_IAM
-              RoleArn: !GetAtt
-                - CloudFormationTrustRole
-                - Arn
-              StackName: !Sub "${AppName}"
+              Capabilities: CAPABILITY_NAMED_IAM
+              RoleArn: !GetAtt CloudFormationTrustRole.Arn
+              StackName: !Ref ProdStackName
               ChangeSetName: ProdChangeSetName
-              TemplateConfiguration: BuildFromRepo::prod-stack-configuration.json
-              TemplatePath: BuildFromRepo::output.yml
-            RunOrder: '1'
+              TemplateConfiguration: BuiltCode::prod-stack-configuration.json
+              TemplatePath: BuiltCode::output.yml
+            RunOrder: 1
           - Name: ExecuteChangeSet
             ActionTypeId:
               Category: Deploy
@@ -458,11 +479,9 @@ Resources:
             Configuration:
               ActionMode: CHANGE_SET_EXECUTE
               ChangeSetName: ProdChangeSetName
-              RoleArn: !GetAtt
-                - CloudFormationTrustRole
-                - Arn
-              StackName: !Sub "${AppName}"
-            RunOrder: '2'
+              RoleArn: !GetAtt CloudFormationTrustRole.Arn
+              StackName: !Ref ProdStackName
+            RunOrder: 2
 
       ArtifactStore:
         Type: S3

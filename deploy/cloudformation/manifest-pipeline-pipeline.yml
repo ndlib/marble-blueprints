@@ -216,6 +216,7 @@ Resources:
               - 'cloudformation:DescribeChangeSet'
               - 'cloudformation:CreateChangeSet'
               - 'cloudformation:ExecuteChangeSet'
+              - 'cloudformation:DeleteChangeSet'
             Resource:
               - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${TestStackName}/*'
               - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ProdStackName}/*'

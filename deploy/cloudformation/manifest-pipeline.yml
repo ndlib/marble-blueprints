@@ -166,6 +166,7 @@ Resources:
   LambdaExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
+      RoleName: !Sub "${AWS::StackName}-LambdaExecutionRole"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -182,7 +183,7 @@ Resources:
                 Action:
                   - "ssm:GetParametersByPath"
                 Effect: "Allow"
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/mellon-manifest*"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${AWS::StackName}/config/"
         - PolicyName: ImageDerivativeCacheBucketPermissions
           PolicyDocument:
             Version: 2012-10-17
@@ -225,6 +226,7 @@ Resources:
   IndexInputLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-IndexInputLambdaFunction"
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
@@ -242,6 +244,7 @@ Resources:
   ManifestLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-ManifestLambdaFunction"
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
@@ -251,6 +254,7 @@ Resources:
   FinalizeLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-FinalizeLambdaFunction"
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
@@ -264,6 +268,7 @@ Resources:
   PGCounterLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-PGCounterLambdaFunction"
       Handler: pgcounter.counter
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: nodejs8.10
@@ -277,6 +282,7 @@ Resources:
   PGIteratorLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-PGIteratorLambdaFunction"
       Handler: pgiterator.iterator
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: nodejs8.10
@@ -290,6 +296,7 @@ Resources:
   PGImgProcLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub "${AWS::StackName}-PGImgProcLambdaFunction"
       Handler: pgimgproc.processor
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: nodejs8.10
@@ -303,6 +310,7 @@ Resources:
   StatesExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
+      RoleName: !Sub "${AWS::StackName}-StatesExecutionRole"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -325,6 +333,7 @@ Resources:
   StateMachine:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
+      StateMachineName: !Sub "${AWS::StackName}-StateMachine"
       DefinitionString:
         !Sub
           - |-

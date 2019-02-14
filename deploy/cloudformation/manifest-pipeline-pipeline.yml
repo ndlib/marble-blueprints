@@ -78,25 +78,14 @@ Resources:
               - 'logs:CreateLogGroup'
               - 'logs:CreateLogStream'
               - 'logs:PutLogEvents'
-            Resource:
-              - '*'
+            Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'
           - Effect: Allow
-            Resource:
-              - '*'
+            Resource: !Sub
+              - '${PipelineBucketArn}/*'
+              - PipelineBucketArn: !GetAtt S3Bucket.Arn
             Action:
-              - 's3:*'
-          - Effect: Allow
-            Resource:
-              - '*'
-            Action:
-              - 'kms:GenerateDataKey*'
-              - 'kms:Encrypt'
-              - 'kms:Decrypt'
-          - Effect: Allow
-            Resource:
-              - '*'
-            Action:
-              - 'sns:SendMessage'
+              - 's3:GetObject'
+              - 's3:PutObject'
       Roles:
         - !Ref CodeBuildTrustRole
   CloudFormationTrustRole:

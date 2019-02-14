@@ -1,0 +1,388 @@
+Transform: 'AWS::Serverless-2016-10-31'
+Description: >
+  - Creates a series of lambdas and a step function to process manifests.
+  - The lambdas create iiif manifest and pyramid tiffs out of images.
+  - The finished product are copied to a bucket to serve manifests out of and an image server
+    to display the iiif images.
+  - Creates a bucket for to serve manifests out of
+  - Creates a bucket that the step functions use as an in process location.
+  - Requires the iiif-service and mellon-data-broker pipelines to be built.  Uses ssm keys from those services
+Parameters:
+  EnvType:
+    Type: String
+    Default: 'test'
+  ImageSourceBucket:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: The name of the source bucket that the IIIF Image service will read from for its assets.
+    Default: '/all/stacks/mellon-data-broker/publicbucket'
+  ImageServerUrl:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: The url of the IIIF Image Server
+    Default: '/all/stacks/mellon-image-service/url'
+  InfrastructureStackName:
+    Type: String
+    Default: "mellon-app-infrastructure"
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+
+Outputs:
+  StateMachine:
+    Value: !Ref StateMachine
+
+  ProcessBucket:
+    Value: !Ref ProcessBucket
+
+  ManifestBucket:
+    Value: !Ref ManifestBucket
+
+Resources:
+
+  CanvasDefaultWidth:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/canvas-default-width"
+      Value: "2000"
+      Description: Canvas default width
+
+  CanvasDefaultHeight:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/canvas-default-height"
+      Value: "2000"
+      Description: Canvas default height
+
+  ImageServerBaseUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/image-server-base-url"
+      Value: "https://STUB:8182/iiif/2"
+      Description: Image server base url
+
+  MainCsv:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/main-csv"
+      Value: "main.csv"
+      Description: CSV name
+
+  SequenceCsv:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/sequence-csv"
+      Value: "sequence.csv"
+      Description: CSV name
+
+  ManifestServerBaseUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-server-base-url"
+      Value: "https://"
+      Description: CSV name
+
+  ProcessBucketReadBasepath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/process-bucket-read-basepath"
+      Value: "process"
+      Description: S3 bucket read base path
+
+  ProcessBucketWriteBasepath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/process-bucket-write-basepath"
+      Value: "finished"
+      Description: S3 bucket write base path
+
+  ImageServerBucketBasepath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/image-server-bucket-basepath"
+      Value: "images"
+      Description: S3 bucket images base path
+
+  ManifestServerBucketBasepath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-server-bucket-basepath"
+      Value: "manifest"
+      Description: S3 bucket images base path
+
+  EventFile:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/event-file"
+      Value: "event.json"
+      Description: S3 event filename
+
+  ProcessBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LoggingConfiguration:
+        DestinationBucketName:
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
+        LogFilePrefix: s3/data-broker/
+
+  ProcessBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LoggingConfiguration:
+        DestinationBucketName:
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
+        LogFilePrefix: s3/data-broker/
+
+  ManifestBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      LoggingConfiguration:
+        DestinationBucketName:
+          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
+        LogFilePrefix: s3/data-broker/
+      WebsiteConfiguration:
+        IndexDocument: index.json
+        ErrorDocument: index.json
+      CorsConfiguration:
+        CorsRules:
+          - Id: DefaultCorsHeader
+            AllowedHeaders:
+              - Authorization
+            AllowedMethods:
+              - GET
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3000
+
+  LambdaExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-LambdaExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: ManifestPipelineSsmPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "ssm:GetParametersByPath"
+                Effect: "Allow"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${AWS::StackName}/config/"
+        - PolicyName: ImageDerivativeCacheBucketPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:ListBucket"
+                  - "s3:ListBucketVersions"
+                  - "s3:PutObjectVersionAcl"
+                  - "s3:PutObjectAcl"
+                Effect: "Allow"
+                Resource:
+                  - !GetAtt ProcessBucket.Arn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt ProcessBucket.Arn
+                        - "/*"
+                  - !GetAtt ManifestBucket.Arn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt ManifestBucket.Arn
+                        - "/*"
+                  - Fn::Join:
+                    - ""
+                    -
+                      - !Sub "arn:aws:s3:::"
+                      - !Ref ImageSourceBucket
+                  - Fn::Join:
+                    - ""
+                    -
+                      - !Sub "arn:aws:s3:::"
+                      - !Ref ImageSourceBucket
+                      - "/*"
+
+
+  IndexInputLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-IndexInputLambdaFunction"
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 25
+      CodeUri: json-from-csv/
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AWS::StackName
+          PROCESS_BUCKET: !Ref ProcessBucket
+          MANIFEST_BUCKET: !Ref ManifestBucket
+          IMAGE_BUCKET: !Ref ImageSourceBucket
+          IMAGE_SERVER_URL: !Ref ImageServerUrl
+          MANIFEST_URL: !GetAtt ManifestBucket.WebsiteURL
+
+  ManifestLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ManifestLambdaFunction"
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 25
+      CodeUri: manifest-from-input-json/
+
+  FinalizeLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-FinalizeLambdaFunction"
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 25
+      CodeUri: finalize/
+      Environment:
+        Variables:
+          PROCESS_BUCKET: !Ref ProcessBucket
+
+  # PYRAMID GENERATOR PROCESSING
+  PGCounterLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-PGCounterLambdaFunction"
+      Handler: pgcounter.counter
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: nodejs8.10
+      Timeout: 120
+      MemorySize: 256
+      CodeUri: pyramid-generator/
+      Environment:
+        Variables:
+          PROCESS_BUCKET: !Ref ProcessBucket
+
+  PGIteratorLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-PGIteratorLambdaFunction"
+      Handler: pgiterator.iterator
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: nodejs8.10
+      Timeout: 120
+      MemorySize: 256
+      CodeUri: pyramid-generator/
+      Environment:
+        Variables:
+          PROCESS_BUCKET: !Ref ProcessBucket
+
+  PGImgProcLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-PGImgProcLambdaFunction"
+      Handler: pgimgproc.processor
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: nodejs8.10
+      Timeout: 120
+      MemorySize: 3008
+      CodeUri: pyramid-generator/
+      Environment:
+        Variables:
+          PROCESS_BUCKET: !Ref ProcessBucket
+
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-StatesExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+
+  StateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      StateMachineName: !Sub "${AWS::StackName}-StateMachine"
+      DefinitionString:
+        !Sub
+          - |-
+            {
+              "Comment": "Manifest Pipeline",
+              "StartAt": "ProcessInput",
+              "States": {
+                "ProcessInput": {
+                  "Type": "Task",
+                  "Resource": "${indexInputLambdaArn}",
+                  "Next": "ProcessManifest"
+                },
+                "ProcessManifest": {
+                  "Type": "Task",
+                  "Resource": "${manifestLambdaArn}",
+                  "Next": "PGCount"
+                },
+                "PGCount": {
+                  "Type": "Task",
+                  "Resource": "${pgCountLambdaArn}",
+                  "Next": "PGIterator"
+                },
+                "PGIterator": {
+                    "Type": "Task",
+                    "Resource": "${pgIteratorLambdaArn}",
+                    "Next": "PGIsCountReached"
+                },
+                "PGIsCountReached": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                          "Variable": "$.pgimage.iterator.continue",
+                            "BooleanEquals": true,
+                            "Next": "PGImgProcessor"
+                        }
+                    ],
+                    "Default": "Finalize"
+                },
+                "PGImgProcessor": {
+                    "Type": "Task",
+                    "Resource": "${pgImgProcLambdaArn}",
+                    "Next": "PGIterator"
+                },
+                "Finalize": {
+                  "Type": "Task",
+                  "Resource": "${finalizeLambdaArn}",
+                  "End": true
+                }
+              }
+            }
+          - { indexInputLambdaArn: !GetAtt [ IndexInputLambdaFunction, Arn ], manifestLambdaArn: !GetAtt [ ManifestLambdaFunction, Arn ], pgCountLambdaArn: !GetAtt [ PGCounterLambdaFunction, Arn], pgIteratorLambdaArn: !GetAtt [ PGIteratorLambdaFunction, Arn], pgImgProcLambdaArn: !GetAtt [ PGImgProcLambdaFunction, Arn], finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ] }
+      RoleArn: !GetAtt [ StatesExecutionRole, Arn ]

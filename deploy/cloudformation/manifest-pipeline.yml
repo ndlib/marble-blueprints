@@ -65,7 +65,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-bucket"
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-server-bucket"
       Value: !Ref ManifestBucket
       Description: Manifest Server URL
 
@@ -179,7 +179,7 @@ Resources:
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AWS::StackName
-          
+
   ManifestLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:

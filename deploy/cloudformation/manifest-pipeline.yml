@@ -37,101 +37,45 @@ Outputs:
 
 Resources:
 
-  CanvasDefaultWidth:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/canvas-default-width"
-      Value: "2000"
-      Description: Canvas default width
-
-  CanvasDefaultHeight:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/canvas-default-height"
-      Value: "2000"
-      Description: Canvas default height
-
-  ImageServerBaseUrl:
+  SSMImageServerBaseUrl:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
       Name: !Sub "/all/stacks/${AWS::StackName}/config/image-server-base-url"
-      Value: "https://STUB:8182/iiif/2"
+      Value: !Ref ImageServerUrl
       Description: Image server base url
 
-  MainCsv:
+  SSMImageSourceBucket:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/main-csv"
-      Value: "main.csv"
-      Description: CSV name
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/image-server-bucket"
+      Value: !Ref ImageSourceBucket
+      Description: Image server base url
 
-  SequenceCsv:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/sequence-csv"
-      Value: "sequence.csv"
-      Description: CSV name
-
-  ManifestServerBaseUrl:
+  SSMManifestServerBaseUrl:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
       Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-server-base-url"
-      Value: "https://"
-      Description: CSV name
+      Value: !GetAtt ManifestBucket.WebsiteURL
+      Description: Manifest Server URL
 
-  ProcessBucketReadBasepath:
+  SSMManifestBucket:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/process-bucket-read-basepath"
-      Value: "process"
-      Description: S3 bucket read base path
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-server-bucket"
+      Value: !Ref ManifestBucket
+      Description: Manifest Server URL
 
-  ProcessBucketWriteBasepath:
+  SSMProcessBucket:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/process-bucket-write-basepath"
-      Value: "finished"
-      Description: S3 bucket write base path
-
-  ImageServerBucketBasepath:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/image-server-bucket-basepath"
-      Value: "images"
-      Description: S3 bucket images base path
-
-  ManifestServerBucketBasepath:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-server-bucket-basepath"
-      Value: "manifest"
-      Description: S3 bucket images base path
-
-  EventFile:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/event-file"
-      Value: "event.json"
-      Description: S3 event filename
-
-  ProcessBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      LoggingConfiguration:
-        DestinationBucketName:
-          Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
-        LogFilePrefix: s3/data-broker/
+      Name: !Sub "/all/stacks/${AWS::StackName}/config/process-bucket"
+      Value: !Ref ProcessBucket
+      Description: Manifest Server URL
 
   ProcessBucket:
     Type: AWS::S3::Bucket
@@ -235,11 +179,6 @@ Resources:
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AWS::StackName
-          PROCESS_BUCKET: !Ref ProcessBucket
-          MANIFEST_BUCKET: !Ref ManifestBucket
-          IMAGE_BUCKET: !Ref ImageSourceBucket
-          IMAGE_SERVER_URL: !Ref ImageServerUrl
-          MANIFEST_URL: !GetAtt ManifestBucket.WebsiteURL
 
   ManifestLambdaFunction:
     Type: AWS::Serverless::Function

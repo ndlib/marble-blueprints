@@ -8,9 +8,6 @@ Description: >
   - Creates a bucket that the step functions use as an in process location.
   - Requires the iiif-service and mellon-data-broker pipelines to be built.  Uses ssm keys from those services
 Parameters:
-  EnvType:
-    Type: String
-    Default: 'test'
   ImageSourceBucket:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF Image service will read from for its assets.
@@ -24,6 +21,9 @@ Parameters:
     Default: "mellon-app-infrastructure"
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
+  AppConfigPath:
+    Type: String
+    Description: The path to look for the application config from
 
 Outputs:
   StateMachine:
@@ -41,7 +41,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/image-server-base-url"
+      Name: !Sub "${AppConfigPath}/image-server-base-url"
       Value: !Ref ImageServerUrl
       Description: Image server base url
 
@@ -49,7 +49,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/image-server-bucket"
+      Name: !Sub "${AppConfigPath}/image-server-bucket"
       Value: !Ref ImageSourceBucket
       Description: Image server base url
 
@@ -57,7 +57,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-server-base-url"
+      Name: !Sub "${AppConfigPath}/manifest-server-base-url"
       Value: !GetAtt ManifestBucket.WebsiteURL
       Description: Manifest Server URL
 
@@ -65,7 +65,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/manifest-server-bucket"
+      Name: !Sub "${AppConfigPath}/manifest-server-bucket"
       Value: !Ref ManifestBucket
       Description: Manifest Server URL
 
@@ -73,7 +73,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/config/process-bucket"
+      Name: !Sub "${AppConfigPath}/process-bucket"
       Value: !Ref ProcessBucket
       Description: Manifest Server URL
 
@@ -127,7 +127,7 @@ Resources:
                 Action:
                   - "ssm:GetParametersByPath"
                 Effect: "Allow"
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${AWS::StackName}/config/"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
         - PolicyName: ImageDerivativeCacheBucketPermissions
           PolicyDocument:
             Version: 2012-10-17
@@ -174,11 +174,11 @@ Resources:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
-      Timeout: 25
+      Timeout: 90
       CodeUri: json-from-csv/
       Environment:
         Variables:
-          SSM_KEY_BASE: !Ref AWS::StackName
+          SSM_KEY_BASE: !Ref AppConfigPath
 
   ManifestLambdaFunction:
     Type: AWS::Serverless::Function
@@ -187,7 +187,7 @@ Resources:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
-      Timeout: 25
+      Timeout: 90
       CodeUri: manifest-from-input-json/
 
   FinalizeLambdaFunction:
@@ -197,7 +197,7 @@ Resources:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
-      Timeout: 25
+      Timeout: 90
       CodeUri: finalize/
       Environment:
         Variables:

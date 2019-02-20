@@ -8,6 +8,11 @@ Description: >
   - Creates a bucket that the step functions use as an in process location.
   - Requires the iiif-service and mellon-data-broker pipelines to be built.  Uses ssm keys from those services
 Parameters:
+  InfrastructureStackName:
+    Type: String
+    Default: mellon-app-infrastructure
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
   ImageSourceBucket:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF Image service will read from for its assets.
@@ -24,6 +29,35 @@ Parameters:
   AppConfigPath:
     Type: String
     Description: The path to look for the application config from
+
+  AcmCertificateArn:
+    Type: String
+    Description: Arn for ACM Certificate
+    Default: ''
+
+  CacheSettings:
+    Type: Number
+    Description: The cache value to hold the manifests for.
+    Default: 300
+
+  FQDN:
+    Type: String
+    Description: DNS name for the website to publish
+    MaxLength: 63
+    AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: must be a valid DNS zone name
+    Default: ''
+
+Conditions:
+
+  NoFQDN: !Equals
+    - !Ref FQDN
+    - ''
+
+  NoSSL: !Equals
+    - !Ref AcmCertificateArn
+    - ''
+
 
 Outputs:
   StateMachine:
@@ -58,7 +92,7 @@ Resources:
     Properties:
       Type: String
       Name: !Sub "${AppConfigPath}/manifest-server-base-url"
-      Value: !GetAtt ManifestBucket.WebsiteURL
+      Value: !GetAtt Distribution.DomainName
       Description: Manifest Server URL
 
   SSMManifestBucket:
@@ -106,6 +140,73 @@ Resources:
             AllowedOrigins:
               - '*'
             MaxAge: 3000
+
+  OriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub Static assets in ${AWS::StackName}
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    DependsOn: OriginAccessIdentity
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2
+        PriceClass: PriceClass_100
+        ViewerCertificate: !If
+          - NoSSL
+          - !Ref AWS::NoValue
+          - AcmCertificateArn: !Ref AcmCertificateArn
+            MinimumProtocolVersion: TLSv1.1_2016
+            SslSupportMethod: sni-only
+        Comment: !If
+          - NoFQDN
+          - !Ref AWS::NoValue
+          - !Ref FQDN
+        Aliases: !If
+          - NoFQDN
+          - !Ref AWS::NoValue
+          - - !Ref FQDN
+        DefaultRootObject: index.json
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: false
+          AllowedMethods:
+            - HEAD
+            - GET
+            - OPTIONS
+          Compress: true
+          DefaultTTL: !Ref CacheSettings
+          ViewerProtocolPolicy: !If
+            - NoSSL
+            - allow-all
+            - redirect-to-https
+          TargetOriginId: Bucket
+        Origins:
+          - Id: Bucket
+            DomainName: !GetAtt ManifestBucket.DomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Join
+                - /
+                - - origin-access-identity
+                  - cloudfront
+                  - !Ref OriginAccessIdentity
+        Logging:
+          # This should result in "logbucketname.s3.amazonaws.com", where "logbucketname" is the value from an export
+          # named "InfrastructureStackName:LogBucket"
+          Bucket: !Join
+            - .
+            - - !ImportValue
+                Fn::Join: [':', [!Ref InfrastructureStackName, 'LogBucket']]
+              - s3
+              - !Ref AWS::URLSuffix
+          Prefix: !If
+            - NoFQDN
+            - !Sub web/${AWS::StackName}/
+            - !Sub web/${FQDN}/
+          IncludeCookies: true
 
   LambdaExecutionRole:
     Type: "AWS::IAM::Role"

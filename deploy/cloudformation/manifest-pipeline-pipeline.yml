@@ -54,6 +54,14 @@ Parameters:
     Type: String
     Default: "mellon-data-broker"
     Description: The name of the shared data broker stack
+  AppConfigPathProd:
+    Type: String
+    Default: "/all/mellon-manifest-pipeline"
+    Description: The path the keys for parameter store should be read and written to for config
+  AppConfigPathTest:
+    Type: String
+    Default: "/all/mellon-manifest-pipeline-test"
+    Description: The path the keys for parameter store should be read and written to for config
 
 Resources:
   CodeBuildTrustRole:
@@ -152,6 +160,8 @@ Resources:
             Resource:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${TestStackName}/*"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ProdStackName}/*"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPathProd}/*"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPathTest}/*"
             Effect: Allow
           - Action:
               - 'lambda:*'
@@ -286,7 +296,7 @@ Resources:
                 - >
                     echo "{
                       \"Parameters\" : {
-                        \"EnvType\" : \"test\",
+                        \"AppConfigPath: "${AppConfigPathTest}",
                         \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
                         \"ImageServerUrl\" : \"/all/stacks/${ImageServiceTestStackName}/url\"
                       },
@@ -300,7 +310,7 @@ Resources:
                 - >
                     echo "{
                       \"Parameters\" : {
-                        \"EnvType\" : \"test\",
+                        \"AppConfigPath: "${AppConfigPathProd}",
                         \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
                         \"ImageServerUrl\" : \"/all/stacks/${ImageServiceProdStackName}/url\"
                       },

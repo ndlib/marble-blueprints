@@ -157,6 +157,7 @@ Resources:
           - Action:
             - 'ssm:Delete*'
             - 'ssm:Put*'
+            - 'ssm:AddTags*'
             Resource:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${TestStackName}/*"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ProdStackName}/*"
@@ -296,7 +297,7 @@ Resources:
                 - >
                     echo "{
                       \"Parameters\" : {
-                        \"AppConfigPath: "${AppConfigPathTest}",
+                        \"AppConfigPath\" : \"${AppConfigPathTest}\",
                         \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
                         \"ImageServerUrl\" : \"/all/stacks/${ImageServiceTestStackName}/url\"
                       },
@@ -310,7 +311,7 @@ Resources:
                 - >
                     echo "{
                       \"Parameters\" : {
-                        \"AppConfigPath: "${AppConfigPathProd}",
+                        \"AppConfigPath\" : \"${AppConfigPathProd}\",
                         \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
                         \"ImageServerUrl\" : \"/all/stacks/${ImageServiceProdStackName}/url\"
                       },

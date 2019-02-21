@@ -13,18 +13,25 @@ Parameters:
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
 
-  AcmCertificateArn:
-    Type: String
-    Description: Arn for ACM Certificate
-    Default: ''
+#  AcmCertificateArn:
+#    Type: String
+#    Description: Arn for ACM Certificate
+#    Default: ''
+
+#  FQDN:
+#    Type: String
+#    Description: DNS name for the website to publish
+#    MaxLength: 63
+#    AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+#    ConstraintDescription: must be a valid DNS zone name
+#    Default: ''
 
   FQDN:
     Type: String
-    Description: DNS name for the website to publish
+    Description: DNS name for website without Domain
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     ConstraintDescription: must be a valid DNS zone name
-    Default: ''
 
   EnvType:
     Type: String
@@ -48,9 +55,9 @@ Conditions:
     - !Ref FQDN
     - ''
 
-  NoSSL: !Equals
-    - !Ref AcmCertificateArn
-    - ''
+#  NoSSL: !Equals
+#    - !Ref AcmCertificateArn
+#    - ''
 
 Outputs:
 
@@ -62,10 +69,13 @@ Outputs:
 
   URL:
     Description: The FQDN if one is given, otherwise the cloudfront distribution domain name.
-    Value: !If
-      - NoFQDN
-      - !GetAtt Distribution.DomainName
-      - !Ref FQDN
+    Value: 
+#      - NoFQDN
+#      - !GetAtt Distribution.DomainName
+      !Sub
+        - '${FQDN}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'URL']]
 
@@ -87,10 +97,12 @@ Resources:
       LoggingConfiguration:
         DestinationBucketName:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
-        LogFilePrefix: !If
-          - NoFQDN
-          - !Sub s3/${AWS::StackName}/
-          - !Sub s3/${FQDN}/
+        LogFilePrefix: 
+          !Sub
+            - 's3/${FQDN}.${ResolvedDomainName}/'
+            - ResolvedDomainName:
+                Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+#          - !Sub s3/${FQDN}/
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -115,20 +127,21 @@ Resources:
         Enabled: true
         HttpVersion: http2
         PriceClass: PriceClass_100
-        ViewerCertificate: !If
-          - NoSSL
-          - !Ref AWS::NoValue
-          - AcmCertificateArn: !Ref AcmCertificateArn
-            MinimumProtocolVersion: TLSv1.1_2016
-            SslSupportMethod: sni-only
-        Comment: !If
-          - NoFQDN
-          - !Ref AWS::NoValue
-          - !Ref FQDN
-        Aliases: !If
-          - NoFQDN
-          - !Ref AWS::NoValue
-          - - !Ref FQDN
+        ViewerCertificate: 
+          AcmCertificateArn: 
+              Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ACMCertificateARN']]
+          MinimumProtocolVersion: TLSv1.1_2016
+          SslSupportMethod: sni-only
+        Comment: 
+          !Sub
+            - '${FQDN}.${ResolvedDomainName}'
+            - ResolvedDomainName:
+                Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+        Aliases: 
+          - !Sub
+              - '${FQDN}.${ResolvedDomainName}'
+              - ResolvedDomainName:
+                  Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
         DefaultRootObject: index.html
         DefaultCacheBehavior:
           ForwardedValues:
@@ -139,10 +152,8 @@ Resources:
             - OPTIONS
           Compress: true
           DefaultTTL: !FindInMap [CacheSettings, !Ref EnvType, "DefaultTTL"]
-          ViewerProtocolPolicy: !If
-            - NoSSL
-            - allow-all
-            - redirect-to-https
+          ViewerProtocolPolicy: 
+            redirect-to-https
           TargetOriginId: Bucket
         Origins:
           - Id: Bucket
@@ -165,5 +176,28 @@ Resources:
           Prefix: !If
             - NoFQDN
             - !Sub web/${AWS::StackName}/
-            - !Sub web/${FQDN}/
+            - !Sub
+               - 'web/${FQDN}.${ResolvedDomainName}/'
+               - ResolvedDomainName:
+                   Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
           IncludeCookies: true
+
+  Route53DNSCreation:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub
+        - '${ResolvedDomainName}.'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+      Comment: !Sub
+        - '${FQDN}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+      Name: !Sub
+        - '${FQDN}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !GetAtt Distribution.DomainName

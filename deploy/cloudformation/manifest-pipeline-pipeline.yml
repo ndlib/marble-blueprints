@@ -188,15 +188,14 @@ Resources:
             Resource: !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
             Effect: Allow
           - Action:
-             - 'cloudfront:CreateDistrabution'
-             - 'cloudfront:CreateCloudFrontOriginAccessIdentity'
-             - 'cloudfront:DeleteDistribution'
-             - 'cloudfront:DeleteCloudFrontOriginAccessIdentity'
-             - 'cloudfront:UpdateDistribution'
-             - 'cloudfront:UpdateCloudFrontOriginAccessIdentity'
-
-             Resource: '*'
-             Effect: Allow
+              - 'cloudfront:CreateDistribution'
+              - 'cloudfront:CreateCloudFrontOriginAccessIdentity'
+              - 'cloudfront:DeleteDistribution'
+              - 'cloudfront:DeleteCloudFrontOriginAccessIdentity'
+              - 'cloudfront:UpdateDistribution'
+              - 'cloudfront:UpdateCloudFrontOriginAccessIdentity'
+            Resource: '*'
+            Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole
   CodePipelineTrustRole:

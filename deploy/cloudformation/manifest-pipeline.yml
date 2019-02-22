@@ -266,6 +266,15 @@ Resources:
                       - !Sub "arn:aws:s3:::"
                       - !Ref ImageSourceBucket
                       - "/*"
+        - PolicyName: ManifestPipelineSesPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "ses:SendEmail"
+                Effect: "Allow"
+                Resource: "*"
 
 
   IndexInputLambdaFunction:

@@ -25,7 +25,7 @@ Parameters:
 
   DomainName:
     Type: String
-    Description: 'The FQDN to use for the certificate, see: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-certificatemanager-certificate.html'
+    Description: 'The DomainName to be used for all entities to be created. All services will be built within this Domain'
     Default: 'library.nd.edu'
 
 Resources:

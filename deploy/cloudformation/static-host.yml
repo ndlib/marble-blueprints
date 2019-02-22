@@ -12,23 +12,14 @@ Parameters:
     Default: mellon-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
-
-#  AcmCertificateArn:
-#    Type: String
-#    Description: Arn for ACM Certificate
-#    Default: ''
-
-#  FQDN:
-#    Type: String
-#    Description: DNS name for the website to publish
-#    MaxLength: 63
-#    AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
-#    ConstraintDescription: must be a valid DNS zone name
-#    Default: ''
-
-  FQDN:
+  CreateDNSRecord:
     Type: String
-    Description: DNS name for website without Domain
+    Default: "True"
+    Description: Indicate whether the base domain is registered in Route 53
+
+  SubDomain:
+    Type: String
+    Description: Host DNS name for website without Domain
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     ConstraintDescription: must be a valid DNS zone name
@@ -51,13 +42,10 @@ Mappings:
 
 Conditions:
 
-  NoFQDN: !Equals
-    - !Ref FQDN
+  NoSubDomain: !Equals
+    - !Ref SubDomain
     - ''
-
-#  NoSSL: !Equals
-#    - !Ref AcmCertificateArn
-#    - ''
+  CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
 
 Outputs:
 
@@ -68,12 +56,10 @@ Outputs:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'BucketName']]
 
   URL:
-    Description: The FQDN if one is given, otherwise the cloudfront distribution domain name.
+    Description: The SubDomain if one is given, otherwise the cloudfront distribution domain name.
     Value: 
-#      - NoFQDN
-#      - !GetAtt Distribution.DomainName
       !Sub
-        - '${FQDN}.${ResolvedDomainName}'
+        - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
     Export:
@@ -99,10 +85,9 @@ Resources:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
         LogFilePrefix: 
           !Sub
-            - 's3/${FQDN}.${ResolvedDomainName}/'
+            - 's3/${SubDomain}.${ResolvedDomainName}/'
             - ResolvedDomainName:
                 Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
-#          - !Sub s3/${FQDN}/
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -134,12 +119,12 @@ Resources:
           SslSupportMethod: sni-only
         Comment: 
           !Sub
-            - '${FQDN}.${ResolvedDomainName}'
+            - '${SubDomain}.${ResolvedDomainName}'
             - ResolvedDomainName:
                 Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
         Aliases: 
           - !Sub
-              - '${FQDN}.${ResolvedDomainName}'
+              - '${SubDomain}.${ResolvedDomainName}'
               - ResolvedDomainName:
                   Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
         DefaultRootObject: index.html
@@ -174,27 +159,28 @@ Resources:
               - s3
               - !Ref AWS::URLSuffix
           Prefix: !If
-            - NoFQDN
+            - NoSubDomain
             - !Sub web/${AWS::StackName}/
             - !Sub
-               - 'web/${FQDN}.${ResolvedDomainName}/'
+               - 'web/${SubDomain}.${ResolvedDomainName}/'
                - ResolvedDomainName:
                    Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
           IncludeCookies: true
 
   Route53DNSCreation:
     Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
     Properties:
       HostedZoneName: !Sub
         - '${ResolvedDomainName}.'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
       Comment: !Sub
-        - '${FQDN}.${ResolvedDomainName}'
+        - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
       Name: !Sub
-        - '${FQDN}.${ResolvedDomainName}'
+        - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
       Type: CNAME

@@ -69,9 +69,9 @@ Parameters:
     Type: Number
     Default: 1
     Description: How many copies of the service task to run
-  ServiceName:
+  SubDomain:
     Type: String
-    Description: The URL of the service
+    Description: The SubDomain of the service. Combined with DomainName to create the FQDN.
   CreateDNSRecord:
     Type: String
     Default: "True"
@@ -88,7 +88,7 @@ Outputs:
   WebURL:
     Description: The URL of the service, often in CNAME form
     Value: !Sub
-        - '${ServiceName}.${ResolvedDomainName}'
+        - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
     Export:
@@ -98,8 +98,8 @@ Outputs:
     Description: The name of the bucket that will be used as the source/destination for derivative images
     Value: !Ref ImageDerivativeCacheBucket
 
-  ServiceName:
-    Description: The Name of the created ECS Service
+  SubDomain:
+    Description: The SubDomain of the ECS Service
     Value: !Ref Service
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Service']]
@@ -112,7 +112,7 @@ Resources:
       Type: String
       Name: !Sub "/all/stacks/${AWS::StackName}/url"
       Value: !Sub
-        - '${ServiceName}.${ResolvedDomainName}'
+        - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
       Description: The URL endpoint for this component
@@ -318,11 +318,11 @@ Resources:
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
       Comment: !Sub
-        - '${ServiceName}.${ResolvedDomainName}'
+        - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
       Name: !Sub
-        - '${ServiceName}.${ResolvedDomainName}'
+        - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
       Type: CNAME

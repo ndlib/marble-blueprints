@@ -21,7 +21,6 @@ Description: >
     - NetworkStackName:PublicSubnet1ID
     - NetworkStackName:PublicSubnet2ID
 
-
 Parameters:
 
   NetworkStackName:
@@ -37,7 +36,6 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF service will read from for its assets.
     Default: '/all/stacks/mellon-data-broker-dev/publicbucket'
-
   ImageUrl:
     Type: String
     Default: ndlib/image-service
@@ -71,10 +69,16 @@ Parameters:
     Type: Number
     Default: 1
     Description: How many copies of the service task to run
-
   ServiceName:
     Type: String
     Description: The URL of the service
+  CreateDNSRecord:
+    Type: String
+    Default: "True"
+    Description: Indicate whether the base domain is registered in Route 53
+
+Conditions:
+  CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
 
 Outputs:
   PublicLoadBalancerDNSName:
@@ -307,6 +311,7 @@ Resources:
 
   Route53DNSCreation:
     Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
     Properties:
       HostedZoneName: !Sub
         - '${ResolvedDomainName}.'

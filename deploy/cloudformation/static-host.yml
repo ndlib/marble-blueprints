@@ -22,7 +22,7 @@ Parameters:
     Description: Host DNS name for website without Domain
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
-    ConstraintDescription: must be a valid DNS zone name
+    ConstraintDescription: Must be a valid SubDomain value.
 
   EnvType:
     Type: String
@@ -42,9 +42,6 @@ Mappings:
 
 Conditions:
 
-  NoSubDomain: !Equals
-    - !Ref SubDomain
-    - ''
   CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
 
 Outputs:
@@ -56,7 +53,7 @@ Outputs:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'BucketName']]
 
   URL:
-    Description: The SubDomain if one is given, otherwise the cloudfront distribution domain name.
+    Description: The combination of SubDomain and Domain
     Value: 
       !Sub
         - '${SubDomain}.${ResolvedDomainName}'
@@ -158,10 +155,8 @@ Resources:
                 Fn::Join: [':', [!Ref InfrastructureStackName, 'LogBucket']]
               - s3
               - !Ref AWS::URLSuffix
-          Prefix: !If
-            - NoSubDomain
-            - !Sub web/${AWS::StackName}/
-            - !Sub
+          Prefix: 
+            !Sub
                - 'web/${SubDomain}.${ResolvedDomainName}/'
                - ResolvedDomainName:
                    Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'

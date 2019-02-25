@@ -337,6 +337,15 @@ Resources:
                       - !Sub "arn:aws:s3:::"
                       - !Ref ImageSourceBucket
                       - "/*"
+        - PolicyName: ManifestPipelineSesPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "ses:SendEmail"
+                Effect: "Allow"
+                Resource: "*"
 
 
   IndexInputLambdaFunction:
@@ -369,7 +378,8 @@ Resources:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
-      Timeout: 90
+      Timeout: 600
+      MemorySize: 512
       CodeUri: finalize/
       Environment:
         Variables:

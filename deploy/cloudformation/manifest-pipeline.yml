@@ -303,6 +303,9 @@ Resources:
                 Rules:
                   - Name: suffix
                     Value: 'main.csv'
+      Environment:
+        Variables:
+          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachine"
 
   IndexInputLambdaFunction:
     Type: AWS::Serverless::Function

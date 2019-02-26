@@ -276,6 +276,33 @@ Resources:
                 Effect: "Allow"
                 Resource: "*"
 
+  AutoRun:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-autorun"
+      Handler: handler.run
+      CodeUri: autorun/
+      Runtime: python3.7
+      Timeout: 300
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'states:ListStateMachines'
+                - 'states:StartExecution'
+              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*"
+      Events:
+        S3FileListener:
+          Type: S3
+          Properties:
+            Bucket: !Ref ProcessBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: 'main.csv'
 
   IndexInputLambdaFunction:
     Type: AWS::Serverless::Function

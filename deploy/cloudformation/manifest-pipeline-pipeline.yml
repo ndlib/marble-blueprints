@@ -135,6 +135,7 @@ Resources:
               - 's3:PutBucketAcl'
               - 's3:GetBucketAcl'
               - 's3:PutBucketWebsite'
+              - 's3:DeleteBucketWebsite'
               - 's3:DeleteBucketPolicy'
               - 's3:PutBucketPolicy'
               - 's3:GetBucketPolicy'

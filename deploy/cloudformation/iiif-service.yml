@@ -74,8 +74,8 @@ Parameters:
     Description: The SubDomain of the service. Combined with DomainName to create the FQDN.
   CreateDNSRecord:
     Type: String
-    Default: "True"
-    Description: Indicate whether the base domain is registered in Route 53
+    Default: 'True'
+    Description: If True, will attempt to create a Route 53 DNS record for load balancer.
 
 Conditions:
   CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]

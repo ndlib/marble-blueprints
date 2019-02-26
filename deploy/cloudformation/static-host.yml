@@ -15,7 +15,7 @@ Parameters:
   CreateDNSRecord:
     Type: String
     Default: "True"
-    Description: Indicate whether the base domain is registered in Route 53
+    Description: If True, will attempt to create a Route 53 DNS record for the CloudFront.
 
   SubDomain:
     Type: String
@@ -54,8 +54,7 @@ Outputs:
 
   URL:
     Description: The combination of SubDomain and Domain
-    Value: 
-      !Sub
+    Value: !Sub
         - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
@@ -80,8 +79,7 @@ Resources:
       LoggingConfiguration:
         DestinationBucketName:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
-        LogFilePrefix: 
-          !Sub
+        LogFilePrefix: !Sub
             - 's3/${SubDomain}.${ResolvedDomainName}/'
             - ResolvedDomainName:
                 Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
@@ -114,8 +112,7 @@ Resources:
               Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ACMCertificateARN']]
           MinimumProtocolVersion: TLSv1.1_2016
           SslSupportMethod: sni-only
-        Comment: 
-          !Sub
+        Comment: !Sub
             - '${SubDomain}.${ResolvedDomainName}'
             - ResolvedDomainName:
                 Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
@@ -134,8 +131,7 @@ Resources:
             - OPTIONS
           Compress: true
           DefaultTTL: !FindInMap [CacheSettings, !Ref EnvType, "DefaultTTL"]
-          ViewerProtocolPolicy: 
-            redirect-to-https
+          ViewerProtocolPolicy: redirect-to-https
           TargetOriginId: Bucket
         Origins:
           - Id: Bucket
@@ -155,8 +151,7 @@ Resources:
                 Fn::Join: [':', [!Ref InfrastructureStackName, 'LogBucket']]
               - s3
               - !Ref AWS::URLSuffix
-          Prefix: 
-            !Sub
+          Prefix: !Sub
                - 'web/${SubDomain}.${ResolvedDomainName}/'
                - ResolvedDomainName:
                    Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'

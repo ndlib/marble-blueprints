@@ -135,6 +135,9 @@ Resources:
               - 's3:PutBucketAcl'
               - 's3:GetBucketAcl'
               - 's3:PutBucketWebsite'
+              - 's3:DeleteBucketPolicy'
+              - 's3:PutBucketPolicy'
+              - 's3:GetBucketPolicy'
             Resource:
               - !Sub 'arn:aws:s3:::${TestStackName}*'
               - !Sub 'arn:aws:s3:::${ProdStackName}*'
@@ -205,9 +208,10 @@ Resources:
               - 'cloudfront:DeleteCloudFrontOriginAccessIdentity'
               - 'cloudfront:UpdateDistribution'
               - 'cloudfront:UpdateCloudFrontOriginAccessIdentity'
-              - 'cloudfront:GetCloudFrontOriginAccessIdentityConfig'
               - 'cloudfront:TagResource'
               - 'cloudfront:GetDistribution'
+              - 'cloudfront:GetCloudFrontOriginAccessIdentity'
+              - 'cloudfront:GetCloudFrontOriginAccessIdentityConfig'
             Resource: '*'
             Effect: Allow
       Roles:

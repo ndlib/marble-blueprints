@@ -122,14 +122,10 @@ Resources:
   ManifestBucket:
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: PublicRead
       LoggingConfiguration:
         DestinationBucketName:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
         LogFilePrefix: s3/data-broker/
-      WebsiteConfiguration:
-        IndexDocument: index.json
-        ErrorDocument: index.json
       CorsConfiguration:
         CorsRules:
           - Id: DefaultCorsHeader
@@ -140,7 +136,6 @@ Resources:
             AllowedOrigins:
               - '*'
             MaxAge: 3000
-            
   ManifestBucketPolicy:
     Type: AWS::S3::BucketPolicy
     DependsOn: OriginAccessIdentity
@@ -188,12 +183,15 @@ Resources:
         DefaultCacheBehavior:
           ForwardedValues:
             QueryString: false
+            Headers:
+              - "Access-Control-Request-Headers"
+              - "Access-Control-Request-Method"
+              - "Origin"
           AllowedMethods:
             - HEAD
             - GET
             - OPTIONS
           Compress: true
-          DefaultTTL: !Ref CacheSettings
           ViewerProtocolPolicy: !If
             - NoSSL
             - allow-all

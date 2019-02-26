@@ -248,10 +248,9 @@ Resources:
     Properties:
       Code:
         # This Lambda will take incoming web requests and adjust the request URI as appropriate.
-        # Any requests for assets under the "/static" path will be passed along as originally sent.
-        # Requests that start with "faviocn.ico" and "manifest.json" will also be passed
-        # To "/favicon.ico" and "manifest.json" as appropriate. If the request does not match any
-        # of these, the request will ne routed to "/index.html" for entry into the SPA
+        # any directory that does not end with an index.json will have that appended to it.
+        # this based off of the pattern for the mellon urls which always require a directory with an
+        # index.json
         ZipFile: >
           'use strict';
           exports.handler = (event, context, callback) => {

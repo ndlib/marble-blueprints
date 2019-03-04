@@ -18,6 +18,12 @@ TODO:
 ## Deploy Shared Infrastructure
 Before you can deploy any of the other stacks, you must deploy some prerequisite pieces of shared infrastructure. These are required by both the application components and the CI/CD stacks that test and deploy those application components.
 
+In all cases below, deployment is done using AWS CLI commands. The examples given must be rewritten with valid values for each of the parameters. The commands assume that default parameters are chosen in each case. In most deployments, however, non-default parameters will be desired. In each case, parameters defaults can be overwritten by adding a line similar to:
+
+  -- parameter-overrides NetworkStackName='unpeered-network' \
+
+which include all of the parameters to be overwritten.
+
 ### Network stack
 
 ```console
@@ -33,7 +39,7 @@ TODO: Add example of exporting an existing network
 
 ### Infrastructure stack
 
-Parameters:
+__Parameters:__
 + NetworkStackName
   + Description: The name of the parent networking stack created.
   + Default: "mellon-network"
@@ -59,6 +65,16 @@ aws cloudformation deploy \
 ## Deploy Application Components
 
 ### Data Broker stack
+
+__Parameters:__
++ InfrastructureStackName
+  + Description: The name of the parent infrastructure/networking stack that you created. Necessary to locate and reference resources created by that stack
+  + Default: "mellon-app-infrastructure"
++ EnvType
+  + Description: The type of environment to create.
+  + Default: "dev"
+  + AllowedValues: "dev", "prod"
+
 ```console
 aws cloudformation deploy \
   --stack-name mellon-data-broker-dev \
@@ -68,6 +84,45 @@ aws cloudformation deploy \
 ```
 
 ### IIIF Image Service stack
+
+__Parameters:__
++ NetworkStackName
+  + Description: The name of the parent networking stack created.
+  + Default: "mellon-network"
++ InfrastructureStackName
+  + Description: The name of the parent infrastructure/networking stack that you created. Necessary to locate and reference resources created by that stack
+  + Default: "mellon-app-infrastructure"
++ ImageSourceBucket
+  + Description: The name of the source bucket that the IIIF service will read from for its assets.
+  + Default: '/all/stacks/mellon-data-broker-dev/publicbucket'
++ ImageUrl:
+  + Description: The url of a docker image that contains the application process that will handle the traffic for this service.
+  + Default: ndlib/image-service
++ ContainerPort
+  + Description: What port number the application inside the docker container is binding to
+  + Default: 8182
++ ContainerCpu
+  + Description: How much CPU to give the container. 1024 is 1 CPU
+  + Default: 256
++ ContainerMemory
+  + Description: How much memory in megabytes to give the container
+  + Default: 512
++ Path
+  + Description: A path on the public load balancer that this service should be connected to. Use * to send all load balancer traffic to this service.
+  + Default: "*"
++ Priority
+  + Description: The priority for the routing rule added to the load balancer. This only applies if your have multiple services which have been assigned to different paths on the load balancer.
+  + Default: 1
++ DesiredCount
+  + Description: How many copies of the service task to run
+  + Default: 1
++ SubDomain
+  + Description: The SubDomain of the service. Combined with DomainName to create the FQDN.
+  + Default: image-server
++ CreateDNSRecord
+  + Description: If True, will attempt to create a Route 53 DNS record for load balancer.
+  + Default: "True"
+
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
@@ -81,6 +136,23 @@ aws cloudformation deploy \
 ```
 
 ### IIIF Image Viewer Webcomponent stack
+
+__Parameters:__
++ InfrastructureStackName
+  + Description: The name of the parent infrastructure/networking stack that you created. Necessary to locate and reference resources created by that stack
+  + Default: "mellon-app-infrastructure"
++ CreateDNSRecord
+  + Description: If True, will attempt to create a Route 53 DNS record for load balancer.
+  + Default: "True"
++ SubDomain
+  + Description: The SubDomain of the service. Combined with DomainName to create the FQDN.
+  + Default: image-server
++ EnvType
+  + Description: The type of environment to create.
+  + Default: "dev"
+  + AllowedValues: "dev", "prod"
+
+
 ```console
 aws cloudformation deploy \
   --stack-name mellon-image-webcomponent-dev \

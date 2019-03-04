@@ -122,14 +122,10 @@ Resources:
   ManifestBucket:
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: PublicRead
       LoggingConfiguration:
         DestinationBucketName:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
         LogFilePrefix: s3/data-broker/
-      WebsiteConfiguration:
-        IndexDocument: index.json
-        ErrorDocument: index.json
       CorsConfiguration:
         CorsRules:
           - Id: DefaultCorsHeader
@@ -140,6 +136,20 @@ Resources:
             AllowedOrigins:
               - '*'
             MaxAge: 3000
+  ManifestBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: OriginAccessIdentity
+    Properties:
+      Bucket: !Ref ManifestBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub ${ManifestBucket.Arn}/*
+            Principal:
+              CanonicalUser: !GetAtt OriginAccessIdentity.S3CanonicalUserId
 
   OriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
@@ -173,17 +183,24 @@ Resources:
         DefaultCacheBehavior:
           ForwardedValues:
             QueryString: false
+            Headers:
+              - "Access-Control-Request-Headers"
+              - "Access-Control-Request-Method"
+              - "Origin"
           AllowedMethods:
             - HEAD
             - GET
             - OPTIONS
           Compress: true
-          DefaultTTL: !Ref CacheSettings
           ViewerProtocolPolicy: !If
             - NoSSL
             - allow-all
             - redirect-to-https
           TargetOriginId: Bucket
+          LambdaFunctionAssociations:
+            -
+              EventType: origin-request
+              LambdaFunctionARN: !Sub ${SPARedirectionLambda.Arn}:${SPARedirectionLambdaV1.Version}
         Origins:
           - Id: Bucket
             DomainName: !GetAtt ManifestBucket.DomainName
@@ -207,6 +224,57 @@ Resources:
             - !Sub web/${AWS::StackName}/
             - !Sub web/${FQDN}/
           IncludeCookies: true
+
+  LambdaEdgeBasicExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - "edgelambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  SPARedirectionLambda:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        # This Lambda will take incoming web requests and adjust the request URI as appropriate.
+        # any directory that does not end with an index.json will have that appended to it.
+        # this based off of the pattern for the mellon urls which always require a directory with an
+        # index.json
+        ZipFile: >
+          'use strict';
+          exports.handler = (event, context, callback) => {
+              var request = event.Records[0].cf.request;
+
+              if (!request.uri.endsWith('/index.json')) {
+                if (request.uri.endsWith('/')) {
+                  request.uri = request.uri + 'index.json'
+                } else {
+                  request.uri = request.uri + '/index.json'
+                }
+              }
+              return callback(null, request);
+          };
+      Description: Basic rewrite rule to send directory requests to appropriate locations in the SPA
+      Handler: index.handler
+      Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
+      Runtime: nodejs8.10
+
+  SPARedirectionLambdaV1:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref SPARedirectionLambda
+      Description: Adds the rewrite rules as needed
 
   LambdaExecutionRole:
     Type: "AWS::IAM::Role"

@@ -7,6 +7,11 @@ Description: >
   - Requires the iiif-service pipeline to be built.
 
 Parameters:
+  InfrastructureStackName:
+    Type: String
+    Default: mellon-app-infrastructure
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
   ProdStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the production resources
@@ -130,9 +135,19 @@ Resources:
               - 's3:PutBucketAcl'
               - 's3:GetBucketAcl'
               - 's3:PutBucketWebsite'
+              - 's3:DeleteBucketWebsite'
+              - 's3:DeleteBucketPolicy'
+              - 's3:PutBucketPolicy'
+              - 's3:GetBucketPolicy'
             Resource:
               - !Sub 'arn:aws:s3:::${TestStackName}*'
               - !Sub 'arn:aws:s3:::${ProdStackName}*'
+              - Fn::Join:
+                - ""
+                -
+                  - 'arn:aws:s3:::'
+                  - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
+                  - '/*'
             Effect: 'Allow'
           # Allow reading from the Pipeline's artifact bucket. Required to deploy the built lambda zips
           - Action:
@@ -194,6 +209,10 @@ Resources:
               - 'cloudfront:DeleteCloudFrontOriginAccessIdentity'
               - 'cloudfront:UpdateDistribution'
               - 'cloudfront:UpdateCloudFrontOriginAccessIdentity'
+              - 'cloudfront:TagResource'
+              - 'cloudfront:GetDistribution'
+              - 'cloudfront:GetCloudFrontOriginAccessIdentity'
+              - 'cloudfront:GetCloudFrontOriginAccessIdentityConfig'
             Resource: '*'
             Effect: Allow
       Roles:

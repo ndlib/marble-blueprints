@@ -139,6 +139,7 @@ Resources:
               - 's3:DeleteBucketPolicy'
               - 's3:PutBucketPolicy'
               - 's3:GetBucketPolicy'
+              - 's3:PutBucketNotification'
             Resource:
               - !Sub 'arn:aws:s3:::${TestStackName}*'
               - !Sub 'arn:aws:s3:::${ProdStackName}*'

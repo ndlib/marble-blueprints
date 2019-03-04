@@ -32,9 +32,22 @@ aws cloudformation deploy \
 TODO: Add example of exporting an existing network
 
 ### Infrastructure stack
+
+Parameters:
++ NetworkStackName
+  + Description: The name of the parent networking stack created.
+  + Default: "mellon-network"
++ EnvironmentName
+  + Description: Any value that describes where the service exists
+  + Default: "dev"
++ DomainName
+  + Description: 'The DomainName to be used for all entities to be created. All services will be built within this Domain'
+  + Default: 'library.nd.edu'
+
 Note: This will require adding a DNS entry to validate the certificate created by the stack. The stack will not complete until this is done. See https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html.
 
 ```console
+  --parameter-overrides NetworkStackName='unpeered-network' DomainName='libraries.nd.edu' \
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --template-file deploy/cloudformation/app-infrastructure.yml \

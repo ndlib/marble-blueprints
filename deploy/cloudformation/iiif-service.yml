@@ -21,7 +21,6 @@ Description: >
     - NetworkStackName:PublicSubnet1ID
     - NetworkStackName:PublicSubnet2ID
 
-
 Parameters:
 
   NetworkStackName:
@@ -37,7 +36,6 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF service will read from for its assets.
     Default: '/all/stacks/mellon-data-broker-dev/publicbucket'
-
   ImageUrl:
     Type: String
     Default: ndlib/image-service
@@ -71,17 +69,16 @@ Parameters:
     Type: Number
     Default: 1
     Description: How many copies of the service task to run
-
-  ServiceURL:
+  SubDomain:
     Type: String
-    Default: ''
-    Description: The URL of the service
+    Description: The SubDomain of the service. Combined with DomainName to create the FQDN.
+  CreateDNSRecord:
+    Type: String
+    Default: 'True'
+    Description: If True, will attempt to create a Route 53 DNS record for load balancer.
 
 Conditions:
-
-  NoServiceURL: !Equals
-    - !Ref ServiceURL
-    - ''
+  CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
 
 Outputs:
   PublicLoadBalancerDNSName:
@@ -90,10 +87,10 @@ Outputs:
 
   WebURL:
     Description: The URL of the service, often in CNAME form
-    Value: !If
-      - NoServiceURL
-      - !GetAtt PublicLoadBalancer.DNSName
-      - !Ref ServiceURL
+    Value: !Sub
+        - '${SubDomain}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
     Export:
       Name: !Join [ ':', [!Ref 'AWS::StackName', 'URL']]
 
@@ -101,8 +98,8 @@ Outputs:
     Description: The name of the bucket that will be used as the source/destination for derivative images
     Value: !Ref ImageDerivativeCacheBucket
 
-  ServiceName:
-    Description: The Name of the created ECS Service
+  SubDomain:
+    Description: The SubDomain of the ECS Service
     Value: !Ref Service
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Service']]
@@ -114,7 +111,10 @@ Resources:
     Properties:
       Type: String
       Name: !Sub "/all/stacks/${AWS::StackName}/url"
-      Value: !Ref ServiceURL
+      Value: !Sub
+        - '${SubDomain}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
       Description: The URL endpoint for this component
 
   # The task definition. This is a simple metadata description of what
@@ -308,3 +308,24 @@ Resources:
                       -
                         - !GetAtt ImageDerivativeCacheBucket.Arn
                         - "/*"
+
+  Route53DNSCreation:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      HostedZoneName: !Sub
+        - '${ResolvedDomainName}.'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+      Comment: !Sub
+        - '${SubDomain}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+      Name: !Sub
+        - '${SubDomain}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !GetAtt PublicLoadBalancer.DNSName

@@ -81,7 +81,7 @@ aws cloudformation deploy \
 ```console
 aws cloudformation deploy \
   --stack-name mellon-website-dev \
-  --template-file deploy/cloudformation/static-host.yml \
+  --template-file deploy/cloudformation/unified-static-host.yml \
   --tags ProjectName=mellon Name='testaccount-mellonimagewebsite-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'

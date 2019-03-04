@@ -71,10 +71,11 @@ Parameters:
     Description: How many copies of the service task to run
   SubDomain:
     Type: String
+    Default: image-server
     Description: The SubDomain of the service. Combined with DomainName to create the FQDN.
   CreateDNSRecord:
     Type: String
-    Default: 'True'
+    Default: "True"
     Description: If True, will attempt to create a Route 53 DNS record for load balancer.
 
 Conditions:

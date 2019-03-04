@@ -6,7 +6,7 @@ Note: It is highly recommended you use something like https://github.com/awslabs
 # Requirements
 Before you begin, check that you have the following:
   - A role with permissions to deploy cloudformations. In most cases, will require permissions to create IAM roles/policies (see [Permissions Required to Access IAM Resources](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_permissions-required.html))
-  - Ability to manage DNS for your organization to validate certificates (see [Use DNS to Validate Domain Ownership](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html))
+  - Ability to manage DNS for your organization to validate certificates (see [Use DNS to Validate Domain Ownership](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html)). All deployments use SSL and thus require valid certificates.
   - A policy that allows your approvers to approve pipelines (see [Grant Approval Permissions to an IAM User in AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/approvals-iam-permissions.html))
   - Must have awscli installed if using the example deploy commands
 
@@ -53,10 +53,10 @@ __Parameters:__
 Note: This will require adding a DNS entry to validate the certificate created by the stack. The stack will not complete until this is done. See https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html.
 
 ```console
-  --parameter-overrides NetworkStackName='unpeered-network' DomainName='libraries.nd.edu' \
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --template-file deploy/cloudformation/app-infrastructure.yml \
+  --parameter-overrides NetworkStackName='unpeered-network' DomainName='libraries.nd.edu' \
   --stack-name mellon-app-infrastructure \
   --tags ProjectName=mellon Name='testaccount-mellonappinfrastructure-dev' Contact='me@myhost.com' Owner='myid'\
   Description='brief-description-of-purpose'
@@ -79,6 +79,7 @@ __Parameters:__
 aws cloudformation deploy \
   --stack-name mellon-data-broker-dev \
   --template-file deploy/cloudformation/data-broker.yml \
+  --parameter-overrides NetworkStackName='unpeered-network' \
   --tags ProjectName=mellon Name='testaccount-mellondatabroker-dev' Contact='me@myhost.com' Owner='myid'\
   Description='brief-description-of-purpose'
 ```
@@ -131,7 +132,7 @@ aws cloudformation deploy \
   --tags ProjectName=mellon NameTag='testaccount-mellonimageservice-dev' \
     ContactTag='me@myhost.com' OwnerTag='myid' \
     Description='brief-description-of-purpose' \
-  --parameter-overrides
+  --parameter-overrides \
     ContainerCpu='1024' ContainerMemory='2048' DesiredCount=1
 ```
 
@@ -158,6 +159,7 @@ __Parameters:__
 aws cloudformation deploy \
   --stack-name mellon-image-webcomponent-dev \
   --template-file deploy/cloudformation/static-host.yml \
+  --parameter-overrides NetworkStackName='unpeered-network' \
   --tags ProjectName=mellon Name='testaccount-mellonimagewebcomponent-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'
@@ -168,6 +170,7 @@ aws cloudformation deploy \
 aws cloudformation deploy \
   --stack-name mellon-website-dev \
   --template-file deploy/cloudformation/static-host.yml \
+  --parameter-overrides NetworkStackName='unpeered-network' \
   --tags ProjectName=mellon Name='testaccount-mellonimagewebsite-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'

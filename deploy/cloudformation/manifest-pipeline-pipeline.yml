@@ -147,7 +147,7 @@ Resources:
                 -
                   - 'arn:aws:s3:::'
                   - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
-                  - '*'
+                  - '/*'
             Effect: 'Allow'
           # Allow reading from the Pipeline's artifact bucket. Required to deploy the built lambda zips
           - Action:

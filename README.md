@@ -144,9 +144,10 @@ __Parameters:__
 + CreateDNSRecord
   + Description: If True, will attempt to create a Route 53 DNS record for load balancer.
   + Default: "True"
-+ SubDomain
++ SubDomain 
+  + __Required parameter__
   + Description: The SubDomain of the service. Combined with DomainName to create the FQDN.
-  + Default: image-server
+  + Default: None (because this template is used for multiple services, the SubDomain value should be passed in)
 + EnvType
   + Description: The type of environment to create.
   + Default: "dev"

@@ -144,7 +144,15 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          -
+            Effect: Allow
+            Action:
+              - s3:GetBucketCors
+            Resource: !Sub ${ManifestBucket.Arn}
+            Principal:
+              CanonicalUser: !GetAtt OriginAccessIdentity.S3CanonicalUserId
+          -
+            Effect: Allow
             Action:
               - s3:GetObject
             Resource: !Sub ${ManifestBucket.Arn}/*
@@ -187,6 +195,7 @@ Resources:
               - "Access-Control-Request-Headers"
               - "Access-Control-Request-Method"
               - "Origin"
+              - "Authorization"
           AllowedMethods:
             - HEAD
             - GET

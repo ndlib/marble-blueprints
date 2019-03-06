@@ -102,7 +102,7 @@ aws cloudformation deploy \
 
 cd src/unifiedEdgeLambda
 yarn install
-yarn run spec
+yarn run jest
 ````
 
 ## Deploy CI/CD

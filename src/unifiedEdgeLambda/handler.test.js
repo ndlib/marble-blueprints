@@ -17,7 +17,7 @@ test("it allows the basic site files to be passed through", () => {
 })
 
 test('other patterns are sent to the index.html', () => {
-  let tests = ['/some_path', '/', '/item/2342432', 'robots', '404', '/directory/subdir']
+  let tests = ['/', '', '/some_path', '/item/2342432', 'robots', '404', '/directory/subdir']
 
   for(let test of tests) {
     expect(hander.modifyRequestUri(test)).toEqual('/index.html')

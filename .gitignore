@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# remove node_modules
+node_modules
+
+# aws package output
+output.yml

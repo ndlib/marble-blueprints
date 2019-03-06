@@ -122,6 +122,7 @@ Resources:
           - Action:
               - 'states:CreateStateMachine'
               - 'states:DeleteStateMachine'
+              - 'states:TagResource'
             Resource:
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'
             Effect: 'Allow'
@@ -132,10 +133,6 @@ Resources:
               - 's3:PutBucketLogging'
               - 's3:GetBucketCORS'
               - 's3:PutBucketCORS'
-              - 's3:PutBucketAcl'
-              - 's3:GetBucketAcl'
-              - 's3:PutBucketWebsite'
-              - 's3:DeleteBucketWebsite'
               - 's3:DeleteBucketPolicy'
               - 's3:PutBucketPolicy'
               - 's3:GetBucketPolicy'
@@ -143,12 +140,16 @@ Resources:
             Resource:
               - !Sub 'arn:aws:s3:::${TestStackName}*'
               - !Sub 'arn:aws:s3:::${ProdStackName}*'
-              - Fn::Join:
-                - ""
-                -
-                  - 'arn:aws:s3:::'
-                  - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
-                  - '/*'
+            Effect: 'Allow'
+          # Allow the pipeline to change ACLs on the logging bucket since the it deploys a Cloudfront that needs to put logs here
+          - Action:
+              - 's3:PutBucketAcl'
+              - 's3:GetBucketAcl'
+            Resource:
+              - !Sub
+                - 'arn:aws:s3:::${ResolvedBucketName}'
+                - ResolvedBucketName:
+                    Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
             Effect: 'Allow'
           # Allow reading from the Pipeline's artifact bucket. Required to deploy the built lambda zips
           - Action:

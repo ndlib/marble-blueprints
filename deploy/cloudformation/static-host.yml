@@ -12,6 +12,13 @@ Parameters:
     Default: mellon-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
+
+  DomainStackName:
+    Type: String
+    Default: mellon-domain
+    Description: The name of the parent domain stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+
   CreateDNSRecord:
     Type: String
     Default: "True"
@@ -57,7 +64,7 @@ Outputs:
     Value: !Sub
         - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'URL']]
 
@@ -82,7 +89,7 @@ Resources:
         LogFilePrefix: !Sub
             - 's3/${SubDomain}.${ResolvedDomainName}/'
             - ResolvedDomainName:
-                Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+                Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -107,20 +114,20 @@ Resources:
         Enabled: true
         HttpVersion: http2
         PriceClass: PriceClass_100
-        ViewerCertificate: 
-          AcmCertificateArn: 
-              Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ACMCertificateARN']]
+        ViewerCertificate:
+          AcmCertificateArn:
+              Fn::ImportValue: !Join [':', [!Ref DomainStackName, 'ACMCertificateARN']]
           MinimumProtocolVersion: TLSv1.1_2016
           SslSupportMethod: sni-only
         Comment: !Sub
             - '${SubDomain}.${ResolvedDomainName}'
             - ResolvedDomainName:
-                Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
-        Aliases: 
+                Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+        Aliases:
           - !Sub
               - '${SubDomain}.${ResolvedDomainName}'
               - ResolvedDomainName:
-                  Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+                  Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
         DefaultRootObject: index.html
         DefaultCacheBehavior:
           ForwardedValues:
@@ -154,7 +161,7 @@ Resources:
           Prefix: !Sub
                - 'web/${SubDomain}.${ResolvedDomainName}/'
                - ResolvedDomainName:
-                   Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+                   Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
           IncludeCookies: true
 
   Route53DNSCreation:
@@ -164,15 +171,15 @@ Resources:
       HostedZoneName: !Sub
         - '${ResolvedDomainName}.'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Comment: !Sub
         - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Name: !Sub
         - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Type: CNAME
       TTL: '900'
       ResourceRecords:

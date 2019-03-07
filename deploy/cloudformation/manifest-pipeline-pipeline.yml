@@ -12,14 +12,35 @@ Parameters:
     Default: mellon-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
+  DomainStackName:
+    Type: String
+    Default: mellon-domain
+    Description: The name of the parent domain stack that you created. Necessary
+                 to locate and reference resources created by that stack.
   ProdStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the production resources
     Default: "mellon-manifest-pipeline"
+  ProdSubDomain:
+    Type: String
+    Description: Host DNS name for website without Domain
+    MaxLength: 63
+    AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: Must be a valid SubDomain value.
   TestStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the test resources
     Default: "mellon-manifest-pipeline-test"
+  TestSubDomain:
+    Type: String
+    Description: Host DNS name for website without Domain
+    MaxLength: 63
+    AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: Must be a valid SubDomain value.
+  CreateDNSRecord:
+    Type: String
+    Default: "True"
+    Description: If True, will attempt to create a Route 53 DNS record for the test and prod stacks.
   Receivers:
     Type: String
     Description: An e-mail address to send the monitoring notifications
@@ -217,6 +238,20 @@ Resources:
               - 'cloudfront:GetCloudFrontOriginAccessIdentityConfig'
             Resource: '*'
             Effect: Allow
+          # The manifest pipeline is going to create DNS records. Need to allow certain permissions for the associated zone
+          - Action:
+              - 'route53:ChangeResourceRecordSets'
+              - 'route53:ListResourceRecordSets'
+            Resource: !Sub
+              - 'arn:aws:route53:::hostedzone/${ResolvedZone}'
+              - ResolvedZone:
+                  Fn::ImportValue: !Join [':', [!Ref DomainStackName, 'Zone']]
+            Effect: Allow
+          - Action:
+              - 'route53:ListHostedZones'
+              - 'route53:GetChange'
+            Resource: '*'
+            Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole
   CodePipelineTrustRole:
@@ -329,7 +364,10 @@ Resources:
                       \"Parameters\" : {
                         \"AppConfigPath\" : \"${AppConfigPathTest}\",
                         \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
-                        \"ImageServerUrl\" : \"/all/stacks/${ImageServiceTestStackName}/url\"
+                        \"ImageServerUrl\" : \"/all/stacks/${ImageServiceTestStackName}/url\",
+                        \"SubDomain\" : \"${TestSubDomain}\",
+                        \"DomainStackName\" : \"${DomainStackName}\",
+                        \"CreateDNSRecord\" : \"${CreateDNSRecord}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${TestStackName}\",
@@ -343,7 +381,10 @@ Resources:
                       \"Parameters\" : {
                         \"AppConfigPath\" : \"${AppConfigPathProd}\",
                         \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
-                        \"ImageServerUrl\" : \"/all/stacks/${ImageServiceProdStackName}/url\"
+                        \"ImageServerUrl\" : \"/all/stacks/${ImageServiceProdStackName}/url\",
+                        \"SubDomain\" : \"${ProdSubDomain}\",
+                        \"DomainStackName\" : \"${DomainStackName}\",
+                        \"CreateDNSRecord\" : \"${CreateDNSRecord}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${ProdStackName}\",

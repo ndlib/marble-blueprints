@@ -86,8 +86,9 @@ aws cloudformation package \
   --output-template-file output.yml
 
 aws cloudformation deploy \
-  --stack-name mellon-website-dev \
+  --stack-name mellon-website-jon \
   --template-file output.yml \
+  --capabilities CAPABILITY_IAM \
   --tags ProjectName=mellon Name='testaccount-mellonimagewebsite-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'

@@ -145,7 +145,7 @@ Resources:
           LambdaFunctionAssociations:
               -
                 EventType: origin-request
-                LambdaFunctionARN: !Sub ${SPARedirectionLambda.Arn}:${SPARedirectionLambda.Version}
+                LambdaFunctionARN: !Ref SPARedirectionLambda.Version
         Origins:
           - Id: Bucket
             DomainName: !GetAtt Bucket.DomainName
@@ -196,3 +196,4 @@ Resources:
       Handler: index.handler
       Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
       Runtime: nodejs8.10
+      AutoPublishAlias: live

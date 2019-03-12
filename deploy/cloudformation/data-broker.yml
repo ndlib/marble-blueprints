@@ -22,6 +22,7 @@ Mappings:
     dev:
       CorsOrigins:
         - "*.library.nd.edu"
+        - "*.libraries.nd.edu"
         - "*.cloudfront.net"
         - "http://universalviewer.io"
     prod:

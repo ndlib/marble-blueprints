@@ -352,6 +352,17 @@ Resources:
                   - "ses:SendEmail"
                 Effect: "Allow"
                 Resource: "*"
+        - PolicyName: ManifestPipelineLogPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:CreateLogGroup"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource: "*"
 
   AutoRun:
     Type: AWS::Serverless::Function
@@ -374,7 +385,7 @@ Resources:
           Type: S3
           Properties:
             Bucket: !Ref ProcessBucket
-            Events: s3:ObjectCreated:*
+            Events: s3:ObjectCreated:Put
             Filter:
               S3Key:
                 Rules:

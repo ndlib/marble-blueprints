@@ -20,7 +20,8 @@ Parameters:
   ProdStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the production resources
-    Default: "mellon-manifest-pipeline"
+    Default: "mellon-manifest-prod"
+    MaxLength: 26
   ProdSubDomain:
     Type: String
     Description: Host DNS name for website without Domain
@@ -30,7 +31,8 @@ Parameters:
   TestStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the test resources
-    Default: "mellon-manifest-pipeline-test"
+    Default: "mellon-manifest-test"
+    MaxLength: 26
   TestSubDomain:
     Type: String
     Description: Host DNS name for website without Domain

@@ -193,7 +193,7 @@ Resources:
     Properties:
       CodeUri: ./src/unifiedEdgeLambda/handler.js
       Description: Basic rewrite rule to send directory requests to appropriate locations in the SPA
-      Handler: index.handler
+      Handler: handler.handler
       Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
       Runtime: nodejs8.10
       AutoPublishAlias: live

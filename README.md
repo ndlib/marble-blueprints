@@ -32,7 +32,6 @@ aws cloudformation deploy \
 TODO: Add example of exporting an existing network
 
 ### Infrastructure stack
-Note: This will require adding a DNS entry to validate the certificate created by the stack. The stack will not complete until this is done. See https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html.
 
 ```console
 aws cloudformation deploy \
@@ -40,6 +39,25 @@ aws cloudformation deploy \
   --template-file deploy/cloudformation/app-infrastructure.yml \
   --stack-name mellon-app-infrastructure \
   --tags ProjectName=mellon Name='testaccount-mellonappinfrastructure-dev' Contact='me@myhost.com' Owner='myid'\
+  Description='brief-description-of-purpose'
+```
+
+
+### Domain stack
+Defines a domain and creates a wildcard certificate that can be used for services built in this domain. By default, it will create a zone in Route53 for you, but this can be skipped if you're using your own DNS by overriding the CreateDNSZone parameter.
+
+A few things to note:
+1. You will likely need to do this in us-east-1 so that your ACM certificate can be used by Cloudfront (see https://aws.amazon.com/premiumsupport/knowledge-center/custom-ssl-certificate-cloudfront/).
+1. This will require adding a DNS entry to validate the certificate created by the stack. The stack will not complete until this is done. See https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html. If you are creating a Route53 zone in this stack, you can add a record to the new zone as soon as both the zone and cert are created by the stack.
+
+```console
+aws cloudformation deploy \
+  --capabilities CAPABILITY_IAM \
+  --region us-east-1 \
+  --template-file deploy/cloudformation/domain.yml \
+  --stack-name mellon-domain \
+  --parameter-overrides DomainName='mydomain.edu' CreateDNSZone='True' UseDNSZone='' \
+  --tags ProjectName=mellon Name='mellon-domain' Contact='me@myhost.com' Owner='myid'\
   Description='brief-description-of-purpose'
 ```
 
@@ -89,6 +107,7 @@ aws cloudformation deploy \
   --stack-name mellon-website-jon \
   --template-file output.yml \
   --capabilities CAPABILITY_IAM \
+  --parameter-overrides SubDomain='mellon-website-dev' \
   --tags ProjectName=mellon Name='testaccount-mellonimagewebsite-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'
@@ -137,6 +156,20 @@ aws cloudformation deploy \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
     SourceRepoOwner=ndlib SourceRepoName=image-viewer BuildScriptsDir='build' BuildOutputDir='dist' \
     TestStackName=mellon-image-webcomponent-test ProdStackName=mellon-image-webcomponent-prod
+```
+
+# IIIF Manifest Pipeline
+This will create an AWS CodePipeline that will deploy the [manifest data pipeline](https://github.com/ndlib/mellon-manifest-pipeline).
+
+```console
+aws cloudformation deploy \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --stack-name mellon-manifest-deploy-pipeline \
+  --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
+  --tags Name='mellon-manifest-pipeline' Contact='me@myhost.com' Owner='myid' Description='Deploys the IIIF Manifest Data Pipeline.' \
+  --parameter-overrides GitHubToken=my_oauth_key Receivers=me@myhost.com \
+    TestSubDomain='mellon-manifest-test' ProdSubDomain='mellon-manifest' \
+    AppConfigPathTest='/all/mellon-manifest-test' AppConfigPathProd='/all/mellon-manifest-prod'
 ```
 
 ### Website Pipeline
@@ -201,16 +234,6 @@ aws cloudformation deploy \
   --tags ProjectName=mellon Name='testaccount-mellonimageservicepipeline-monitoring' \
     Contact='me@myhost.com' Owner='myid' Description='brief-description-of-purpose' \
   --parameter-overrides PipelineStackName=mellon-image-service-pipeline Receivers=me@myhost.com
-```
-
-How to build the Manifest Pipeline Pipleine
-```console
-aws cloudformation deploy \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --stack-name mellon-manifest-pipeline \
-  --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
-  --tags Name='mellon-manifest-pipeline' Contact='me@myhost.com' Owner='myid' Description='CF for Manifest Pipeline.' \
-  --parameter-overrides GitHubToken=ADDME! Receivers=email@email.com
 ```
 
 #### Examples of the notifications:

@@ -13,6 +13,11 @@ Parameters:
     Default: mellon-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
+  DomainStackName:
+    Type: String
+    Default: mellon-domain
+    Description: The name of the parent domain stack that you created. Necessary
+                 to locate and reference resources created by that stack.
   ImageSourceBucket:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF Image service will read from for its assets.
@@ -30,34 +35,26 @@ Parameters:
     Type: String
     Description: The path to look for the application config from
 
-  AcmCertificateArn:
-    Type: String
-    Description: Arn for ACM Certificate
-    Default: ''
-
   CacheSettings:
     Type: Number
     Description: The cache value to hold the manifests for.
     Default: 300
 
-  FQDN:
+  CreateDNSRecord:
     Type: String
-    Description: DNS name for the website to publish
+    Default: "True"
+    Description: If True, will attempt to create a Route 53 DNS record for the CloudFront.
+
+  SubDomain:
+    Type: String
+    Description: Host DNS name for website without Domain
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
-    ConstraintDescription: must be a valid DNS zone name
-    Default: ''
+    ConstraintDescription: Must be a valid SubDomain value.
 
 Conditions:
 
-  NoFQDN: !Equals
-    - !Ref FQDN
-    - ''
-
-  NoSSL: !Equals
-    - !Ref AcmCertificateArn
-    - ''
-
+  CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
 
 Outputs:
   StateMachine:
@@ -68,6 +65,19 @@ Outputs:
 
   ManifestBucket:
     Value: !Ref ManifestBucket
+
+  URL:
+    Description: The combination of SubDomain and Domain
+    Value: !Sub
+        - '${SubDomain}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'URL']]
+
+  DistributionDomainName:
+    Description: The cloudfront distribution domain name. Use this if creating your CNAME record via some other DNS
+    Value: !GetAtt Distribution.DomainName
 
 Resources:
 
@@ -159,6 +169,27 @@ Resources:
             Principal:
               CanonicalUser: !GetAtt OriginAccessIdentity.S3CanonicalUserId
 
+  Route53DNSCreation:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      HostedZoneName: !Sub
+        - '${ResolvedDomainName}.'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+      Comment: !Sub
+        - '${SubDomain}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+      Name: !Sub
+        - '${SubDomain}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !GetAtt Distribution.DomainName
+
   OriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
@@ -167,26 +198,27 @@ Resources:
 
   Distribution:
     Type: AWS::CloudFront::Distribution
-    DependsOn: OriginAccessIdentity
+    DependsOn:
+      - OriginAccessIdentity
     Properties:
       DistributionConfig:
         Enabled: true
         HttpVersion: http2
         PriceClass: PriceClass_100
-        ViewerCertificate: !If
-          - NoSSL
-          - !Ref AWS::NoValue
-          - AcmCertificateArn: !Ref AcmCertificateArn
-            MinimumProtocolVersion: TLSv1.1_2016
-            SslSupportMethod: sni-only
-        Comment: !If
-          - NoFQDN
-          - !Ref AWS::NoValue
-          - !Ref FQDN
-        Aliases: !If
-          - NoFQDN
-          - !Ref AWS::NoValue
-          - - !Ref FQDN
+        ViewerCertificate:
+          AcmCertificateArn:
+            Fn::ImportValue: !Join [':', [!Ref DomainStackName, 'ACMCertificateARN']]
+          MinimumProtocolVersion: TLSv1.1_2016
+          SslSupportMethod: sni-only
+        Comment: !Sub
+          - '${SubDomain}.${ResolvedDomainName}'
+          - ResolvedDomainName:
+              Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+        Aliases:
+          - !Sub
+            - '${SubDomain}.${ResolvedDomainName}'
+            - ResolvedDomainName:
+                Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
         DefaultRootObject: index.json
         DefaultCacheBehavior:
           ForwardedValues:
@@ -201,10 +233,7 @@ Resources:
             - GET
             - OPTIONS
           Compress: true
-          ViewerProtocolPolicy: !If
-            - NoSSL
-            - allow-all
-            - redirect-to-https
+          ViewerProtocolPolicy: redirect-to-https
           TargetOriginId: Bucket
           LambdaFunctionAssociations:
             -
@@ -228,10 +257,10 @@ Resources:
                 Fn::Join: [':', [!Ref InfrastructureStackName, 'LogBucket']]
               - s3
               - !Ref AWS::URLSuffix
-          Prefix: !If
-            - NoFQDN
-            - !Sub web/${AWS::StackName}/
-            - !Sub web/${FQDN}/
+          Prefix: !Sub
+            - 'web/${SubDomain}.${ResolvedDomainName}/'
+            - ResolvedDomainName:
+                Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
           IncludeCookies: true
 
   LambdaEdgeBasicExecutionRole:
@@ -288,7 +317,6 @@ Resources:
   LambdaExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Sub "${AWS::StackName}-LambdaExecutionRole"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -352,11 +380,21 @@ Resources:
                   - "ses:SendEmail"
                 Effect: "Allow"
                 Resource: "*"
+        - PolicyName: ManifestPipelineLogPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:CreateLogGroup"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource: "*"
 
   AutoRun:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-autorun"
       Handler: handler.run
       CodeUri: autorun/
       Runtime: python3.7
@@ -374,7 +412,7 @@ Resources:
           Type: S3
           Properties:
             Bucket: !Ref ProcessBucket
-            Events: s3:ObjectCreated:*
+            Events: s3:ObjectCreated:Put
             Filter:
               S3Key:
                 Rules:
@@ -387,7 +425,6 @@ Resources:
   IndexInputLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-IndexInputLambdaFunction"
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
@@ -400,7 +437,6 @@ Resources:
   ManifestLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-ManifestLambdaFunction"
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
@@ -410,7 +446,6 @@ Resources:
   FinalizeLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-FinalizeLambdaFunction"
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
@@ -425,7 +460,6 @@ Resources:
   PGCounterLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-PGCounterLambdaFunction"
       Handler: pgcounter.counter
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: nodejs8.10
@@ -439,7 +473,6 @@ Resources:
   PGIteratorLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-PGIteratorLambdaFunction"
       Handler: pgiterator.iterator
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: nodejs8.10
@@ -453,7 +486,6 @@ Resources:
   PGImgProcLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-PGImgProcLambdaFunction"
       Handler: pgimgproc.processor
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: nodejs8.10
@@ -467,7 +499,6 @@ Resources:
   StatesExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Sub "${AWS::StackName}-StatesExecutionRole"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:

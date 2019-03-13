@@ -72,6 +72,11 @@ Resources:
 
   CodeBuildRole:
     Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "We're allowing the role to perform all log-related activities."
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -173,6 +178,11 @@ Resources:
 
   CodeTestDeployRole:
     Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "We're allowing the role to perform all log-related activities."
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -236,6 +246,11 @@ Resources:
 
   CodeProdDeployRole:
     Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "We're allowing the role to perform all log-related activities."
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -488,7 +503,17 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action:
-              - codepipeline:*
+              - codepipeline:AcknowledgeJob
+              - codepipeline:GetJobDetails
+              - codepipeline:GetPipeline
+              - codepipeline:GetPipelineState
+              - codepipeline:GetPipelineExecution
+              - codepipeline:ListPipelineExecutions
+              - codepipeline:PollForJobs
+              - codepipeline:PutJobFailureResult
+              - codepipeline:PutJobSuccessResult
+              - codepipeline:RetryStageExecution
+              - codepipeline:StartPipelineExecution
               - sns:Publish
             Resource: '*'
           - Effect: Allow
@@ -517,13 +542,6 @@ Resources:
               - !GetAtt CodeTestDeployer.Arn
               - !GetAtt CodeProdDeployer.Arn
               - !GetAtt PostDeployGitHub.Arn
-          - Effect: Allow
-            Action:
-              - ecs:UpdateService
-              - ecs:RegisterTaskDefinition
-              - ecs:List*
-              - ecs:CreateService
-            Resource: "*"
       Roles:
         - !Ref CodePipelineRole
 

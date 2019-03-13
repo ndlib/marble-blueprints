@@ -64,6 +64,11 @@ Resources:
 
   PublicBucketPolicy:
     Type: AWS::S3::BucketPolicy
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: "This is currently designed as a public bucket, so it's acceptable to have * principal"
     Properties:
       Bucket: !Ref PublicBucket
       PolicyDocument:

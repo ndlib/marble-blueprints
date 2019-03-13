@@ -96,6 +96,11 @@ Resources:
     Type: AWS::ECR::Repository
 
   CodeBuildRole:
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F3
+            reason: "We're allowing the role to perform all log-related activities."
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -151,7 +156,7 @@ Resources:
   DockerQABuilder:
     Type: 'AWS::CodeBuild::Project'
     Properties:
-      Name: mellon_docker_newman_tests
+      Name: !Sub '${AWS::StackName}-newman-tests'
       Description: 'Run Newman Tests against Image Server'
       ServiceRole: !Ref CodeBuildRole
       TimeoutInMinutes: 10
@@ -190,7 +195,7 @@ Resources:
   DockerCodePipelineBuilder:
     Type: 'AWS::CodeBuild::Project'
     Properties:
-      Name: mellon_docker_codepipeline
+      Name: !Sub '${AWS::StackName}-docker-codepipeline'
       Description: 'Build Docker Image from GitHub for CodePipeline'
       ServiceRole: !Ref CodeBuildRole
       TimeoutInMinutes: 10
@@ -225,7 +230,7 @@ Resources:
   PostDeployDocker:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: image_server_docker_add_tag
+      Name: !Sub '${AWS::StackName}-docker-add-tag'
       Description: 'CodeBuild to update the current_release tag in ECR'
       ServiceRole: !Ref CodeBuildRole
       TimeoutInMinutes: 10
@@ -267,7 +272,7 @@ Resources:
   PostDeployGitHub:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: image_server_docker_add_github_status
+      Name: !Sub '${AWS::StackName}-add-github-status'
       Description: 'CodeBuild to tag the latest commit in repo post-deploy'
       ServiceRole: !Ref CodeBuildRole
       TimeoutInMinutes: 10
@@ -341,7 +346,17 @@ Resources:
             Resource: "*"
           - Effect: Allow
             Action:
-              - codepipeline:*
+              - codepipeline:AcknowledgeJob
+              - codepipeline:GetJobDetails
+              - codepipeline:GetPipeline
+              - codepipeline:GetPipelineState
+              - codepipeline:GetPipelineExecution
+              - codepipeline:ListPipelineExecutions
+              - codepipeline:PollForJobs
+              - codepipeline:PutJobFailureResult
+              - codepipeline:PutJobSuccessResult
+              - codepipeline:RetryStageExecution
+              - codepipeline:StartPipelineExecution
               - sns:Publish
             Resource: '*'
           - Effect: Allow
@@ -375,7 +390,10 @@ Resources:
             Action:
               - ecs:UpdateService
               - ecs:RegisterTaskDefinition
-              - ecs:List*
+              - ecs:ListTasks
+              - ecs:ListTaskDefinitions
+              - ecs:ListClusters
+              - ecs:ListServices
               - ecs:CreateService
             Resource: "*"
       Roles:

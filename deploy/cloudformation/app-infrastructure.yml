@@ -30,6 +30,10 @@ Resources:
           # Allow access to ALB from anywhere on the internet
           - CidrIp: 0.0.0.0/0
             IpProtocol: "-1"
+      SecurityGroupEgress:
+          # Explicitly allow all outgoing traffic
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: "-1"
 
   IIIFSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -43,6 +47,12 @@ Resources:
           FromPort: 8182
           ToPort: 8182
           CidrIp: 0.0.0.0/0 # This may need to be changed for security purposes
+      SecurityGroupEgress:
+        -
+          IpProtocol: "-1"
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0 #This explicitly allows all outgoing traffic
 
   ContainerCluster:
     Type: AWS::ECS::Cluster

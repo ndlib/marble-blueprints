@@ -18,16 +18,6 @@ Parameters:
     Description: The name of the parent networking stack created.
     Default: "mellon-network"
 
-  EnvironmentName:
-    Type: String
-    Description: Any value that describes where the service exists
-    Default: "dev"
-
-  DomainName:
-    Type: String
-    Description: 'The DomainName to be used for all entities to be created. All services will be built within this Domain'
-    Default: 'library.nd.edu'
-
 Resources:
 
   PublicLoadBalancerSecurityGroup:
@@ -108,22 +98,7 @@ Resources:
       RetentionInDays: 7
       LogGroupName: !Join [ '-', [ !Ref 'AWS::StackName', 'LogGroup']]
 
-  ACMCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Join [ '.', [ '*', !Ref DomainName ]]
-      DomainValidationOptions:
-        - DomainName: !Join [ '.', [ '*', !Ref DomainName ]]
-          ValidationDomain: !Join [ '.', [ '*', !Ref DomainName ]]
-      ValidationMethod: DNS
-
 Outputs:
-
-  ServiceDNSDomain:
-    Description: The DNS domain for all services.
-    Value: !Ref DomainName
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'DomainName']]
 
   SharedLogGroup:
     Description: The name of the log group to use for application logs
@@ -160,9 +135,3 @@ Outputs:
     Value: !Ref LogBucket
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogBucket']]
-
-  AcmArnParameter:
-    Description: The ARN of the generated certificate
-    Value: !Ref ACMCertificate
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ACMCertificateARN']]

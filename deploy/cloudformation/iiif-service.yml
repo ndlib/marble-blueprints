@@ -11,7 +11,8 @@ Description: >
     - InfrastructureStackName:IIIFSecurityGroupID
     - InfrastructureStackName:ContainerTaskExecutionRoleArn
     - InfrastructureStackName:PublicLoadBalancerSecurityGroup
-    - InfrastructureStackName:ACMCertificateARN
+    - DomainStackName:ACMCertificateARN
+    - DomainStackName:DomainName
 
 
   Expects the following exports ftom the network stack:
@@ -31,6 +32,11 @@ Parameters:
     Type: String
     Default: "mellon-app-infrastructure"
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+  DomainStackName:
+    Type: String
+    Default: mellon-domain
+    Description: The name of the parent domain stack that you created. Necessary
                  to locate and reference resources created by that stack.
   ImageSourceBucket:
     Type: 'AWS::SSM::Parameter::Value<String>'
@@ -90,7 +96,7 @@ Outputs:
     Value: !Sub
         - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
     Export:
       Name: !Join [ ':', [!Ref 'AWS::StackName', 'URL']]
 
@@ -114,7 +120,7 @@ Resources:
       Value: !Sub
         - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Description: The URL endpoint for this component
 
   # The task definition. This is a simple metadata description of what
@@ -237,7 +243,7 @@ Resources:
       Protocol: HTTPS
       Certificates:
         - CertificateArn:
-            Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ACMCertificateARN']]
+            Fn::ImportValue: !Join [':', [!Ref DomainStackName, 'ACMCertificateARN']]
       SslPolicy: ELBSecurityPolicy-2016-08
 
   LoadBalancerRule:
@@ -316,15 +322,15 @@ Resources:
       HostedZoneName: !Sub
         - '${ResolvedDomainName}.'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Comment: !Sub
         - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Name: !Sub
         - '${SubDomain}.${ResolvedDomainName}'
         - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${InfrastructureStackName}:DomainName'
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Type: CNAME
       TTL: '900'
       ResourceRecords:

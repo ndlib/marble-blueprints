@@ -14,11 +14,6 @@ Description: >
 
 Parameters:
 
-  TestURL:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: The path to the param that stores the test URL.
-    Default: "/all/stacks/mellon-image-service-test/url"
-
   Approvers:
     Type: String
     Default: ''
@@ -57,15 +52,6 @@ Parameters:
     Type: String
     NoEcho: true
     Description: The OAuth Token Value to connect CodePipeline to GitHub. Passed in at Runtime.
-
-  EnvType:
-    Type: String
-    Description: The type of environment to create.
-    Default: dev
-    AllowedValues:
-      - dev
-      - prod
-    ConstraintDescription: must specify prod or dev.
 
 Outputs:
 
@@ -142,7 +128,7 @@ Resources:
                         - !GetAtt CodeS3Bucket.Arn
                         - "/*"
         -
-          PolicyName: "ReadGitOauth"
+          PolicyName: "ReadRequiredSSM"
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -150,7 +136,9 @@ Resources:
                 Effect: Allow
                 Action:
                   - ssm:GetParameters
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/github/ndlib-git/oauth"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/github/ndlib-git/oauth"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${IIIFTestServiceStackName}/hostname"
 
 
   DockerQABuilder:
@@ -176,7 +164,7 @@ Resources:
               commands:
                 - echo Build started on `date`
                 - |
-                  printf '{"name": "image_server.test","values": [{"key": "image-server-host","value": "%s:8182"}, {"key": "image-server-protocol","value": "https"}],"_postman_variable_scope": "environment"}' $TESTING_URL >> test_env.json
+                  printf '{"name": "image_server.test","values": [{"key": "image-server-host","value": "%s:8182"}, {"key": "image-server-protocol","value": "https"}],"_postman_variable_scope": "environment"}' $TESTING_HOST >> test_env.json
                 - cat test_env.json
                 - newman run spec/image-server.postman_collection.json -e test_env.json
             post_build:
@@ -189,8 +177,9 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/nodejs:10.1.0
         EnvironmentVariables:
-          - Name: TESTING_URL
-            Value: !Ref TestURL
+          - Name: TESTING_HOST
+            Type: PARAMETER_STORE
+            Value: !Sub "/all/stacks/${IIIFTestServiceStackName}/hostname"
 
   DockerCodePipelineBuilder:
     Type: 'AWS::CodeBuild::Project'
@@ -291,7 +280,7 @@ Resources:
                 - DATE=$(date)
             post_build:
               commands:
-                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://${TARGET_URL}\"}"
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://${TARGET_HOST}\"}"
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -304,9 +293,9 @@ Resources:
             Value: /esu/github/ndlib-git/oauth
           - Name: API_URL
             Value: !Sub "https://api.github.com/repos/${SourceRepoOwner}/${SourceRepoName}/statuses"
-          - Name: TARGET_URL
-            Value:
-              Fn::ImportValue: !Join [':', [!Ref IIIFProdServiceStackName, 'URL']]
+          - Name: TARGET_HOST
+            Type: PARAMETER_STORE
+            Value: !Sub "/all/stacks/${IIIFTestServiceStackName}/hostname"
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket
@@ -453,10 +442,8 @@ Resources:
                 Provider: ECS
                 Version: "1"
               Configuration:
-                ClusterName:
-                  Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ClusterName']]
-                ServiceName:
-                  Fn::Join: ['-', [!Ref IIIFTestServiceStackName, 'ImageService']]
+                ClusterName: !Sub '${InfrastructureStackName}-Cluster'
+                ServiceName: !Sub '${IIIFTestServiceStackName}-ImageService'
                 FileName: imagedefinitionstest.json
         -
           Name: Approval
@@ -497,10 +484,8 @@ Resources:
                 Provider: ECS
                 Version: "1"
               Configuration:
-                ClusterName:
-                  Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ClusterName']]
-                ServiceName:
-                  Fn::Join: ['-', [!Ref IIIFProdServiceStackName, 'ImageService']]
+                ClusterName: !Sub '${InfrastructureStackName}-Cluster'
+                ServiceName: !Sub '${IIIFProdServiceStackName}-ImageService'
                 FileName: imagedefinitionsprod.json
         -
           Name: PostDeployActions

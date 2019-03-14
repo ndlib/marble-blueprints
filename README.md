@@ -107,7 +107,7 @@ aws cloudformation deploy \
   --stack-name mellon-website-jon \
   --template-file output.yml \
   --capabilities CAPABILITY_IAM \
-  --parameter-overrides SubDomain='mellon-website-dev' \
+  --parameter-overrides HostnamePrefix='mellon-website-dev' \
   --tags ProjectName=mellon Name='testaccount-mellonimagewebsite-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'
@@ -168,7 +168,7 @@ aws cloudformation deploy \
   --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
   --tags Name='mellon-manifest-pipeline' Contact='me@myhost.com' Owner='myid' Description='Deploys the IIIF Manifest Data Pipeline.' \
   --parameter-overrides GitHubToken=my_oauth_key Receivers=me@myhost.com \
-    TestSubDomain='mellon-manifest-test' ProdSubDomain='mellon-manifest' \
+    TestHostnamePrefix='mellon-manifest-test' ProdHostnamePrefix='mellon-manifest' \
     AppConfigPathTest='/all/mellon-manifest-test' AppConfigPathProd='/all/mellon-manifest-prod'
 ```
 

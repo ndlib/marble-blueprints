@@ -24,12 +24,12 @@ Parameters:
     Default: "True"
     Description: If True, will attempt to create a Route 53 DNS record for the CloudFront.
 
-  SubDomain:
+  HostnamePrefix:
     Type: String
-    Description: Host DNS name for website without Domain
+    Description: Hostname prefix for the website CDN
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
-    ConstraintDescription: Must be a valid SubDomain value.
+    ConstraintDescription: Must be a valid hostname prefix value.
 
   EnvType:
     Type: String
@@ -59,14 +59,14 @@ Outputs:
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'BucketName']]
 
-  URL:
+  Hostname:
     Description: The FQDN if one is given, otherwise the cloudfront distribution domain name.
     Value: !Sub
-        - '${SubDomain}.${ResolvedDomainName}'
+        - '${HostnamePrefix}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
     Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'URL']]
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Hostname']]
 
   DistributionDomainName:
     Description: The cloudfront distribution domain name.
@@ -87,7 +87,7 @@ Resources:
         DestinationBucketName:
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogBucket']]
         LogFilePrefix: !Sub
-            - 's3/${SubDomain}.${ResolvedDomainName}/'
+            - 's3/${HostnamePrefix}.${ResolvedDomainName}/'
             - ResolvedDomainName:
                 Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
 
@@ -114,11 +114,11 @@ Resources:
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Comment: !Sub
-        - '${SubDomain}.${ResolvedDomainName}'
+        - '${HostnamePrefix}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Name: !Sub
-        - '${SubDomain}.${ResolvedDomainName}'
+        - '${HostnamePrefix}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Type: CNAME
@@ -139,12 +139,12 @@ Resources:
           MinimumProtocolVersion: TLSv1.1_2016
           SslSupportMethod: sni-only
         Comment: !Sub
-            - '${SubDomain}.${ResolvedDomainName}'
+            - '${HostnamePrefix}.${ResolvedDomainName}'
             - ResolvedDomainName:
                 Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
         Aliases:
           - !Sub
-              - '${SubDomain}.${ResolvedDomainName}'
+              - '${HostnamePrefix}.${ResolvedDomainName}'
               - ResolvedDomainName:
                   Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
         DefaultRootObject: index.html
@@ -182,7 +182,7 @@ Resources:
               - s3
               - !Ref AWS::URLSuffix
           Prefix: !Sub
-               - 'web/${SubDomain}.${ResolvedDomainName}/'
+               - 'web/${HostnamePrefix}.${ResolvedDomainName}/'
                - ResolvedDomainName:
                    Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
           IncludeCookies: true

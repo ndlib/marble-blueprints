@@ -7,7 +7,6 @@ Description: >
 
   Expects the following exports from the app-infrastructure stack:
     - InfrastructureStackName:ContainerTaskExecutionRoleArn
-    - InfrastructureStackName:ClusterName
     - InfrastructureStackName:IIIFSecurityGroupID
     - InfrastructureStackName:ContainerTaskExecutionRoleArn
     - InfrastructureStackName:PublicLoadBalancerSecurityGroup
@@ -75,9 +74,12 @@ Parameters:
     Type: Number
     Default: 1
     Description: How many copies of the service task to run
-  SubDomain:
+  HostnamePrefix:
     Type: String
-    Description: The SubDomain of the service. Combined with DomainName to create the FQDN.
+    Description: Hostname prefix for the manifest bucket CDN
+    MaxLength: 63
+    AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: Must be a valid hostname prefix value.
   CreateDNSRecord:
     Type: String
     Default: 'True'
@@ -91,37 +93,28 @@ Outputs:
     Description: The dns name of the load balancer
     Value: !GetAtt PublicLoadBalancer.DNSName
 
-  WebURL:
-    Description: The URL of the service, often in CNAME form
-    Value: !Sub
-        - '${SubDomain}.${ResolvedDomainName}'
-        - ResolvedDomainName:
-            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
-    Export:
-      Name: !Join [ ':', [!Ref 'AWS::StackName', 'URL']]
-
   ImageDerivativeCacheBucketName:
     Description: The name of the bucket that will be used as the source/destination for derivative images
     Value: !Ref ImageDerivativeCacheBucket
 
-  SubDomain:
-    Description: The SubDomain of the ECS Service
+  Service:
+    Description: The name of the ECS Service
     Value: !Ref Service
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Service']]
 
 Resources:
 
-  URLParameter:
+  HostnameParameter:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/url"
+      Name: !Sub "/all/stacks/${AWS::StackName}/hostname"
       Value: !Sub
-        - '${SubDomain}.${ResolvedDomainName}'
+        - '${HostnamePrefix}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
-      Description: The URL endpoint for this component
+      Description: The hostname for this component
 
   # The task definition. This is a simple metadata description of what
   # container to run, and what resource requirements it has.
@@ -167,8 +160,7 @@ Resources:
     DependsOn: LoadBalancerRule
     Properties:
       ServiceName: !Sub '${AWS::StackName}-ImageService'
-      Cluster:
-        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ClusterName']]
+      Cluster: !Sub '${InfrastructureStackName}-Cluster'
       LaunchType: FARGATE
       DeploymentConfiguration:
         MaximumPercent: 200
@@ -324,11 +316,11 @@ Resources:
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Comment: !Sub
-        - '${SubDomain}.${ResolvedDomainName}'
+        - '${HostnamePrefix}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Name: !Sub
-        - '${SubDomain}.${ResolvedDomainName}'
+        - '${HostnamePrefix}.${ResolvedDomainName}'
         - ResolvedDomainName:
             Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
       Type: CNAME

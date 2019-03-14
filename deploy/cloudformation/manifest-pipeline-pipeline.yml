@@ -22,23 +22,23 @@ Parameters:
     Description: The name of the CloudFormation stack to use when creating the production resources
     Default: "mellon-manifest-prod"
     MaxLength: 24
-  ProdSubDomain:
+  ProdHostnamePrefix:
     Type: String
-    Description: Host DNS name for website without Domain
+    Description: Hostname prefix for the production manifest bucket CDN
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
-    ConstraintDescription: Must be a valid SubDomain value.
+    ConstraintDescription: Must be a valid hostname prefix.
   TestStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the test resources
     Default: "mellon-manifest-test"
     MaxLength: 24
-  TestSubDomain:
+  TestHostnamePrefix:
     Type: String
-    Description: Host DNS name for website without Domain
+    Description: Hostname prefix for the test manifest bucket CDN
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
-    ConstraintDescription: Must be a valid SubDomain value.
+    ConstraintDescription: Must be a valid hostname prefix.
   CreateDNSRecord:
     Type: String
     Default: "True"
@@ -366,8 +366,8 @@ Resources:
                       \"Parameters\" : {
                         \"AppConfigPath\" : \"${AppConfigPathTest}\",
                         \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
-                        \"ImageServerUrl\" : \"/all/stacks/${ImageServiceTestStackName}/url\",
-                        \"SubDomain\" : \"${TestSubDomain}\",
+                        \"ImageServerHostname\" : \"/all/stacks/${ImageServiceTestStackName}/hostname\",
+                        \"HostnamePrefix\" : \"${TestHostnamePrefix}\",
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\"
                       },
@@ -383,8 +383,8 @@ Resources:
                       \"Parameters\" : {
                         \"AppConfigPath\" : \"${AppConfigPathProd}\",
                         \"ImageSourceBucket\" : \"/all/stacks/${DataBrokerStackName}/publicbucket\",
-                        \"ImageServerUrl\" : \"/all/stacks/${ImageServiceProdStackName}/url\",
-                        \"SubDomain\" : \"${ProdSubDomain}\",
+                        \"ImageServerHostname\" : \"/all/stacks/${ImageServiceProdStackName}/hostname\",
+                        \"HostnamePrefix\" : \"${ProdHostnamePrefix}\",
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\"
                       },

@@ -56,6 +56,8 @@ Resources:
 
   ContainerCluster:
     Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${AWS::StackName}-Cluster"
 
   ContainerTaskExecutionRole:
     Type: AWS::IAM::Role
@@ -115,12 +117,6 @@ Outputs:
     Value: !Ref SharedLogGroup
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogGroup']]
-
-  ClusterName:
-    Description: The name of the ECS Cluster created by this CloudFormation
-    Value: !Ref ContainerCluster
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ClusterName']]
 
   IIIFSecurityGroupID:
     Description: The Security Group ID for the IIIF Service

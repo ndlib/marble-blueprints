@@ -97,14 +97,33 @@ aws cloudformation deploy \
 
 ### Main Website stack
 ```console
-aws cloudformation deploy \
-  --stack-name mellon-website-dev \
+
+aws cloudformation package \
   --template-file deploy/cloudformation/unified-static-host.yml \
+  --s3-bucket $DEPLOY_BUCKET_TESTLIBND \
+  --output-template-file output.yml
+
+aws cloudformation deploy \
+  --stack-name mellon-website-jon \
+  --template-file output.yml \
+  --capabilities CAPABILITY_IAM \
   --parameter-overrides SubDomain='mellon-website-dev' \
   --tags ProjectName=mellon Name='testaccount-mellonimagewebsite-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'
 ```
+
+### Test the edge lambda for the main website.
+
+1. Install node 8.10
+2. Install Yarn
+
+```console
+
+cd src/unifiedEdgeLambda
+yarn install
+yarn run jest
+````
 
 ## Deploy CI/CD
 Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines.

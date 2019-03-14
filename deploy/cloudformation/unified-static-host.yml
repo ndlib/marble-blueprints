@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-
+Transform: AWS::Serverless-2016-10-31
 
 Description: 'Static host for webcomponents and single-page applications'
 
@@ -162,7 +162,7 @@ Resources:
           LambdaFunctionAssociations:
               -
                 EventType: origin-request
-                LambdaFunctionARN: !Sub ${SPARedirectionLambda.Arn}:${DefaultDirectoryIndexLambdaV1.Version}
+                LambdaFunctionARN: !Ref SPARedirectionLambda.Version
         Origins:
           - Id: Bucket
             DomainName: !GetAtt Bucket.DomainName
@@ -206,51 +206,11 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   SPARedirectionLambda:
-    Type: "AWS::Lambda::Function"
+    Type: AWS::Serverless::Function
     Properties:
-      Code:
-        # This Lambda will take incoming web requests and adjust the request URI as appropriate.
-        # Any requests for assets under the "/static" path will be passed along as originally sent.
-        # Requests that start with "faviocn.ico" and "manifest.json" will also be passed
-        # To "/favicon.ico" and "manifest.json" as appropriate. If the request does not match any
-        # of these, the request will ne routed to "/index.html" for entry into the SPA
-        ZipFile: >
-          'use strict';
-          exports.handler = (event, context, callback) => {
-              var request = event.Records[0].cf.request;
-              var olduri = request.uri;
-              var rootpath = olduri.slice(0,7);
-              var fav = olduri.slice(0,12);
-              var manifest = olduri.slice(0,14);
-              var robot = olduri.slice(0,11);
-              var sitemap = olduri.slice(0,12);
-              if (rootpath == ("/static") ) {
-                request.uri = request.uri;
-                return callback(null, request);
-              } else if (fav == ("/favicon.ico") ) {
-                  request.uri = "/favicon.ico";
-                  return callback(null, request);
-              }  else if (manifest == ("/manifest.json") ) {
-                  request.uri = "/manifest.json";
-                  return callback(null, request);
-              }  else if (robot == ("/robots.txt") ) {
-                  request.uri = "/robots.txt";
-                  return callback(null, request);
-              }  else if (sitemap == ("/sitemap.xml") ) {
-                  request.uri = "/sitemap.xml";
-                  return callback(null, request);
-              }  else {
-                  request.uri = "/index.html";
-                  return callback(null, request);
-              }
-          };
+      CodeUri: ./src/unifiedEdgeLambda/handler.js
       Description: Basic rewrite rule to send directory requests to appropriate locations in the SPA
-      Handler: index.handler
+      Handler: handler.handler
       Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
       Runtime: nodejs8.10
-
-  DefaultDirectoryIndexLambdaV1:
-    Type: AWS::Lambda::Version
-    Properties:
-      FunctionName: !Ref SPARedirectionLambda
-      Description: Adds the rewrite rules as needed
+      AutoPublishAlias: live

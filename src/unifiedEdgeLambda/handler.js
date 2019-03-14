@@ -1,6 +1,6 @@
 'use strict';
 
-const pathMatches = [/^\/static/, /\/favicon.ico/, /\/robots.txt/, /\/sitemap.xml/]
+const pathMatches = new RegExp('^\/static|\/favicon.ico|\/robots.txt|\/sitemap.xml')
 
 exports.handler = (event, context, callback) => {
   let request = event.Records[0].cf.request;
@@ -11,12 +11,9 @@ exports.handler = (event, context, callback) => {
 }
 
 exports.modifyRequestUri = (uri) => {
-  for(let expr of pathMatches) {
-    if (expr.test(uri)) {
-       return uri
-       return
-    }
+  if (pathMatches.test(uri)) {
+    return uri
+  } else {
+    return "/index.html"
   }
-
-  return "/index.html";
 }

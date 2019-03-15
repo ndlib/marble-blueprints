@@ -295,7 +295,7 @@ Resources:
             Value: !Sub "https://api.github.com/repos/${SourceRepoOwner}/${SourceRepoName}/statuses"
           - Name: TARGET_HOST
             Type: PARAMETER_STORE
-            Value: !Sub "/all/stacks/${IIIFTestServiceStackName}/hostname"
+            Value: !Sub "/all/stacks/${IIIFProdServiceStackName}/hostname"
 
   CodeS3Bucket:
     Type: AWS::S3::Bucket

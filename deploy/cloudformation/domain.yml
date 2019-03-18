@@ -2,10 +2,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
 Description: >
-  Defines a domain and creates a wildcard certificate that can be used for services built in this domain.
+  Defines a domain or subdomain and creates a wildcard certificate that can be used for services built within it.
 
   Note: You will still have to manually create the acm validation record once the zone and certificate are created. If this
-  is a subdomain, you will need to create the ns record in your domain to forward to this zone once it's created. You can do
+  is a subdomain, you will also need to create the ns record in your domain to forward to this zone once it's created. You can do
   this while the stack is waiting for the cert verification, which may take some time if this is a new domain.
 
 Parameters:

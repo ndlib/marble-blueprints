@@ -369,7 +369,8 @@ Resources:
                         \"ImageServerHostname\" : \"/all/stacks/${ImageServiceTestStackName}/hostname\",
                         \"HostnamePrefix\" : \"${TestHostnamePrefix}\",
                         \"DomainStackName\" : \"${DomainStackName}\",
-                        \"CreateDNSRecord\" : \"${CreateDNSRecord}\"
+                        \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
+                        \"InfrastructureStackName\" : \"${InfrastructureStackName}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${TestStackName}\",
@@ -386,7 +387,8 @@ Resources:
                         \"ImageServerHostname\" : \"/all/stacks/${ImageServiceProdStackName}/hostname\",
                         \"HostnamePrefix\" : \"${ProdHostnamePrefix}\",
                         \"DomainStackName\" : \"${DomainStackName}\",
-                        \"CreateDNSRecord\" : \"${CreateDNSRecord}\"
+                        \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
+                        \"InfrastructureStackName\" : \"${InfrastructureStackName}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${ProdStackName}\",

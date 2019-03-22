@@ -139,6 +139,7 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/github/ndlib-git/oauth"
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${IIIFTestServiceStackName}/hostname"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${IIIFProdServiceStackName}/hostname"
 
 
   DockerQABuilder:

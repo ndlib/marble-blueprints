@@ -498,6 +498,7 @@ Resources:
       Environment:
         Variables:
           PROCESS_BUCKET: !Ref ProcessBucket
+          VIPS_DISC_THRESHOLD: 512 m
 
   StatesExecutionRole:
     Type: "AWS::IAM::Role"

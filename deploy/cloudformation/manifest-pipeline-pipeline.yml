@@ -9,18 +9,18 @@ Description: >
 Parameters:
   InfrastructureStackName:
     Type: String
-    Default: mellon-app-infrastructure
+    Default: marble-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
   DomainStackName:
     Type: String
-    Default: mellon-domain
+    Default: marble-domain
     Description: The name of the parent domain stack that you created. Necessary
                  to locate and reference resources created by that stack.
   ProdStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the production resources
-    Default: "mellon-manifest-prod"
+    Default: "marble-manifest-prod"
     MaxLength: 24
   ProdHostnamePrefix:
     Type: String
@@ -31,7 +31,7 @@ Parameters:
   TestStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the test resources
-    Default: "mellon-manifest-test"
+    Default: "marble-manifest-test"
     MaxLength: 24
   TestHostnamePrefix:
     Type: String
@@ -57,7 +57,7 @@ Parameters:
   ManifestPipelineRepoName:
     Type: String
     Description: The GitHub repo name
-    Default: mellon-manifest-pipeline
+    Default: marble-manifest-pipeline
   ManifestPipelineRepoBranch:
     Type: String
     Description: The GitHub repo branch code pipelines should watch for changes on
@@ -72,23 +72,23 @@ Parameters:
     Description: "Secret. OAuthToken with access to Repo. Long string of characters and digits. Go to https://github.com/settings/tokens"
   ImageServiceTestStackName:
     Type: String
-    Default: "mellon-image-service-test"
+    Default: "marble-image-service-test"
     Description: The name of the test IIIF image service stack
   ImageServiceProdStackName:
     Type: String
-    Default: "mellon-image-service"
+    Default: "marble-image-service"
     Description: The name of the production IIIF image service stack
   DataBrokerStackName:
     Type: String
-    Default: "mellon-data-broker"
+    Default: "marble-data-broker"
     Description: The name of the shared data broker stack
   AppConfigPathProd:
     Type: String
-    Default: "/all/mellon-manifest-pipeline"
+    Default: "/all/marble-manifest-pipeline"
     Description: The path the keys for parameter store should be read and written to for config
   AppConfigPathTest:
     Type: String
-    Default: "/all/mellon-manifest-pipeline-test"
+    Default: "/all/marble-manifest-pipeline-test"
     Description: The path the keys for parameter store should be read and written to for config
 
 Resources:

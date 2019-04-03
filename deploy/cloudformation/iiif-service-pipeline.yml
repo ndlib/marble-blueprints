@@ -29,17 +29,17 @@ Parameters:
 
   IIIFProdServiceStackName:
     Type: String
-    Default: mellon-image-service-prod
+    Default: marble-image-service-prod
     Description: The name of the CloudFormation stack that created the production ECS Service
 
   IIIFTestServiceStackName:
     Type: String
-    Default: mellon-image-service-test
+    Default: marble-image-service-test
     Description: The name of the CloudFormation stack that created the test ECS Service
 
   InfrastructureStackName:
     Type: String
-    Default: mellon-app-infrastructure
+    Default: marble-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
 

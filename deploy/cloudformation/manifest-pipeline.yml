@@ -6,29 +6,29 @@ Description: >
     to display the iiif images.
   - Creates a bucket for to serve manifests out of
   - Creates a bucket that the step functions use as an in process location.
-  - Requires the iiif-service and mellon-data-broker pipelines to be built.  Uses ssm keys from those services
+  - Requires the iiif-service and marble-data-broker pipelines to be built.  Uses ssm keys from those services
 Parameters:
   InfrastructureStackName:
     Type: String
-    Default: mellon-app-infrastructure
+    Default: marble-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
   DomainStackName:
     Type: String
-    Default: mellon-domain
+    Default: marble-domain
     Description: The name of the parent domain stack that you created. Necessary
                  to locate and reference resources created by that stack.
   ImageSourceBucket:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF Image service will read from for its assets.
-    Default: '/all/stacks/mellon-data-broker/publicbucket'
+    Default: '/all/stacks/marble-data-broker/publicbucket'
   ImageServerHostname:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The hostname of the IIIF Image Server
-    Default: '/all/stacks/mellon-image-service/hostname'
+    Default: '/all/stacks/marble-image-service/hostname'
   InfrastructureStackName:
     Type: String
-    Default: "mellon-app-infrastructure"
+    Default: "marble-app-infrastructure"
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
   AppConfigPath:
@@ -290,7 +290,7 @@ Resources:
       Code:
         # This Lambda will take incoming web requests and adjust the request URI as appropriate.
         # any directory that does not end with an index.json will have that appended to it.
-        # this based off of the pattern for the mellon urls which always require a directory with an
+        # this based off of the pattern for the marble urls which always require a directory with an
         # index.json
         ZipFile: >
           'use strict';

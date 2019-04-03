@@ -1,5 +1,5 @@
-# mellon-blueprints
-The "Infrastructure as Code" repo for all pieces in the Mellon Grant. Will contain Cloud Formation Templates, Ansible playbooks, deploy scripts, etc for all components of the new system.
+# marble-blueprints
+The "Infrastructure as Code" repo for all pieces in the Marble project. Will contain Cloud Formation Templates, Ansible playbooks, deploy scripts, etc for all components of the new system.
 
 Note: It is highly recommended you use something like https://github.com/awslabs/git-secrets to prevent pushing AWS secrets to the repo
 
@@ -24,8 +24,8 @@ Before you can deploy any of the other stacks, you must deploy some prerequisite
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --template-file deploy/cloudformation/network.yml \
-  --stack-name mellon-network \
-  --tags ProjectName=mellon Name='testaccount-mellonnetwork-dev' Contact='me@myhost.org' Owner='myid' \
+  --stack-name marble-network \
+  --tags ProjectName=marble Name='testaccount-marblenetwork-dev' Contact='me@myhost.org' Owner='myid' \
     Description='brief-description-of-purpose'
 ```
 
@@ -37,8 +37,8 @@ TODO: Add example of exporting an existing network
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --template-file deploy/cloudformation/app-infrastructure.yml \
-  --stack-name mellon-app-infrastructure \
-  --tags ProjectName=mellon Name='testaccount-mellonappinfrastructure-dev' Contact='me@myhost.com' Owner='myid'\
+  --stack-name marble-app-infrastructure \
+  --tags ProjectName=marble Name='testaccount-marbleappinfrastructure-dev' Contact='me@myhost.com' Owner='myid'\
   Description='brief-description-of-purpose'
 ```
 
@@ -55,9 +55,9 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --region us-east-1 \
   --template-file deploy/cloudformation/domain.yml \
-  --stack-name mellon-domain \
+  --stack-name marble-domain \
   --parameter-overrides DomainName='mydomain.edu' CreateDNSZone='True' UseDNSZone='' \
-  --tags ProjectName=mellon Name='mellon-domain' Contact='me@myhost.com' Owner='myid'\
+  --tags ProjectName=marble Name='marble-domain' Contact='me@myhost.com' Owner='myid'\
   Description='brief-description-of-purpose'
 ```
 
@@ -66,9 +66,9 @@ aws cloudformation deploy \
 ### Data Broker stack
 ```console
 aws cloudformation deploy \
-  --stack-name mellon-data-broker-dev \
+  --stack-name marble-data-broker-dev \
   --template-file deploy/cloudformation/data-broker.yml \
-  --tags ProjectName=mellon Name='testaccount-mellondatabroker-dev' Contact='me@myhost.com' Owner='myid'\
+  --tags ProjectName=marble Name='testaccount-marbledatabroker-dev' Contact='me@myhost.com' Owner='myid'\
   Description='brief-description-of-purpose'
 ```
 
@@ -76,9 +76,9 @@ aws cloudformation deploy \
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
-  --stack-name mellon-image-service-dev \
+  --stack-name marble-image-service-dev \
   --template-file deploy/cloudformation/iiif-service.yml \
-  --tags ProjectName=mellon NameTag='testaccount-mellonimageservice-dev' \
+  --tags ProjectName=marble NameTag='testaccount-marbleimageservice-dev' \
     ContactTag='me@myhost.com' OwnerTag='myid' \
     Description='brief-description-of-purpose' \
   --parameter-overrides
@@ -88,9 +88,9 @@ aws cloudformation deploy \
 ### IIIF Image Viewer Webcomponent stack
 ```console
 aws cloudformation deploy \
-  --stack-name mellon-image-webcomponent-dev \
+  --stack-name marble-image-webcomponent-dev \
   --template-file deploy/cloudformation/static-host.yml \
-  --tags ProjectName=mellon Name='testaccount-mellonimagewebcomponent-dev' \
+  --tags ProjectName=marble Name='testaccount-marbleimagewebcomponent-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'
 ```
@@ -104,11 +104,11 @@ aws cloudformation package \
   --output-template-file output.yml
 
 aws cloudformation deploy \
-  --stack-name mellon-website-jon \
+  --stack-name marble-website-jon \
   --template-file output.yml \
   --capabilities CAPABILITY_IAM \
-  --parameter-overrides HostnamePrefix='mellon-website-dev' \
-  --tags ProjectName=mellon Name='testaccount-mellonimagewebsite-dev' \
+  --parameter-overrides HostnamePrefix='marble-website-dev' \
+  --tags ProjectName=marble Name='testaccount-marbleimagewebsite-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'
 ```
@@ -129,70 +129,70 @@ yarn run jest
 Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines.
 
 ### IIIF Image Service Pipeline
-This will deploy to test, then to production, so it expects two different image-service stacks to exist, ex: "mellon-image-service-test" and "mellon-image-service-prod". If custom stack names were used for the image-service stacks, you'll need to override the default parameters for IIIFProdServiceStackName and IIIFTestServiceStackName.
+This will deploy to test, then to production, so it expects two different image-service stacks to exist, ex: "marble-image-service-test" and "marble-image-service-prod". If custom stack names were used for the image-service stacks, you'll need to override the default parameters for IIIFProdServiceStackName and IIIFTestServiceStackName.
 
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
-  --stack-name mellon-image-service-pipeline \
+  --stack-name marble-image-service-pipeline \
   --template-file deploy/cloudformation/iiif-service-pipeline.yml \
-  --tags ProjectName=mellon Name='testaccount-mellonimageservicepipeline' \
+  --tags ProjectName=marble Name='testaccount-marbleimageservicepipeline' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
 ```
 
 ### IIIF Image Viewer Pipeline
-This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "mellon-image-webcomponent-test" and "mellon-image-webcomponent-prod".
+This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "marble-image-webcomponent-test" and "marble-image-webcomponent-prod".
 
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
-  --stack-name mellon-image-webcomponent-pipeline \
+  --stack-name marble-image-webcomponent-pipeline \
   --template-file deploy/cloudformation/static-host-pipeline.yml \
-  --tags ProjectName=mellon Name='testaccount-mellonimagewebcomponentpipeline' \
+  --tags ProjectName=marble Name='testaccount-marbleimagewebcomponentpipeline' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
     SourceRepoOwner=ndlib SourceRepoName=image-viewer BuildScriptsDir='build' BuildOutputDir='dist' \
-    TestStackName=mellon-image-webcomponent-test ProdStackName=mellon-image-webcomponent-prod
+    TestStackName=marble-image-webcomponent-test ProdStackName=marble-image-webcomponent-prod
 ```
 
 # IIIF Manifest Pipeline
-This will create an AWS CodePipeline that will deploy the [manifest data pipeline](https://github.com/ndlib/mellon-manifest-pipeline).
+This will create an AWS CodePipeline that will deploy the [manifest data pipeline](https://github.com/ndlib/marble-manifest-pipeline).
 
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
-  --stack-name mellon-manifest-deploy-pipeline \
+  --stack-name marble-manifest-deploy-pipeline \
   --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
-  --tags Name='mellon-manifest-pipeline' Contact='me@myhost.com' Owner='myid' Description='Deploys the IIIF Manifest Data Pipeline.' \
+  --tags Name='marble-manifest-pipeline' Contact='me@myhost.com' Owner='myid' Description='Deploys the IIIF Manifest Data Pipeline.' \
   --parameter-overrides GitHubToken=my_oauth_key Receivers=me@myhost.com \
-    TestHostnamePrefix='mellon-manifest-test' ProdHostnamePrefix='mellon-manifest' \
-    AppConfigPathTest='/all/mellon-manifest-test' AppConfigPathProd='/all/mellon-manifest-prod'
+    TestHostnamePrefix='marble-manifest-test' ProdHostnamePrefix='marble-manifest' \
+    AppConfigPathTest='/all/marble-manifest-test' AppConfigPathProd='/all/marble-manifest-prod'
 ```
 
 ### Website Pipeline
-This will deploy to test, then to production, so it expects two different website stacks to exist, ex: "mellon-website-test" and "mellon-website-prod".
+This will deploy to test, then to production, so it expects two different website stacks to exist, ex: "marble-website-test" and "marble-website-prod".
 
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
-  --stack-name mellon-website-pipeline \
+  --stack-name marble-website-pipeline \
   --template-file deploy/cloudformation/static-host-pipeline.yml \
-  --tags ProjectName=mellon Name='testaccount-mellonimagewebsitepipeline' \
+  --tags ProjectName=marble Name='testaccount-marbleimagewebsitepipeline' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
-    SourceRepoOwner=ndlib SourceRepoName=mellon-website \
-    TestStackName=mellon-website-test ProdStackName=mellon-website-prod
+    SourceRepoOwner=ndlib SourceRepoName=marble-website \
+    TestStackName=marble-website-test ProdStackName=marble-website-prod
 ```
 
 #### Approval message
 Once the pipeline reaches the UAT step, it will send an email to the approvers list and wait until it's either approved or rejected. Here's an example of the message.
 
 ```email
-Approve or reject: https://console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID/Approval/ManualApprovalOfTestEnvironment/approve/approval-id
+Approve or reject: https://console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID/Approval/ManualApprovalOfTestEnvironment/approve/approval-id
 Additional information: You can review these changes at https://testurl. Once approved, this will be deployed to https://produrl.
 Deadline: This review request will expire on 2018-10-15T20:36Z
 ```
@@ -209,54 +209,54 @@ Use this stack if you want to notify an email address of pipeline events. It is 
 Here's an example of adding monitoring to the image-webcomponent-pipeline
 ```console
 aws cloudformation deploy \
-  --stack-name mellon-image-webcomponent-pipeline-monitoring \
+  --stack-name marble-image-webcomponent-pipeline-monitoring \
   --template-file deploy/cloudformation/pipeline-monitoring.yml \
-  --tags ProjectName=mellon Name='testaccount-mellonimagewebcomponentpipeline-monitoring' \
+  --tags ProjectName=marble Name='testaccount-marbleimagewebcomponentpipeline-monitoring' \
     Contact='me@myhost.com' Owner='myid' Description='brief-description-of-purpose' \
-  --parameter-overrides PipelineStackName=mellon-image-webcomponent-pipeline Receivers=me@myhost.com
+  --parameter-overrides PipelineStackName=marble-image-webcomponent-pipeline Receivers=me@myhost.com
 ```
 
 Here's an example of adding monitoring to the website-pipeline
 ```console
 aws cloudformation deploy \
-  --stack-name mellon-website-pipeline-monitoring \
+  --stack-name marble-website-pipeline-monitoring \
   --template-file deploy/cloudformation/pipeline-monitoring.yml \
-  --tags ProjectName=mellon Name='testaccount-mellonimagewebsitepipeline-monitoring' \
+  --tags ProjectName=marble Name='testaccount-marbleimagewebsitepipeline-monitoring' \
     Contact='me@myhost.com' Owner='myid' Description='brief-description-of-purpose' \
-  --parameter-overrides PipelineStackName=mellon-website-pipeline Receivers=me@myhost.com
+  --parameter-overrides PipelineStackName=marble-website-pipeline Receivers=me@myhost.com
 ```
 
 Here's an example of adding monitoring to the image-service-pipeline
 ```console
 aws cloudformation deploy \
-  --stack-name mellon-image-service-pipeline-monitoring \
+  --stack-name marble-image-service-pipeline-monitoring \
   --template-file deploy/cloudformation/pipeline-monitoring.yml \
-  --tags ProjectName=mellon Name='testaccount-mellonimageservicepipeline-monitoring' \
+  --tags ProjectName=marble Name='testaccount-marbleimageservicepipeline-monitoring' \
     Contact='me@myhost.com' Owner='myid' Description='brief-description-of-purpose' \
-  --parameter-overrides PipelineStackName=mellon-image-service-pipeline Receivers=me@myhost.com
+  --parameter-overrides PipelineStackName=marble-image-service-pipeline Receivers=me@myhost.com
 ```
 
 #### Examples of the notifications:
 ##### Started
-The pipeline mellon-image-webcomponent-pipeline has started. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.
+The pipeline marble-image-webcomponent-pipeline has started. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.
 
 ##### Success
-The pipeline mellon-image-webcomponent-pipeline has successfully deployed to production. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.
+The pipeline marble-image-webcomponent-pipeline has successfully deployed to production. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.
 
 ##### Source failure
-Failed to pull the source code for mellon-image-webcomponent-pipeline. To view the current execution, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.
+Failed to pull the source code for marble-image-webcomponent-pipeline. To view the current execution, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.
 
 ##### Build failure
-Failed to build mellon-image-webcomponent-pipeline. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.
+Failed to build marble-image-webcomponent-pipeline. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.
 
 ##### Deploy to test failure
-Build for mellon-image-webcomponent-pipeline failed to deploy to test stack. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.
+Build for marble-image-webcomponent-pipeline failed to deploy to test stack. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.
 
 ##### Approval failure
-Build for mellon-image-webcomponent-pipeline was rejected either due to a QA failure or UAT rejection. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.
+Build for marble-image-webcomponent-pipeline was rejected either due to a QA failure or UAT rejection. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.
 
 ##### Deploy to production failure
-Build for mellon-image-webcomponent-pipeline failed to deploy to production. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.
+Build for marble-image-webcomponent-pipeline failed to deploy to production. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.
 
 ##### Generic resume after a failure
-The pipeline mellon-image-webcomponent-pipeline has changed state to RESUMED. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/mellon-image-webcomponent-pipeline-CodePipeline-ID.
+The pipeline marble-image-webcomponent-pipeline has changed state to RESUMED. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.

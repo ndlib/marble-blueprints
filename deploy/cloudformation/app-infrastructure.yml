@@ -16,7 +16,7 @@ Parameters:
   NetworkStackName:
     Type: String
     Description: The name of the parent networking stack created.
-    Default: "mellon-network"
+    Default: "marble-network"
 
 Resources:
 

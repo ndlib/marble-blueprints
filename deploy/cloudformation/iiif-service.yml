@@ -26,21 +26,21 @@ Parameters:
   NetworkStackName:
     Type: String
     Description: The name of the parent networking stack created.
-    Default: "mellon-network"
+    Default: "marble-network"
   InfrastructureStackName:
     Type: String
-    Default: "mellon-app-infrastructure"
+    Default: "marble-app-infrastructure"
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
   DomainStackName:
     Type: String
-    Default: mellon-domain
+    Default: marble-domain
     Description: The name of the parent domain stack that you created. Necessary
                  to locate and reference resources created by that stack.
   ImageSourceBucket:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The name of the source bucket that the IIIF service will read from for its assets.
-    Default: '/all/stacks/mellon-data-broker-dev/publicbucket'
+    Default: '/all/stacks/marble-data-broker-dev/publicbucket'
   ImageUrl:
     Type: String
     Default: ndlib/image-service

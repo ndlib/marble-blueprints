@@ -5,7 +5,7 @@ Description: >
   This CloudFormation will create the following:
 
     - Exports for the current VPCID and SubnetIDs that exist in your existing account,
-    with consistency for the rest of the Mellon project
+    with consistency for the rest of the Marble project
 
 Parameters:
   VPC:

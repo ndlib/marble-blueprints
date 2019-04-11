@@ -14,11 +14,11 @@ Parameters:
   ProdStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the production resources
-    Default: "mellon-passthroughprimo-pipeline"
+    Default: "marble-passthroughprimo-pipeline"
   TestStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the test resources
-    Default: "mellon-passthroughprimo-pipeline-test"
+    Default: "marble-passthroughprimo-pipeline-test"
   Receivers:
     Type: String
     Description: An e-mail address to send the monitoring notifications
@@ -33,7 +33,7 @@ Parameters:
   PassthroughPrimoPipelineRepoName:
     Type: String
     Description: The GitHub repo name
-    Default: mellon-passthrough-primo
+    Default: marble-passthrough-primo
   PassthroughPrimoPipelineRepoBranch:
     Type: String
     Description: The GitHub repo branch code pipelines should watch for changes on
@@ -48,11 +48,11 @@ Parameters:
     Description: "Secret. OAuthToken with access to Repo. Long string of characters and digits. Go to https://github.com/settings/tokens"
   AppConfigPathProd:
     Type: String
-    Default: "/all/mellon-passthroughprimo-pipeline"
+    Default: "/all/marble-passthroughprimo-pipeline"
     Description: The path the keys for parameter store should be read and written to for config
   AppConfigPathTest:
     Type: String
-    Default: "/all/mellon-passthroughprimo-pipeline-test"
+    Default: "/all/marble-passthroughprimo-pipeline-test"
     Description: The path the keys for parameter store should be read and written to for config
   PassthroughUrl:
       NoEcho: true

@@ -41,7 +41,7 @@ Resources:
   PassthroughLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-MellonPrimoPassthrough"
+      FunctionName: !Sub "${AWS::StackName}-MarblePrimoPassthrough"
       Handler: index.handler
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: "nodejs8.10"

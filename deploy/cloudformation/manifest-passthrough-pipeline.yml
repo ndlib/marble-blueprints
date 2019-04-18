@@ -33,7 +33,7 @@ Parameters:
   PassthroughPrimoPipelineRepoName:
     Type: String
     Description: The GitHub repo name
-    Default: marble-passthrough-primo
+    Default: mellon-passthrough-primo
   PassthroughPrimoPipelineRepoBranch:
     Type: String
     Description: The GitHub repo branch code pipelines should watch for changes on
@@ -54,22 +54,10 @@ Parameters:
     Type: String
     Default: "/all/marble-passthroughprimo-pipeline-test"
     Description: The path the keys for parameter store should be read and written to for config
-  PassthroughUrl:
-      NoEcho: true
-      Type: String
-      Description: Primo passthrough url
-  PrimoApiKey:
-      NoEcho: true
-      Type: String
-      Description: Primo API key
-  PrimoSandboxApiKey:
-      NoEcho: true
-      Type: String
-      Description: Sandbox Primo API key
   PassthroughVersion:
-    NoEcho: true
     Type: String
     Description: Passthrough Git versioning information
+    Default: dev
 
 Resources:
   CodeBuildTrustRole:
@@ -121,11 +109,11 @@ Resources:
       PolicyName: CloudFormationRolePolicy
       PolicyDocument:
         Statement:
-          # Allow the role to create SSM resources specified by manifest-pipeline.yml
+          # Allow the role to create SSM resources specified by the pipeline
           - Action:
-            - 'ssm:Delete*'
-            - 'ssm:Put*'
-            - 'ssm:AddTags*'
+            - 'ssm:DeleteParameter'
+            - 'ssm:PutParameter'
+            - 'ssm:AddTagsToResource'
             Resource:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${TestStackName}/*"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ProdStackName}/*"
@@ -133,7 +121,11 @@ Resources:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPathTest}/*"
             Effect: Allow
           - Action:
-              - 'lambda:*'
+              - 'lambda:GetFunction'
+              - 'lambda:InvokeFunction'
+              - 'lambda:DeleteFunction'
+              - 'lambda:CreateFunction'
+              - 'lambda:TagResource'
             Resource:
               - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TestStackName}-*'
               - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ProdStackName}-*'
@@ -271,9 +263,6 @@ Resources:
                     echo "{
                       \"Parameters\" : {
                         \"AppConfigPath\" : \"${AppConfigPathTest}\",
-                        \"PassthroughUrl\" : \"${PassthroughUrl}\",
-                        \"PrimoApiKey\" : \"${PrimoApiKey}\",
-                        \"PrimoSandboxApiKey\" : \"${PrimoSandboxApiKey}\",
                         \"Version\" : \"${PassthroughVersion}\"
                       },
                       \"Tags\" : {
@@ -287,9 +276,6 @@ Resources:
                     echo "{
                       \"Parameters\" : {
                         \"AppConfigPath\" : \"${AppConfigPathProd}\",
-                        \"PassthroughUrl\" : \"${PassthroughUrl}\",
-                        \"PrimoApiKey\" : \"${PrimoApiKey}\",
-                        \"PrimoSandboxApiKey\" : \"${PrimoSandboxApiKey}\",
                         \"Version\" : \"${PassthroughVersion}\"
                       },
                       \"Tags\" : {
@@ -528,7 +514,6 @@ Resources:
             InputPathsMap:
               Pipeline: "$.detail.pipeline"
             InputTemplate: !Sub '"The pipeline <Pipeline> has successfully deployed to production. To view the pipeline, go to https://${AWS::Region}.console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/<Pipeline>."'
-
   # This is just a catch all for other states.
   # I'm not entirely sure we care about them yet.
   PipelineGenericEventRule:

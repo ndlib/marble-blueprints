@@ -10,18 +10,11 @@ Parameters:
   AppConfigPath:
     Type: String
     Description: The path to look for the application config from
-  PassthroughUrl:
-      Type: String
-      Description: Primo passthrough url
-  PrimoApiKey:
-      Type: String
-      Description: Primo API key
-  PrimoSandboxApiKey:
-      Type: String
-      Description: Sandbox Primo API key
+    Default: /all/marble-passthroughprimo-pipeline-test/
   Version:
-      Type: String
-      Description: Versioning information
+    Type: String
+    Description: Versioning information
+    Default: dev
 
 
 Resources:
@@ -36,6 +29,16 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: PassthroughSsmPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "ssm:GetParametersByPath"
+                Effect: "Allow"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}*"
 
 
   PassthroughLambdaFunction:
@@ -49,7 +52,5 @@ Resources:
       CodeUri: passthrough/
       Environment:
         Variables:
-          PRIMO_API_KEY: !Ref PrimoApiKey
-          PASSTHROUGH_URL: !Ref PassthroughUrl
-          PRIMO_SANDBOX_API_KEY: !Ref PrimoSandboxApiKey
+          APP_CONFIG_PATH: !Ref AppConfigPath
           VERSION: !Ref Version

@@ -200,8 +200,8 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --stack-name mellon-passthrough-pipeline \
   --template-file deploy/cloudformation/manifest-passthrough-pipeline.yml \
-  --tags Name='mellon-passthrough-pipeline' Contact='me@myhost.com' Owner='myid' Description='CF for Passthrough Pipeline.' \ --parameter-overrides Receivers=email@email.com GitHubToken=ADDME! \
-    PrimoApiKey=key1 PrimoSandboxApiKey=key2 PassthroughVersion=dev PassthroughUrl='https://myurl.com'
+  --tags Name='mellon-passthrough-pipeline' Contact='me@myhost.com' Owner='myid' Description='CF for Passthrough Pipeline.' \ 
+  --parameter-overrides Receivers=email@email.com GitHubToken=ADDME! PassthroughVersion='setMe'
 ```
 
 #### Examples of the notifications:

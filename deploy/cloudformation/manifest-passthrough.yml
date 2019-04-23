@@ -4,7 +4,7 @@ Description: >
 Parameters:
   InfrastructureStackName:
     Type: String
-    Default: mellon-app-infrastructure
+    Default: marble-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
   AppConfigPath:

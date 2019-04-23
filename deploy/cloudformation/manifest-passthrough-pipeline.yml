@@ -8,7 +8,7 @@ Description: >
 Parameters:
   InfrastructureStackName:
     Type: String
-    Default: mellon-app-infrastructure
+    Default: marble-app-infrastructure
     Description: The name of the parent infrastructure/networking stack that you created. Necessary
                  to locate and reference resources created by that stack.
   ProdStackName:
@@ -25,7 +25,7 @@ Parameters:
   ConfigurationRepoName:
     Type: String
     Description: The GitHub repo for the cloudfromation blueprints
-    Default: mellon-blueprints
+    Default: marble-blueprints
   ConfigurationRepoBranchName:
     Type: String
     Description: The GitHub repo branch the codepipeline should checkout to run blueprints from
@@ -33,7 +33,7 @@ Parameters:
   PassthroughPrimoPipelineRepoName:
     Type: String
     Description: The GitHub repo name
-    Default: mellon-passthrough-primo
+    Default: marble-passthrough-primo
   PassthroughPrimoPipelineRepoBranch:
     Type: String
     Description: The GitHub repo branch code pipelines should watch for changes on

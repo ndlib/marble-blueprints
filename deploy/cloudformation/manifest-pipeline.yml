@@ -25,7 +25,7 @@ Parameters:
   ImageServerHostname:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The hostname of the IIIF Image Server
-    Default: '/all/stacks/marble-image-service-test/hostname'
+    Default: '/all/stacks/marble-image-service/hostname'
   InfrastructureStackName:
     Type: String
     Default: "marble-app-infrastructure"

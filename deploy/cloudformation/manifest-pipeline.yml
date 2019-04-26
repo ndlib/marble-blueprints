@@ -425,7 +425,7 @@ Resources:
         Variables:
           STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachine"
 
-  IndexInputLambdaFunction:
+  CsvInputLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
@@ -455,6 +455,19 @@ Resources:
       Timeout: 600
       MemorySize: 512
       CodeUri: finalize/
+      Environment:
+        Variables:
+          PROCESS_BUCKET: !Ref ProcessBucket
+
+  IndexLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 600
+      MemorySize: 512
+      CodeUri: index/
       Environment:
         Variables:
           PROCESS_BUCKET: !Ref ProcessBucket
@@ -535,7 +548,7 @@ Resources:
               "States": {
                 "ProcessInput": {
                   "Type": "Task",
-                  "Resource": "${indexInputLambdaArn}",
+                  "Resource": "${csvInputLambdaArn}",
                   "Next": "ProcessManifest"
                 },
                 "ProcessManifest": {
@@ -562,12 +575,17 @@ Resources:
                             "Next": "PGImgProcessor"
                         }
                     ],
-                    "Default": "Finalize"
+                    "Default": "Index"
                 },
                 "PGImgProcessor": {
                     "Type": "Task",
                     "Resource": "${pgImgProcLambdaArn}",
                     "Next": "PGIterator"
+                },
+                "Index": {
+                  "Type": "Task",
+                  "Resource": "${indexLambdaArn}",
+                  "Next": "Finalize"
                 },
                 "Finalize": {
                   "Type": "Task",
@@ -576,5 +594,5 @@ Resources:
                 }
               }
             }
-          - { indexInputLambdaArn: !GetAtt [ IndexInputLambdaFunction, Arn ], manifestLambdaArn: !GetAtt [ ManifestLambdaFunction, Arn ], pgCountLambdaArn: !GetAtt [ PGCounterLambdaFunction, Arn], pgIteratorLambdaArn: !GetAtt [ PGIteratorLambdaFunction, Arn], pgImgProcLambdaArn: !GetAtt [ PGImgProcLambdaFunction, Arn], finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ] }
+          - { csvInputLambdaArn: !GetAtt [ CsvInputLambdaFunction, Arn ], manifestLambdaArn: !GetAtt [ ManifestLambdaFunction, Arn ], pgCountLambdaArn: !GetAtt [ PGCounterLambdaFunction, Arn], pgIteratorLambdaArn: !GetAtt [ PGIteratorLambdaFunction, Arn], pgImgProcLambdaArn: !GetAtt [ PGImgProcLambdaFunction, Arn], indexLambdaArn: !GetAtt [IndexLambdaFunction, Arn], finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ] }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]

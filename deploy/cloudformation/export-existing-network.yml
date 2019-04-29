@@ -43,7 +43,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: /all/vpcid
+      Name: !Sub '/all/stacks/${AWS::StackName}/vpcid'
       Description: The VPCID to use for existing resources
       Value: !Ref VPC
 

@@ -49,7 +49,7 @@ Parameters:
   ConfigurationRepoName:
     Type: String
     Description: The GitHub repo for the cloudfromation blueprints
-    Default: mellon-blueprints
+    Default: marble-blueprints
   ConfigurationRepoBranchName:
     Type: String
     Description: The GitHub repo branch the codepipeline should checkout to run blueprints from

@@ -198,6 +198,8 @@ Resources:
             - 'ssm:Delete*'
             - 'ssm:Put*'
             - 'ssm:AddTags*'
+            - 'ssm:RemoveTagsFromResource'
+            - 'ssm:GetParameters'
             Resource:
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${TestStackName}/*"
               - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ProdStackName}/*"

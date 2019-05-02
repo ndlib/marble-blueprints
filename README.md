@@ -236,6 +236,16 @@ aws cloudformation deploy \
   --parameter-overrides PipelineStackName=marble-image-service-pipeline Receivers=me@myhost.com
 ```
 
+How to build the Primo Passthrough Pipeline
+```console
+aws cloudformation deploy \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --stack-name mellon-passthrough-pipeline \
+  --template-file deploy/cloudformation/manifest-passthrough-pipeline.yml \
+  --tags Name='mellon-passthrough-pipeline' Contact='me@myhost.com' Owner='myid' Description='CF for Passthrough Pipeline.' \ 
+  --parameter-overrides Receivers=email@email.com GitHubToken=ADDME! PassthroughVersion='setMe'
+```
+
 #### Examples of the notifications:
 ##### Started
 The pipeline marble-image-webcomponent-pipeline has started. To view the pipeline, go to https://us-west-2.console.aws.amazon.com/codepipeline/home?region=us-west-2#/view/marble-image-webcomponent-pipeline-CodePipeline-ID.

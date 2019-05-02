@@ -34,7 +34,14 @@ Parameters:
   AppConfigPath:
     Type: String
     Description: The path to look for the application config from
-
+  NoReplyEmailAddr:
+    Type: String
+    Description: Email address notification emails are sent from
+    Default: "noreply@nd.edu"
+  TroubleshooterEmailAddr:
+    Type: String
+    Description: Email address to send errors for debugging
+    Default: "rdought1@nd.edu"
   CacheSettings:
     Type: Number
     Description: The cache value to hold the manifests for.
@@ -80,22 +87,6 @@ Outputs:
     Value: !GetAtt Distribution.DomainName
 
 Resources:
-
-  NoReplyEmailAddr:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "${AppConfigPath}/noreply-email-addr"
-      Value: "noreply@nd.edu"
-      Description: "Email address notification emails are sent from"
-
-  TroubleshooterEmailAddr:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub "${AppConfigPath}/troubleshoot-email-addr"
-      Value: "rdought1@nd.edu"
-      Description: "Email address to send errors for debugging"
 
   SSMImageServerBaseUrl:
     Type: AWS::SSM::Parameter
@@ -452,6 +443,8 @@ Resources:
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
+          NO_REPLY_EMAIL: !Ref NoReplyEmailAddr
+          TROUBLESHOOTING_EMAIL: !Ref TroubleshooterEmailAddr
 
   CsvInputLambdaFunction:
     Type: AWS::Serverless::Function

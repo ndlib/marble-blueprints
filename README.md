@@ -169,7 +169,8 @@ aws cloudformation deploy \
   --tags Name='marble-manifest-pipeline' Contact='me@myhost.com' Owner='myid' Description='Deploys the IIIF Manifest Data Pipeline.' \
   --parameter-overrides GitHubToken=my_oauth_key Receivers=me@myhost.com \
     TestHostnamePrefix='marble-manifest-test' ProdHostnamePrefix='marble-manifest' \
-    AppConfigPathTest='/all/marble-manifest-test' AppConfigPathProd='/all/marble-manifest-prod'
+    AppConfigPathTest='/all/marble-manifest-test' AppConfigPathProd='/all/marble-manifest-prod' \
+    NoReplyEmailAddr='me@myhost.com' TroubleshooterEmailAddr='me@myhost.com'
 ```
 
 ### Website Pipeline

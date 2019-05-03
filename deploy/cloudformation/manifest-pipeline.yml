@@ -34,7 +34,14 @@ Parameters:
   AppConfigPath:
     Type: String
     Description: The path to look for the application config from
-
+  NoReplyEmailAddr:
+    Type: String
+    Description: Email address notification emails are sent from
+    Default: "noreply@nd.edu"
+  TroubleshooterEmailAddr:
+    Type: String
+    Description: Email address to send errors for debugging
+    Default: "rdought1@nd.edu"
   CacheSettings:
     Type: Number
     Description: The cache value to hold the manifests for.
@@ -425,6 +432,20 @@ Resources:
         Variables:
           STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachine"
 
+  InitManifestLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: init/
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          NO_REPLY_EMAIL: !Ref NoReplyEmailAddr
+          TROUBLESHOOTING_EMAIL: !Ref TroubleshooterEmailAddr
+
   CsvInputLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -433,9 +454,6 @@ Resources:
       Runtime: python3.7
       Timeout: 90
       CodeUri: json-from-csv/
-      Environment:
-        Variables:
-          SSM_KEY_BASE: !Ref AppConfigPath
 
   ManifestLambdaFunction:
     Type: AWS::Serverless::Function
@@ -544,26 +562,66 @@ Resources:
           - |-
             {
               "Comment": "Manifest Pipeline",
-              "StartAt": "ProcessInput",
+              "StartAt": "InitManifest",
               "States": {
+                "InitManifest": {
+                  "Type": "Task",
+                  "Resource": "${initManifestLambdaArn}",
+                  "Catch": [
+                    {
+                      "ErrorEquals": [ "States.ALL" ],
+                      "ResultPath": "$.unexpected",
+                      "Next": "Finalize"
+                    }
+                  ],
+                  "Next": "ProcessInput"
+                },
                 "ProcessInput": {
                   "Type": "Task",
                   "Resource": "${csvInputLambdaArn}",
+                  "Catch": [
+                    {
+                      "ErrorEquals": [ "States.ALL" ],
+                      "ResultPath": "$.unexpected",
+                      "Next": "Finalize"
+                    }
+                  ],
                   "Next": "ProcessManifest"
                 },
                 "ProcessManifest": {
                   "Type": "Task",
                   "Resource": "${manifestLambdaArn}",
+                  "Catch": [
+                    {
+                      "ErrorEquals": [ "States.ALL" ],
+                      "ResultPath": "$.unexpected",
+                      "Next": "Finalize"
+                    }
+                  ],
                   "Next": "PGCount"
                 },
                 "PGCount": {
                   "Type": "Task",
                   "Resource": "${pgCountLambdaArn}",
+                  "Catch": [
+                    {
+                      "ErrorEquals": [ "States.ALL" ],
+                      "ResultPath": "$.unexpected",
+                      "Next": "Finalize"
+                    }
+                  ],
                   "Next": "PGIterator"
                 },
                 "PGIterator": {
                     "Type": "Task",
                     "Resource": "${pgIteratorLambdaArn}",
+                    "Catch": [
+                      {
+                        "ErrorEquals": [ "States.ALL" ],
+                        "ResultPath": "$.unexpected",
+                        "Next": "Finalize"
+                      }
+                    ],
                     "Next": "PGIsCountReached"
                 },
                 "PGIsCountReached": {
@@ -580,11 +638,25 @@ Resources:
                 "PGImgProcessor": {
                     "Type": "Task",
                     "Resource": "${pgImgProcLambdaArn}",
+                    "Catch": [
+                      {
+                        "ErrorEquals": [ "States.ALL" ],
+                        "ResultPath": "$.unexpected",
+                        "Next": "Finalize"
+                      }
+                    ],
                     "Next": "PGIterator"
                 },
                 "Index": {
                   "Type": "Task",
                   "Resource": "${indexLambdaArn}",
+                  "Catch": [
+                    {
+                      "ErrorEquals": [ "States.ALL" ],
+                      "ResultPath": "$.unexpected",
+                      "Next": "Finalize"
+                    }
+                  ],
                   "Next": "Finalize"
                 },
                 "Finalize": {
@@ -594,5 +666,15 @@ Resources:
                 }
               }
             }
-          - { csvInputLambdaArn: !GetAtt [ CsvInputLambdaFunction, Arn ], manifestLambdaArn: !GetAtt [ ManifestLambdaFunction, Arn ], pgCountLambdaArn: !GetAtt [ PGCounterLambdaFunction, Arn], pgIteratorLambdaArn: !GetAtt [ PGIteratorLambdaFunction, Arn], pgImgProcLambdaArn: !GetAtt [ PGImgProcLambdaFunction, Arn], indexLambdaArn: !GetAtt [IndexLambdaFunction, Arn], finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ] }
+          -
+            {
+              initManifestLambdaArn: !GetAtt [InitManifestLambdaFunction, Arn],
+              csvInputLambdaArn: !GetAtt [ CsvInputLambdaFunction, Arn ],
+              manifestLambdaArn: !GetAtt [ ManifestLambdaFunction, Arn ],
+              pgCountLambdaArn: !GetAtt [ PGCounterLambdaFunction, Arn],
+              pgIteratorLambdaArn: !GetAtt [ PGIteratorLambdaFunction, Arn],
+              pgImgProcLambdaArn: !GetAtt [ PGImgProcLambdaFunction, Arn],
+              indexLambdaArn: !GetAtt [IndexLambdaFunction, Arn],
+              finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ],
+            }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]

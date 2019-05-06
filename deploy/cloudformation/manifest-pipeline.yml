@@ -156,6 +156,14 @@ Resources:
             AllowedOrigins:
               - '*'
             MaxAge: 3000
+          - Id: CSRFCorsHeader
+            AllowedHeaders:
+              - X-CSRF-Token
+            AllowedMethods:
+              - GET
+              - HEAD
+            AllowedOrigins:
+              - '*'
   ManifestBucketPolicy:
     Type: AWS::S3::BucketPolicy
     DependsOn: OriginAccessIdentity

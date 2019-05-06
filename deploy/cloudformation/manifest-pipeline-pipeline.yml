@@ -146,6 +146,7 @@ Resources:
               - 'states:CreateStateMachine'
               - 'states:DeleteStateMachine'
               - 'states:TagResource'
+              - 'states:UpdateStateMachine'
             Resource:
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'
             Effect: 'Allow'

@@ -557,7 +557,7 @@ Resources:
           Name: Source
           Actions:
             -
-              Name: "RetrieveSourceCode"
+              Name: "AppCode"
               ActionTypeId:
                 Owner: ThirdParty
                 Category: Source
@@ -587,9 +587,9 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeBuilder
         -
-          Name: DeployToTest
+          Name: Test
           Actions:
-            - Name: "DeployToTest"
+            - Name: "Deploy"
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -602,11 +602,8 @@ Resources:
               Configuration:
                 ProjectName: !Ref CodeTestDeployer
               RunOrder: 1
-        -
-          Name: Approval
-          Actions:
             -
-              Name: "ManualApprovalOfTestEnvironment"
+              Name: "Approval"
               ActionTypeId:
                 Owner: AWS
                 Category: Approval
@@ -623,9 +620,9 @@ Resources:
                         Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'Hostname']]
 
         -
-          Name: DeployToProduction
+          Name: Production
           Actions:
-            - Name: "DeployToProduction"
+            - Name: "Deploy"
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -639,9 +636,9 @@ Resources:
                 ProjectName: !Ref CodeProdDeployer
               RunOrder: 1
         -
-          Name: PostDeployActions
+          Name: PostProduction
           Actions:
-            - Name: "UpdateGitHubStatus"
+            - Name: "AddGitHubStatus"
               ActionTypeId:
                 Category: Build
                 Owner: AWS

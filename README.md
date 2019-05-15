@@ -241,9 +241,9 @@ How to build the Primo Passthrough Pipeline
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
-  --stack-name mellon-passthrough-pipeline \
+  --stack-name marble-passthrough-pipeline \
   --template-file deploy/cloudformation/manifest-passthrough-pipeline.yml \
-  --tags Name='mellon-passthrough-pipeline' Contact='me@myhost.com' Owner='myid' Description='CF for Passthrough Pipeline.' \ 
+  --tags Name='marble-passthrough-pipeline' Contact='me@myhost.com' Owner='myid' Description='CF for Passthrough Pipeline.' \
   --parameter-overrides Receivers=email@email.com GitHubToken=ADDME! PassthroughVersion='setMe'
 ```
 

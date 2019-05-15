@@ -76,7 +76,7 @@ Parameters:
     Description: The name of the test IIIF image service stack
   ImageServiceProdStackName:
     Type: String
-    Default: "marble-image-service"
+    Default: "marble-image-service-prod"
     Description: The name of the production IIIF image service stack
   DataBrokerStackName:
     Type: String
@@ -84,7 +84,7 @@ Parameters:
     Description: The name of the shared data broker stack
   AppConfigPathProd:
     Type: String
-    Default: "/all/marble-manifest-pipeline"
+    Default: "/all/marble-manifest-pipeline-prod"
     Description: The path the keys for parameter store should be read and written to for config
   AppConfigPathTest:
     Type: String
@@ -434,7 +434,7 @@ Resources:
       Stages:
       - Name: Source
         Actions:
-        - Name: RetrieveAppCodeSource
+        - Name: AppCode
           InputArtifacts: []
           ActionTypeId:
             Version: "1"
@@ -451,7 +451,7 @@ Resources:
             PollForSourceChanges: true
           RunOrder: 1
         -
-          Name: "RetrieveConfigSource"
+          Name: "InfraCode"
           ActionTypeId:
             Owner: ThirdParty
             Category: Source
@@ -468,7 +468,7 @@ Resources:
           RunOrder: 1
       - Name: Build
         Actions:
-        - Name: BuildFromSource
+        - Name: Build
           InputArtifacts:
           - Name: AppCodeSource
           - Name: ConfigSource
@@ -484,7 +484,7 @@ Resources:
             PrimarySource: AppCodeSource
           RunOrder: 1
 
-      - Name: DeployToTest
+      - Name: Test
         Actions:
           - Name: CreateChangeSet
             ActionTypeId:
@@ -503,7 +503,7 @@ Resources:
               TemplateConfiguration: BuiltCode::test-stack-configuration.json
               TemplatePath: BuiltCode::output.yml
             RunOrder: 1
-          - Name: ExecuteChangeSet
+          - Name: Deploy
             ActionTypeId:
               Category: Deploy
               Owner: AWS
@@ -516,7 +516,7 @@ Resources:
               StackName: !Ref TestStackName
             RunOrder: 2
           -
-            Name: "ManualApprovalOfTestEnvironment"
+            Name: "Approval"
             ActionTypeId:
               Owner: AWS
               Category: Approval
@@ -527,7 +527,7 @@ Resources:
               CustomData: Approval or Reject this change after running Exploratory Tests
             RunOrder: 3
 
-      - Name: DeployToProduction
+      - Name: Production
         Actions:
           - Name: CreateChangeSet
             ActionTypeId:
@@ -546,7 +546,7 @@ Resources:
               TemplateConfiguration: BuiltCode::prod-stack-configuration.json
               TemplatePath: BuiltCode::output.yml
             RunOrder: 1
-          - Name: ExecuteChangeSet
+          - Name: Deploy
             ActionTypeId:
               Category: Deploy
               Owner: AWS

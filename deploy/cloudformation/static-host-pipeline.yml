@@ -613,11 +613,12 @@ Resources:
                 NotificationArn: !Ref ApproversTopic
                 CustomData:
                   Fn::Sub:
-                    - "You can review these changes at https://${TestHostname}. Once approved, this will be deployed to https://${ProdHostname}."
+                    - "A new version of https://github.com/${SourceRepoOwner}/${SourceRepoName} has been deployed to https://${TestHostname} and is awaiting your approval. If you approve these changes, they will be deployed to https://${ProdHostname}."
                     - TestHostname:
                         Fn::ImportValue: !Join [':', [!Ref TestStackName, 'Hostname']]
                       ProdHostname:
                         Fn::ImportValue: !Join [':', [!Ref ProdStackName, 'Hostname']]
+              RunOrder: 2
 
         -
           Name: Production

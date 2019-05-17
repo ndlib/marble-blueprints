@@ -249,7 +249,7 @@ Resources:
               commands:
                 - echo "Ensure that the codebuild directory is executable"
                 - chmod -R 755 ./scripts/codebuild/*
-                - export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_ConfigSource"
+                - export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_InfraCode"
                 - ./scripts/codebuild/install.sh
             pre_build:
               commands:
@@ -331,7 +331,7 @@ Resources:
             Owner: ThirdParty
             Provider: GitHub
           OutputArtifacts:
-          - Name: AppCodeSource
+          - Name: AppCode
           Configuration:
             Repo: !Ref PassthroughPrimoPipelineRepoName
             Branch: !Ref PassthroughPrimoPipelineRepoBranch
@@ -353,14 +353,14 @@ Resources:
             OAuthToken: !Ref GitHubToken
             PollForSourceChanges: false
           OutputArtifacts:
-            - Name: ConfigSource
+            - Name: InfraCode
           RunOrder: 1
       - Name: Build
         Actions:
         - Name: Build
           InputArtifacts:
-          - Name: AppCodeSource
-          - Name: ConfigSource
+          - Name: AppCode
+          - Name: InfraCode
           ActionTypeId:
             Category: Build
             Owner: AWS
@@ -370,7 +370,7 @@ Resources:
           - Name: BuiltCode
           Configuration:
             ProjectName: !Ref CodeBuildProject
-            PrimarySource: AppCodeSource
+            PrimarySource: AppCode
           RunOrder: 1
 
       - Name: Test
@@ -413,7 +413,7 @@ Resources:
               Version: "1"
             Configuration:
               NotificationArn: !Ref PipelineEventsTopic
-              CustomData: Approval or Reject this change after running Exploratory Tests
+              CustomData: !Sub "A new version of https://github.com/${GitHubUser}/${PassthroughPrimoPipelineRepoName} has been deployed to the ${TestStackName} stack and is awaiting your approval. If you approve these changes, they will be deployed to the ${ProdStackName} stack."
             RunOrder: 3
 
       - Name: Production

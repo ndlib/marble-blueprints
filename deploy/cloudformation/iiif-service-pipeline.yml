@@ -401,7 +401,7 @@ Resources:
           Name: Source
           Actions:
             -
-              Name: "RetrieveSourceCode"
+              Name: "AppCode"
               ActionTypeId:
                 Owner: ThirdParty
                 Category: Source
@@ -418,7 +418,7 @@ Resources:
           Name: Build
           Actions:
             -
-              Name: "BuildDockerImage"
+              Name: "Build"
               InputArtifacts:
                 - Name: SourceCode
               OutputArtifacts:
@@ -431,10 +431,10 @@ Resources:
               Configuration:
                 ProjectName: !Ref DockerCodePipelineBuilder
         -
-          Name: DeployToTest
+          Name: Test
           Actions:
             -
-              Name: "DeployAsTestTask"
+              Name: "Deploy"
               InputArtifacts:
                 - Name: BuiltCode
               ActionTypeId:
@@ -446,11 +446,8 @@ Resources:
                 ClusterName: !Sub '${InfrastructureStackName}-Cluster'
                 ServiceName: !Sub '${IIIFTestServiceStackName}-ImageService'
                 FileName: imagedefinitionstest.json
-        -
-          Name: Approval
-          Actions:
             -
-              Name: "RunQATests"
+              Name: "SmokeTest"
               InputArtifacts:
                 - Name: SourceCode
               ActionTypeId:
@@ -460,9 +457,9 @@ Resources:
                 Version: "1"
               Configuration:
                 ProjectName: !Ref DockerQABuilder
-              RunOrder: 1
+              RunOrder: 2
             -
-              Name: "ManualApprovalOfTestEnvironment"
+              Name: "Approval"
               ActionTypeId:
                 Owner: AWS
                 Category: Approval
@@ -471,12 +468,12 @@ Resources:
               Configuration:
                 NotificationArn: !Ref SNSTopic
                 CustomData: Approval or Reject this change after running Exploratory Tests
-              RunOrder: 2
+              RunOrder: 3
         -
-          Name: DeployToProduction
+          Name: Production
           Actions:
             -
-              Name: "DeployToProduction"
+              Name: "Deploy"
               InputArtifacts:
                 - Name: BuiltCode
               ActionTypeId:
@@ -489,7 +486,7 @@ Resources:
                 ServiceName: !Sub '${IIIFProdServiceStackName}-ImageService'
                 FileName: imagedefinitionsprod.json
         -
-          Name: PostDeployActions
+          Name: PostProduction
           Actions:
             -
               Name: "AddDockerTag"

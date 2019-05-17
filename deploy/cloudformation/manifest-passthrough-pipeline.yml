@@ -14,7 +14,7 @@ Parameters:
   ProdStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the production resources
-    Default: "marble-passthroughprimo-pipeline"
+    Default: "marble-passthroughprimo-pipeline-prod"
   TestStackName:
     Type: String
     Description: The name of the CloudFormation stack to use when creating the test resources
@@ -48,7 +48,7 @@ Parameters:
     Description: "Secret. OAuthToken with access to Repo. Long string of characters and digits. Go to https://github.com/settings/tokens"
   AppConfigPathProd:
     Type: String
-    Default: "/all/marble-passthroughprimo-pipeline"
+    Default: "/all/marble-passthroughprimo-pipeline-prod"
     Description: The path the keys for parameter store should be read and written to for config
   AppConfigPathTest:
     Type: String
@@ -126,6 +126,7 @@ Resources:
               - 'lambda:DeleteFunction'
               - 'lambda:CreateFunction'
               - 'lambda:TagResource'
+              - 'lambda:UpdateFunctionCode'
             Resource:
               - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TestStackName}-*'
               - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ProdStackName}-*'
@@ -322,7 +323,7 @@ Resources:
       Stages:
       - Name: Source
         Actions:
-        - Name: RetrieveAppCodeSource
+        - Name: AppCode
           InputArtifacts: []
           ActionTypeId:
             Version: "1"
@@ -339,7 +340,7 @@ Resources:
             PollForSourceChanges: true
           RunOrder: 1
         -
-          Name: "RetrieveConfigSource"
+          Name: "InfraCode"
           ActionTypeId:
             Owner: ThirdParty
             Category: Source
@@ -356,7 +357,7 @@ Resources:
           RunOrder: 1
       - Name: Build
         Actions:
-        - Name: BuildFromSource
+        - Name: Build
           InputArtifacts:
           - Name: AppCodeSource
           - Name: ConfigSource
@@ -372,7 +373,7 @@ Resources:
             PrimarySource: AppCodeSource
           RunOrder: 1
 
-      - Name: DeployToTest
+      - Name: Test
         Actions:
           - Name: CreateChangeSet
             ActionTypeId:
@@ -391,7 +392,7 @@ Resources:
               TemplateConfiguration: BuiltCode::test-stack-configuration.json
               TemplatePath: BuiltCode::output.yml
             RunOrder: 1
-          - Name: ExecuteChangeSet
+          - Name: Deploy
             ActionTypeId:
               Category: Deploy
               Owner: AWS
@@ -404,7 +405,7 @@ Resources:
               StackName: !Ref TestStackName
             RunOrder: 2
           -
-            Name: "ManualApprovalOfTestEnvironment"
+            Name: Approval
             ActionTypeId:
               Owner: AWS
               Category: Approval
@@ -415,7 +416,7 @@ Resources:
               CustomData: Approval or Reject this change after running Exploratory Tests
             RunOrder: 3
 
-      - Name: DeployToProduction
+      - Name: Production
         Actions:
           - Name: CreateChangeSet
             ActionTypeId:
@@ -434,7 +435,7 @@ Resources:
               TemplateConfiguration: BuiltCode::prod-stack-configuration.json
               TemplatePath: BuiltCode::output.yml
             RunOrder: 1
-          - Name: ExecuteChangeSet
+          - Name: Deploy
             ActionTypeId:
               Category: Deploy
               Owner: AWS

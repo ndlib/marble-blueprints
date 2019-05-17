@@ -37,6 +37,16 @@ Parameters:
     Default: marble-image-service-test
     Description: The name of the CloudFormation stack that created the test ECS Service
 
+  TestImageServerHostname:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: The hostname of the IIIF Image Server
+    Default: '/all/stacks/marble-image-service-test/hostname'
+
+  ProdImageServerHostname:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: The hostname of the IIIF Image Server
+    Default: '/all/stacks/marble-image-service-prod/hostname'
+
   InfrastructureStackName:
     Type: String
     Default: marble-app-infrastructure
@@ -467,7 +477,7 @@ Resources:
                 Version: "1"
               Configuration:
                 NotificationArn: !Ref SNSTopic
-                CustomData: Approval or Reject this change after running Exploratory Tests
+                CustomData: !Sub "A new version of https://github.com/${SourceRepoOwner}/${SourceRepoName} has been deployed to https://${TestImageServerHostname}:8182 and is awaiting your approval. If you approve these changes, they will be deployed to https://${ProdImageServerHostname}:8182"
               RunOrder: 3
         -
           Name: Production

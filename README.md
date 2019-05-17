@@ -88,9 +88,9 @@ aws cloudformation deploy \
 ### IIIF Image Viewer Webcomponent stack
 ```console
 aws cloudformation deploy \
-  --stack-name marble-image-webcomponent-dev \
+  --stack-name marble-image-viewer-dev \
   --template-file deploy/cloudformation/static-host.yml \
-  --tags ProjectName=marble Name='testaccount-marbleimagewebcomponent-dev' \
+  --tags ProjectName=marble Name='testaccount-marbleimageviewer-dev' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose'
 ```
@@ -143,19 +143,19 @@ aws cloudformation deploy \
 ```
 
 ### IIIF Image Viewer Pipeline
-This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "marble-image-webcomponent-test" and "marble-image-webcomponent-prod".
+This will deploy to test, then to production, so it expects two different image-viewer stacks to exist, ex: "marble-image-viewer-test" and "marble-image-viewer-prod".
 
 ```console
 aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
-  --stack-name marble-image-webcomponent-pipeline \
+  --stack-name marble-image-viewer-pipeline \
   --template-file deploy/cloudformation/static-host-pipeline.yml \
-  --tags ProjectName=marble Name='testaccount-marbleimagewebcomponentpipeline' \
+  --tags ProjectName=marble Name='testaccount-marbleimageviewerpipeline' \
     Contact='me@myhost.com' Owner='myid' \
     Description='brief-description-of-purpose' \
   --parameter-overrides OAuth=my_oauth_key Approvers=me@myhost.com \
-    SourceRepoOwner=ndlib SourceRepoName=image-viewer BuildScriptsDir='build' BuildOutputDir='dist' \
-    TestStackName=marble-image-webcomponent-test ProdStackName=marble-image-webcomponent-prod
+    SourceRepoOwner=ndlib SourceRepoName=marble-image-viewer BuildScriptsDir='build' BuildOutputDir='dist' \
+    TestStackName=marble-image-viewer-test ProdStackName=marble-image-viewer-prod
 ```
 
 # IIIF Manifest Pipeline
@@ -207,10 +207,10 @@ Note: The user must be logged in and have the appropriate permissions to approve
 ### Pipeline Monitoring
 Use this stack if you want to notify an email address of pipeline events. It is currently written to only accept a single email address, so it's recommended you use a mailing list for the Receivers parameter.
 
-Here's an example of adding monitoring to the image-webcomponent-pipeline
+Here's an example of adding monitoring to the image-viewer-pipeline
 ```console
 aws cloudformation deploy \
-  --stack-name marble-image-webcomponent-pipeline-monitoring \
+  --stack-name marble-image-viewer-pipeline-monitoring \
   --template-file deploy/cloudformation/pipeline-monitoring.yml \
   --tags ProjectName=marble Name='testaccount-marbleimagewebcomponentpipeline-monitoring' \
     Contact='me@myhost.com' Owner='myid' Description='brief-description-of-purpose' \

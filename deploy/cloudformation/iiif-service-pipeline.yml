@@ -14,11 +14,6 @@ Description: >
 
 Parameters:
 
-  Approvers:
-    Type: String
-    Default: ''
-    Description: An e-mail address of someone who can approve test environment
-
   SourceRepoOwner:
     Type: String
     Description: The owner of the repository in Github
@@ -77,16 +72,15 @@ Outputs:
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'Repository']]
 
-Resources:
-  SNSTopic:
-    Type: AWS::SNS::Topic
+  ApprovalTopic:
+    Description: The manual approval SNS topic
+    Value: !Ref ApprovalTopic
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ApprovalTopic']]
 
-  SNSTopicSubscription:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref SNSTopic
-      Protocol: email
-      Endpoint: !Ref Approvers
+Resources:
+  ApprovalTopic:
+    Type: AWS::SNS::Topic
 
   AmazonContainerRepository:
     Type: AWS::ECR::Repository
@@ -476,7 +470,7 @@ Resources:
                 Provider: Manual
                 Version: "1"
               Configuration:
-                NotificationArn: !Ref SNSTopic
+                NotificationArn: !Ref ApprovalTopic
                 CustomData: !Sub "A new version of https://github.com/${SourceRepoOwner}/${SourceRepoName} has been deployed to https://${TestImageServerHostname}:8182 and is awaiting your approval. If you approve these changes, they will be deployed to https://${ProdImageServerHostname}:8182"
               RunOrder: 3
         -

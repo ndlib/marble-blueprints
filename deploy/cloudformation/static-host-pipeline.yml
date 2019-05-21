@@ -9,11 +9,7 @@ Description: >
   this file.
 
 
-Parameters:
-  Approvers:
-    Type: String
-    Description: An e-mail address of someone who can approve test environment
-
+Parameters:  
   SourceRepoOwner:
     Type: String
     Description: The owner of the repository in Github
@@ -62,13 +58,6 @@ Outputs:
 Resources:
   ApproversTopic:
     Type: AWS::SNS::Topic
-
-  ApproversTopicSubscription:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref ApproversTopic
-      Protocol: email
-      Endpoint: !Ref Approvers
 
   CodeBuildRole:
     Type: AWS::IAM::Role

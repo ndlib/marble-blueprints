@@ -16,11 +16,13 @@ Parameters:
 
   SourceRepoOwner:
     Type: String
-    Description: The owner of the repository in Github
+    Default: ndlib
+    Description: The owner of the repository in Github to poll
 
   SourceRepoName:
     Type: String
-    Description: The name of the repository in Github
+    Default: image-server
+    Description: The name of the repository in Github to poll
 
   IIIFProdServiceStackName:
     Type: String
@@ -34,18 +36,18 @@ Parameters:
 
   TestImageServerHostname:
     Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: The hostname of the IIIF Image Server
+    Description: SSM path to get the hostname of the IIIF Image Server
     Default: '/all/stacks/marble-image-service-test/hostname'
 
   ProdImageServerHostname:
     Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: The hostname of the IIIF Image Server
+    Description: SSM path to get the hostname of the IIIF Image Server
     Default: '/all/stacks/marble-image-service-prod/hostname'
 
   InfrastructureStackName:
     Type: String
     Default: marble-app-infrastructure
-    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+    Description: The name of the parent infrastructure stack that you created. Necessary
                  to locate and reference resources created by that stack.
 
   CDBranchName:
@@ -56,7 +58,7 @@ Parameters:
   OAuth:
     Type: String
     NoEcho: true
-    Description: The OAuth Token Value to connect CodePipeline to GitHub. Passed in at Runtime.
+    Description: The OAuth Token Value to connect CodePipeline to GitHub.
 
 Outputs:
 

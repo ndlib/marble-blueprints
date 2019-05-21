@@ -30,7 +30,7 @@ Parameters:
   InfrastructureStackName:
     Type: String
     Default: "marble-app-infrastructure"
-    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+    Description: The name of the parent infrastructure stack that you created. Necessary
                  to locate and reference resources created by that stack.
   DomainStackName:
     Type: String
@@ -52,11 +52,11 @@ Parameters:
     Description: What port number the application inside the docker container is binding to
   ContainerCpu:
     Type: Number
-    Default: 256
+    Default: 1024
     Description: How much CPU to give the container. 1024 is 1 CPU
   ContainerMemory:
     Type: Number
-    Default: 512
+    Default: 2048
     Description: How much memory in megabytes to give the container
   Path:
     Type: String
@@ -76,7 +76,7 @@ Parameters:
     Description: How many copies of the service task to run
   HostnamePrefix:
     Type: String
-    Description: Hostname prefix for the manifest bucket CDN
+    Description: Hostname prefix to use with the service.
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     ConstraintDescription: Must be a valid hostname prefix value.

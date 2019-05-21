@@ -108,3 +108,5 @@ node_modules
 
 # aws package output
 output.yml
+
+/tmp

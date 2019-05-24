@@ -26,6 +26,9 @@ yarn run jest
 
 ## Package Edge Lambda
 ```console
+cd src/unifiedEdgeLambda
+yarn install --production
+cd ../..
 aws cloudformation package \
   --template-file deploy/cloudformation/unified-static-host.yml \
   --s3-bucket $DEPLOY_BUCKET \
@@ -39,17 +42,17 @@ aws cloudformation deploy \
   --stack-name marble-website-test \
   --template-file unified-static-host-output.yml \
   --capabilities CAPABILITY_IAM \
-  --parameter-overrides HostnamePrefix='marble-test'
+  --parameter-overrides EnvType=prod HostnamePrefix='marble-test'
 ```
 
 ## Production
 ```console
 aws cloudformation deploy \
   --region us-east-1 \
-  --stack-name marble-website-test \
+  --stack-name marble-website-prod \
   --template-file unified-static-host-output.yml \
   --capabilities CAPABILITY_IAM \
-  --parameter-overrides HostnamePrefix='marble'
+  --parameter-overrides EnvType=prod HostnamePrefix='marble'
 ```
 
 ## Continuous Delivery Pipeline

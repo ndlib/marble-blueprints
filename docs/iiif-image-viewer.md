@@ -27,7 +27,7 @@ aws cloudformation deploy \
 ```console
 aws cloudformation deploy \
   --region us-east-1 \
-  --stack-name marble-image-viewer-dev \
+  --stack-name marble-image-viewer-prod \
   --template-file deploy/cloudformation/static-host.yml \
   --parameter-overrides EnvType=prod HostnamePrefix=viewer-iiif
 ```

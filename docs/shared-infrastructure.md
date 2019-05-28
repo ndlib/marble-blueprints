@@ -36,7 +36,7 @@ aws cloudformation deploy \
   --region us-east-1 \
   --template-file deploy/cloudformation/export-existing-network.yml \
   --stack-name marble-network \
-  --parameter-overrides VPC='my-vpc' \
+  --parameter-overrides VPC='my-vpc-id' \
       PrivateSubnet1='subnet-1' PrivateSubnet2='subnet-2' \
       PublicSubnet1='subnet-a' PublicSubnet2='subnet-b'
 ```

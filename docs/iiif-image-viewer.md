@@ -35,7 +35,7 @@ aws cloudformation deploy \
 ## Continuous Delivery Pipeline
 This will create a CodePipeline that will monitor Github for changes and deploy those changes to a test stack, then to a production stack, so it expects the two different image-viewer stacks above to exist.
 
-Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines.
+Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines. Make sure your token provides the `public_repo` scope.
 
 ```console
 aws cloudformation deploy \

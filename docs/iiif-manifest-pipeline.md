@@ -3,7 +3,7 @@
 
 This will create an AWS CodePipeline that will deploy the [manifest data pipeline](https://github.com/ndlib/marble-manifest-pipeline). It will deploy a test and production stack using the [manifest-pipeline.yml](/deploy/cloudformation/manifest-pipeline.yml) template.
 
-Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines.
+Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines. Make sure your token provides the `public_repo` scope.
 
 ```console
 aws cloudformation deploy \

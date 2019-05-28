@@ -3,7 +3,7 @@
 This will create an AWS CodePipeline that will deploy a [serverless Primo proxy](https://github.com/ndlib/marble-passthrough-primo). It will deploy a test and production stack using the [primo-passthrough.yml](/deploy/cloudformation/primo-passthrough.yml) template.
 
 
-Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines.
+Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines. Make sure your token provides the `public_repo` scope.
 
 ```console
 aws cloudformation deploy \

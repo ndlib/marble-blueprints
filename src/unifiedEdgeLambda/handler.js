@@ -1,19 +1,12 @@
 'use strict';
-
-const pathMatches = new RegExp('^\/static|\/favicon.ico|\/robots.txt|\/sitemap.xml')
-
+// https://github.com/ndlib/esu-cloudformation/blob/master/lambda-edge-utils/default-directory-index.js
 exports.handler = (event, context, callback) => {
-  let request = event.Records[0].cf.request;
-
-  request.uri = exports.modifyRequestUri(request.uri)
-  callback(null, request)
-  return
-}
-
-exports.modifyRequestUri = (uri) => {
-  if (pathMatches.test(uri)) {
-    return uri
-  } else {
-    return "/index.html"
-  }
+    var request = event.Records[0].cf.request;
+    var olduri = request.uri;
+    // Add a trailing slash to a sub path if there is none. Anything without a
+    // '.' in the last part of the URI is considered a sub path.
+    var newuri = olduri.replace(/^.*\/([^.|^\/]+)$/, olduri + '/');
+    // Append index.html to any request with a trailing slash
+    request.uri = newuri;
+    return callback(null, request);
 }

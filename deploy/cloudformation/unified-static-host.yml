@@ -147,6 +147,10 @@ Resources:
               - '${HostnamePrefix}.${ResolvedDomainName}'
               - ResolvedDomainName:
                   Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
         DefaultRootObject: index.html
         DefaultCacheBehavior:
           ForwardedValues:

@@ -7,6 +7,7 @@ exports.handler = (event, context, callback) => {
     // '.' in the last part of the URI is considered a sub path.
     var newuri = olduri.replace(/^.*\/([^.|^\/]+)$/, olduri + '/');
     // Append index.html to any request with a trailing slash
+    newuri = newuri.replace(/\/$/, '\/index.html');
     request.uri = newuri;
     return callback(null, request);
 }

@@ -75,6 +75,7 @@ Below is the list of parameters that can be overridden in this template. Paramet
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
+| InfrastructureStackName | The name of the parent infrastructure/networking stack that you created. Necessary to locate and reference resources created by that stack. | marble-app-infrastructure |
 | SourceRepoOwner | The owner of the repository in Github to poll |  |
 | SourceRepoName | The name of the repository in Github to poll |  |
 | CDBranchName | The name of the branch to watch for continuous deployment | master |

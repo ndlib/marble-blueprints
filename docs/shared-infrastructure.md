@@ -68,6 +68,23 @@ Below is the list of parameters that can be overridden in this template. Paramet
 |-----------|-------------|---------|
 | NetworkStackName | The name of the parent networking stack | marble-network |
 
+### Shared roles and permissions
+The app-infrastructure template will also create a shared set of roles and permissions that IAM users can assume for performing limited actions on the different deployed components. What permissions are given will be specific to each component, but here is a general idea of the roles and expected actions:
+1. Debugging - A role that can be used to troubleshoot components if they're having problems with something in production. Permissions required:
+    1. Read data in all buckets
+    1. Read logs
+    1. Manually execute Step Functions
+1. Deployment - To interact with all of the marble components' CD pipelines. Permissions required:
+    1. Manually execute a deployment. This means starting a Pipeline, which then will do whatever it's designed to do, but not making changes _to_ the Pipeline
+    1. View deployment pipelines, their histories, and the results of stages in them
+    1. Manually approve a deployment (note: the Slack approval will still provide this function as well)
+1. Data Administrator - This will be a more temporary role that can be used to put objects in the manifest pipeline's manifest bucket. This may be removed in the future as we develop more of the glue components between sources of data and the manifest pipeline. Permissions required:
+    1. Read data in all component buckets
+    1. Write to manifest bucket
+
+For each of these roles, a group will also be created that will allow users within that group to assume the associated role. Users and their association to groups are not managed by these templates. Below is a diagram of how the IAM permissions are designed, using the DataAdminRole as an example:
+![User Roles](./user-roles.jpg)
+
 ## Domain stack
 Defines a domain and creates a wildcard certificate that can be used for services built in this domain. By default, it will create a zone in Route53 for you, but this can be skipped if you're using your own DNS by overriding the CreateDNSZone parameter.
 

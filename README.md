@@ -12,9 +12,10 @@ For more information on this type of organization see [Organize Your Stacks By L
 Before you begin, check that you have the following:
   - A role with permissions to deploy CloudFormation Templates. In most cases, this will also require permissions to create IAM roles/policies (see [Permissions Required to Access IAM Resources](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_permissions-required.html))
   - If you can use Route53, we provide a template for managing the certificate and DNS record sets for you. If not, make sure you have the ability to manage DNS for your organization to validate certificates (see [Use DNS to Validate Domain Ownership](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html))
-  - A policy that allows your approvers to approve pipelines (see [Grant Approval Permissions to an IAM User in AWS CodePipeline](https://docs.aws.amazon.com/codepipeline/latest/userguide/approvals-iam-permissions.html))
   - Must have the [awscli](https://aws.amazon.com/cli/) installed if using the example deploy commands
   - If you are contributing to this project, **it is highly recommended you use https://github.com/awslabs/git-secrets to prevent pushing AWS secrets to the repo**
+  - You will need to adjust your AWS service limits as follows:
+    - Policies per Role: 20
 
 # Components
 - [Shared Infrastructure](/docs/shared-infrastructure.md) - All components will require creating a set of shared infrastructure, so begin here.

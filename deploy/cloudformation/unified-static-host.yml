@@ -218,3 +218,39 @@ Resources:
       Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
       Runtime: nodejs8.10
       AutoPublishAlias: live
+
+  DebugPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DebugRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt Bucket.Arn
+              - !Sub ${Bucket.Arn}/*
+
+  DataAdminPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DataAdminRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt Bucket.Arn
+              - !Sub ${Bucket.Arn}/*

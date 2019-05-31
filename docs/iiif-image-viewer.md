@@ -18,6 +18,7 @@ To deploy this service, you will need to create 3 stacks: a test stack, producti
 ```console
 aws cloudformation deploy \
   --region us-east-1 \
+  --capabilities CAPABILITY_IAM \
   --stack-name marble-image-viewer-test \
   --template-file deploy/cloudformation/static-host.yml \
   --parameter-overrides EnvType=prod HostnamePrefix=viewer-iiif-test
@@ -27,6 +28,7 @@ aws cloudformation deploy \
 ```console
 aws cloudformation deploy \
   --region us-east-1 \
+  --capabilities CAPABILITY_IAM \
   --stack-name marble-image-viewer-prod \
   --template-file deploy/cloudformation/static-host.yml \
   --parameter-overrides EnvType=prod HostnamePrefix=viewer-iiif
@@ -52,6 +54,7 @@ Below is the list of parameters that can be overridden in this template. Paramet
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
+| InfrastructureStackName | The name of the parent infrastructure/networking stack that you created. Necessary to locate and reference resources created by that stack. | marble-app-infrastructure |
 | SourceRepoOwner | The owner of the repository in Github to poll |  |
 | SourceRepoName | The name of the repository in Github to poll |  |
 | CDBranchName | The name of the branch to watch for continuous deployment | master |

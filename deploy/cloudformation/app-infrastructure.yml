@@ -16,7 +16,7 @@ Parameters:
   NetworkStackName:
     Type: String
     Description: The name of the parent networking stack created.
-    Default: "marble-network"
+    Default: 'marble-network'
 
 Resources:
 
@@ -29,27 +29,27 @@ Resources:
       SecurityGroupIngress:
           # Allow access to ALB from anywhere on the internet
           - CidrIp: 0.0.0.0/0
-            IpProtocol: "-1"
+            IpProtocol: '-1'
       SecurityGroupEgress:
           # Explicitly allow all outgoing traffic
           - CidrIp: 0.0.0.0/0
-            IpProtocol: "-1"
+            IpProtocol: '-1'
 
   IIIFSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       VpcId:
         Fn::ImportValue: !Join [':', [!Ref NetworkStackName, 'VPCID']]
-      GroupDescription: "Security Group to allow incoming traffic over Port 8182 for IIIF Service"
+      GroupDescription: 'Security Group to allow incoming traffic over Port 8182 for IIIF Service'
       SecurityGroupIngress:
         -
-          IpProtocol: "tcp"
+          IpProtocol: 'tcp'
           FromPort: 8182
           ToPort: 8182
           CidrIp: 0.0.0.0/0 # This may need to be changed for security purposes
       SecurityGroupEgress:
         -
-          IpProtocol: "-1"
+          IpProtocol: '-1'
           FromPort: -1
           ToPort: -1
           CidrIp: 0.0.0.0/0 #This explicitly allows all outgoing traffic
@@ -57,7 +57,7 @@ Resources:
   ContainerCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub "${AWS::StackName}-Cluster"
+      ClusterName: !Sub '${AWS::StackName}-Cluster'
 
   ContainerTaskExecutionRole:
     Type: AWS::IAM::Role
@@ -90,7 +90,7 @@ Resources:
               - logs:CreateLogGroup
               - logs:CreateLogStream
               - logs:PutLogEvents
-            Resource: "*"
+            Resource: '*'
 
   LogBucket:
     Type: AWS::S3::Bucket
@@ -109,6 +109,226 @@ Resources:
     Properties:
       RetentionInDays: 7
       LogGroupName: !Join [ '-', [ !Ref 'AWS::StackName', 'LogGroup']]
+
+  # Shared Roles/Groups
+  DataAdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+              - !Ref AWS::AccountId
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+
+  DataAdminGroup:
+    Type: AWS::IAM::Group
+
+  DataAdminPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: A policy that allows the DataAdminRole to read all logs and other global actions
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowGlobals # Things that don't support resource level permissions
+            Effect: Allow
+            Action:
+              - 's3:ListAllMyBuckets'
+            Resource: '*'
+      Roles:
+        - !Ref DataAdminRole
+
+  CanAssumeDataAdminRole:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: A policy that allows a user or group to assume the DataAdminRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            # We may need to remove/rework this if we want to allow attaching this to a federated user's role
+            Condition:
+              BoolIfExists:
+                aws:MultiFactorAuthPresent: true
+            Action: sts:AssumeRole
+            Resource:
+              - !GetAtt DataAdminRole.Arn
+      Groups:
+        - !Ref DataAdminGroup
+
+  DebugRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+              - !Ref AWS::AccountId
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+
+  DebugGroup:
+    Type: AWS::IAM::Group
+
+  DebugPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: A policy that allows the DebugRole to read all logs and other global actions
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowGlobals # Things that don't support resource level permissions
+            Effect: Allow
+            Action:
+              - 'cloudformation:DescribeAccountLimits'
+              - 'cloudformation:DescribeStackDriftDetectionStatus'
+              - 'cloudformation:GetTemplateSummary'
+              - 'cloudformation:ListExports'
+              - 'cloudformation:ListImports'
+              - 'cloudformation:ListStacks'
+              - 'cloudwatch:GetMetricStatistics'
+              - 'codepipeline:ListPipelines'
+              - 'ecs:DescribeServices'
+              - 'ecs:DescribeTaskDefinition'
+              - 'ecs:DescribeTaskSets'
+              - 'ecs:ListClusters'
+              - 'ecs:ListServices'
+              - 'ecs:ListTaskDefinitionFamilies'
+              - 'ecs:ListTaskDefinitions'
+              - 'logs:DescribeLogGroups'
+              - 'logs:DescribeMetricFilters'
+              - 's3:ListAllMyBuckets'
+              - 'states:ListStateMachines'
+            Resource: '*'
+          - Sid: AllowReadingCloudwatchLogs
+            Effect: Allow
+            Action:
+              - 'logs:Describe*'
+              - 'logs:Get*'
+              - 'logs:TestMetricFilter'
+              - 'logs:FilterLogEvents'
+            Resource:
+              - !GetAtt SharedLogGroup.Arn
+          - Sid: AllowReadingLogBucket
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt LogBucket.Arn
+              - !Sub ${LogBucket.Arn}/*
+            # This template is what creates the ECS cluster, and there are a lot of IAM permissions that only offer granularity
+            # by the associated cluster, so makes sense to do all of the ECS permissions in this stack
+            # Reference: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-supported-iam-actions-resources.html
+          - Sid: AllowECSCluster
+            Effect: Allow
+            Action:
+              - 'ecs:DescribeClusters'
+              - 'ecs:ListAttributes'
+              - 'ecs:ListContainerInstances'
+              - 'ecs:ListTagsForResource'
+            Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ContainerCluster}'
+          - Sid: AllowECSClusterTag
+            Effect: Allow
+            Action:
+              - 'ecs:DescribeContainerInstances'
+              - 'ecs:DescribeTasks'
+              - 'ecs:ListTasks'
+              - 'ecs:Poll'
+              - 'ecs:RunTask'
+              - 'ecs:StartTask'
+            Resource: '*'
+            Condition:
+              ArnEquals:
+                'ecs:cluster': !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ContainerCluster}'
+      Roles:
+        - !Ref DebugRole
+
+  CanAssumeDebugRole:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: A policy that allows a user or group to assume the DebugRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            # We may need to remove/rework this if we want to allow attaching this to a federated user's role
+            Condition:
+              BoolIfExists:
+                aws:MultiFactorAuthPresent: true
+            Action: sts:AssumeRole
+            Resource:
+              - !GetAtt DebugRole.Arn
+      Groups:
+        - !Ref DebugGroup
+
+  DeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+              - !Ref AWS::AccountId
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+
+  DeploymentGroup:
+    Type: AWS::IAM::Group
+
+  DeploymentPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: A policy that allows the DeploymentRole to perform global actions
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowGlobals # Things that don't support resource level permissions
+            Effect: Allow
+            Action:
+              - 'cloudformation:ListStacks'
+              - 'codebuild:ListBuilds'
+              - 'codebuild:ListConnectedOAuthAccounts'
+              - 'codebuild:ListCuratedEnvironmentImages'
+              - 'codebuild:ListProjects'
+              - 'codebuild:ListRepositories '
+              - 'codebuild:ListSourceCredentials'
+              - 'codepipeline:ListPipelines'
+            Resource: '*'
+      Roles:
+        - !Ref DeploymentRole
+
+  CanAssumeDeploymentRole:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: A policy that allows a user or group to assume the DeploymentRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Allow
+            # We may need to remove/rework this if we want to allow attaching this to a federated user's role
+            Condition:
+              BoolIfExists:
+                aws:MultiFactorAuthPresent: true
+            Action: sts:AssumeRole
+            Resource:
+              - !GetAtt DeploymentRole.Arn
+      Groups:
+        - !Ref DeploymentGroup
 
 Outputs:
 
@@ -141,3 +361,21 @@ Outputs:
     Value: !Ref LogBucket
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'LogBucket']]
+
+  DataAdminRoleName:
+    Description: Name of the role to attach policies to for data administration related activity
+    Value: !Ref DataAdminRole
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'DataAdminRoleName']]
+
+  DebugRoleName:
+    Description: Name of the role to attach policies to for debugging related activity
+    Value: !Ref DebugRole
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'DebugRoleName']]
+
+  DeploymentRoleName:
+    Description: Name of the role to attach policies to for deployment related activity
+    Value: !Ref DeploymentRole
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'DeploymentRoleName']]

@@ -17,6 +17,7 @@ Below is the list of parameters that can be overridden in this template. Paramet
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
+| InfrastructureStackName | The name of the parent infrastructure/networking stack that you created. Necessary to locate and reference resources created by that stack. | marble-app-infrastructure |
 | ProdStackName | The name of the CloudFormation stack to use when creating the production resources | marble-passthroughprimo-pipeline-prod |
 | TestStackName | The name of the CloudFormation stack to use when creating the test resources | marble-passthroughprimo-pipeline-test |
 | ConfigurationRepoName | The GitHub repo for the cloudfromation blueprints | marble-blueprints |

@@ -2,6 +2,15 @@
 This will create the infrastructure to host our [IIIF Image Service](https://github.com/ndlib/image-server), which is based on [Cantaloupe](https://github.com/medusa-project/cantaloupe/). Below is a diagram of the infrastructure that will be created if you deploy this service:
 ![iiif-image-service-infrastructure.png](iiif-image-service-infrastructure.png)
 
+Diagram Legend:
+
+*   GW: Gateway
+*   LB: Load Balancer
+*   FG: Fargate
+*   ENI: Elastic Network Interface
+*   NAT: Network Address Translation
+*   AZ: Availability Zone
+
 The service stack uses the [iiif-service.yml](/deploy/cloudformation/iiif-service.yml) template. Below is the list of parameters that can be overridden in this template. Parameters with no default are required.
 
 | Parameter | Description | Default |

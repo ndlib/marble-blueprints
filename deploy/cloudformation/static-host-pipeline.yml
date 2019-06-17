@@ -669,13 +669,38 @@ Resources:
             Resource:
               - !GetAtt CodeS3Bucket.Arn
               - !Sub ${CodeS3Bucket.Arn}/*
+          - Sid: AllowPipelineActions
+            Effect: Allow
+            Action:
+              - 'codepipeline:GetPipeline'
+              - 'codepipeline:GetPipelineExecution'
+              - 'codepipeline:GetPipelineState'
+              - 'codepipeline:ListActionExecutions'
+              - 'codepipeline:ListPipelineExecutions'
+              - 'codepipeline:ListPipelines'
+            Resource:
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}'
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}/*'
+          - Sid: AllowCodeBuildActions
+            Effect: Allow
+            Action:
+              - 'codebuild:BatchGetBuilds'
+              - 'codebuild:BatchGetProjects'
+              - 'codebuild:ListBuilds'
+              - 'codebuild:ListBuildsForProject'
+            Resource:
+              - !Sub 'arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${AWS::StackName}-*'
+          - Sid: AllowCodeBuildLogs
+            Effect: Allow
+            Action:
+              - 'logs:GetLogEvents'
+            Resource:
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'
 
   DeploymentPermissions:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       Roles:
-        - !ImportValue
-            Fn::Sub: ${InfrastructureStackName}:DebugRoleName
         - !ImportValue
             Fn::Sub: ${InfrastructureStackName}:DeploymentRoleName
       PolicyDocument:

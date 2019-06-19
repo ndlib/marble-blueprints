@@ -18,6 +18,15 @@ Parameters:
     Description: The name of the parent networking stack created.
     Default: 'marble-network'
 
+  RequireMFA:
+    Type: String
+    Description: Specify 'True' if you wish to require MFA when assuming the shared user roles defined in this template
+    Default: 'True'
+
+Conditions:
+
+  MFARequired?: !Equals [ !Ref RequireMFA, 'True' ]
+
 Resources:
 
   PublicLoadBalancerSecurityGroup:
@@ -152,10 +161,11 @@ Resources:
         Statement:
           -
             Effect: Allow
-            # We may need to remove/rework this if we want to allow attaching this to a federated user's role
-            Condition:
-              BoolIfExists:
-                aws:MultiFactorAuthPresent: true
+            Condition: !If
+              - MFARequired?
+              - Bool:
+                  aws:MultiFactorAuthPresent: true
+              - !Ref 'AWS::NoValue'
             Action: sts:AssumeRole
             Resource:
               - !GetAtt DataAdminRole.Arn
@@ -262,10 +272,11 @@ Resources:
         Statement:
           -
             Effect: Allow
-            # We may need to remove/rework this if we want to allow attaching this to a federated user's role
-            Condition:
-              BoolIfExists:
-                aws:MultiFactorAuthPresent: true
+            Condition: !If
+              - MFARequired?
+              - Bool:
+                  aws:MultiFactorAuthPresent: true
+              - !Ref 'AWS::NoValue'
             Action: sts:AssumeRole
             Resource:
               - !GetAtt DebugRole.Arn
@@ -320,10 +331,11 @@ Resources:
         Statement:
           -
             Effect: Allow
-            # We may need to remove/rework this if we want to allow attaching this to a federated user's role
-            Condition:
-              BoolIfExists:
-                aws:MultiFactorAuthPresent: true
+            Condition: !If
+              - MFARequired?
+              - Bool:
+                  aws:MultiFactorAuthPresent: true
+              - !Ref 'AWS::NoValue'
             Action: sts:AssumeRole
             Resource:
               - !GetAtt DeploymentRole.Arn

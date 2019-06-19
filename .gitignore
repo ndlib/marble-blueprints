@@ -110,3 +110,4 @@ node_modules
 output.yml
 
 /tmp
+.DS_Store

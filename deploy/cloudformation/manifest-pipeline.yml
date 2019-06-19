@@ -164,6 +164,7 @@ Resources:
               - HEAD
             AllowedOrigins:
               - '*'
+
   ManifestBucketPolicy:
     Type: AWS::S3::BucketPolicy
     DependsOn: OriginAccessIdentity
@@ -686,3 +687,62 @@ Resources:
               finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ],
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
+
+  DebugPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DebugRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt ProcessBucket.Arn
+              - !Sub ${ProcessBucket.Arn}/*
+              - !GetAtt ManifestBucket.Arn
+              - !Sub ${ManifestBucket.Arn}/*
+          - Sid: AllowStateMachineActions
+            Effect: Allow
+            Action:
+              - 'states:DescribeStateMachine'
+              - 'states:ListExecutions'
+              - 'states:StartExecution'
+              - 'states:DescribeExecution'
+              - 'states:GetExecutionHistory'
+              - 'states:DescribeStateMachineForExecution'
+            Resource:
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachine.Name}'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachine.Name}:*'
+
+  DataAdminPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DataAdminRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt ProcessBucket.Arn
+              - !Sub ${ProcessBucket.Arn}/*
+              - !GetAtt ManifestBucket.Arn
+              - !Sub ${ManifestBucket.Arn}/*
+          - Sid: AllowWriteToManifests
+            Effect: Allow
+            Action:
+              - 's3:PutObject'
+            Resource:
+              - !GetAtt ManifestBucket.Arn
+              - !Sub ${ManifestBucket.Arn}/*

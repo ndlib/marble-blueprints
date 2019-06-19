@@ -80,3 +80,39 @@ Resources:
               - s3:GetObject
             Resource: !Sub ${PublicBucket.Arn}/*
             Principal: '*'
+
+  DebugPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DebugRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt PublicBucket.Arn
+              - !Sub ${PublicBucket.Arn}/*
+
+  DataAdminPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DataAdminRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt PublicBucket.Arn
+              - !Sub ${PublicBucket.Arn}/*

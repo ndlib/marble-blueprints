@@ -234,6 +234,7 @@ Resources:
               - 'iam:GetRole'
               - 'iam:CreateRole'
               - 'iam:DeleteRole'
+              - 'iam:CreatePolicy'
               - 'iam:AttachRolePolicy'
               - 'iam:DetachRolePolicy'
               - 'iam:DeleteRolePolicy'
@@ -242,6 +243,28 @@ Resources:
             Resource:
               - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${TestStackName}-*'
               - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${ProdStackName}-*'
+            Effect: Allow
+          # Allow the Pipeline to create IAM policies defined in manifest-pipeline.yml and attach them to the shared roles in app-infrastructure.yml
+          - Action:
+              - 'iam:CreatePolicy'
+              - 'iam:DeletePolicy'
+              - 'iam:GetPolicy'
+              - 'iam:CreatePolicyVersion'
+              - 'iam:DeletePolicyVersion'
+              - 'iam:ListPolicyVersions'
+              - 'iam:AttachRolePolicy'
+              - 'iam:DetachRolePolicy'
+              # For some reason it needs permission to describe the state machine when creating DebugPermissions for the test/prod stacks
+              - 'states:DescribeStateMachine'
+            Resource:
+              - !Sub
+                - 'arn:aws:iam::${AWS::AccountId}:role/${ResolvedDataAdminRoleName}'
+                - ResolvedDataAdminRoleName: !ImportValue
+                    Fn::Sub: ${InfrastructureStackName}:DataAdminRoleName
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${TestStackName}-*'
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${ProdStackName}-*'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${TestStackName}-*'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${ProdStackName}-*'
             Effect: Allow
           - Action:
               - 'cloudformation:CreateChangeSet'
@@ -572,3 +595,122 @@ Resources:
       ArtifactStore:
         Type: S3
         Location: !Ref S3Bucket
+
+  DebugPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DebugRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt S3Bucket.Arn
+              - !Sub ${S3Bucket.Arn}/*
+          - Sid: AllowPipelineActions
+            Effect: Allow
+            Action:
+              - 'codepipeline:GetPipeline'
+              - 'codepipeline:GetPipelineExecution'
+              - 'codepipeline:GetPipelineState'
+              - 'codepipeline:ListActionExecutions'
+              - 'codepipeline:ListPipelineExecutions'
+              - 'codepipeline:ListPipelines'
+            Resource:
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ProjectPipeline}'
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ProjectPipeline}/*'
+          - Sid: AllowCodeBuildActions
+            Effect: Allow
+            Action:
+              - 'codebuild:BatchGetBuilds'
+              - 'codebuild:BatchGetProjects'
+              - 'codebuild:ListBuilds'
+              - 'codebuild:ListBuildsForProject'
+            Resource:
+              - !Sub 'arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${AWS::StackName}-*'
+          - Sid: AllowCodeBuildLogs
+            Effect: Allow
+            Action:
+              - 'logs:GetLogEvents'
+            Resource:
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'
+          # This pipeline currently creates a change set then executes. So in order to see execution details,
+          # a Deployment user will need to see what may have gone wrong with the CloudFormation CHANGE_SET_EXECUTE
+          # for the target stacks
+          - Sid: AllowCloudformationActions
+            Effect: Allow
+            Action:
+              - 'cloudformation:DescribeStacks'
+              - 'cloudformation:DescribeStackEvents'
+              - 'cloudformation:DescribeChangeSet'
+              - 'cloudformation:GetStackPolicy'
+              - 'cloudformation:GetTemplate'
+              - 'cloudformation:ListChangeSets'
+              - 'cloudformation:ListStackResources'
+            Resource:
+              - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${TestStackName}/*'
+              - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ProdStackName}/*'
+              
+  DeploymentPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DeploymentRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowPipelineActions
+            Effect: Allow
+            Action:
+              - 'codepipeline:DisableStageTransition'
+              - 'codepipeline:EnableStageTransition'
+              - 'codepipeline:GetPipeline'
+              - 'codepipeline:GetPipelineExecution'
+              - 'codepipeline:GetPipelineState'
+              - 'codepipeline:ListActionExecutions'
+              - 'codepipeline:ListPipelineExecutions'
+              - 'codepipeline:ListPipelines'
+              - 'codepipeline:PutApprovalResult'
+              - 'codepipeline:RetryStageExecution'
+              - 'codepipeline:StartPipelineExecution'
+            Resource:
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ProjectPipeline}'
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ProjectPipeline}/*'
+          - Sid: AllowCodeBuildActions
+            Effect: Allow
+            Action:
+              - 'codebuild:BatchGetBuilds'
+              - 'codebuild:BatchGetProjects'
+              - 'codebuild:ListBuilds'
+              - 'codebuild:ListBuildsForProject'
+            Resource:
+              - !Sub 'arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${AWS::StackName}-*'
+          - Sid: AllowCodeBuildLogs
+            Effect: Allow
+            Action:
+              - 'logs:GetLogEvents'
+            Resource:
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'
+          # This pipeline currently creates a change set then executes. So in order to see execution details,
+          # a Deployment user will need to see what may have gone wrong with the CloudFormation CHANGE_SET_EXECUTE
+          # for the target stacks
+          - Sid: AllowCloudformationActions
+            Effect: Allow
+            Action:
+              - 'cloudformation:DescribeStacks'
+              - 'cloudformation:DescribeStackEvents'
+              - 'cloudformation:DescribeChangeSet'
+              - 'cloudformation:GetStackPolicy'
+              - 'cloudformation:GetTemplate'
+              - 'cloudformation:ListChangeSets'
+              - 'cloudformation:ListStackResources'
+            Resource:
+              - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${TestStackName}/*'
+              - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ProdStackName}/*'

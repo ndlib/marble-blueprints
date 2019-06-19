@@ -10,6 +10,12 @@ Description: >
 
 
 Parameters:
+  InfrastructureStackName:
+    Type: String
+    Default: marble-app-infrastructure
+    Description: The name of the parent infrastructure stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+
   SourceRepoOwner:
     Type: String
     Description: The owner of the repository in Github
@@ -645,3 +651,90 @@ Resources:
               Configuration:
                 ProjectName: !Ref PostDeployGitHub
               RunOrder: 1
+
+  DebugPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DebugRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt CodeS3Bucket.Arn
+              - !Sub ${CodeS3Bucket.Arn}/*
+          - Sid: AllowPipelineActions
+            Effect: Allow
+            Action:
+              - 'codepipeline:GetPipeline'
+              - 'codepipeline:GetPipelineExecution'
+              - 'codepipeline:GetPipelineState'
+              - 'codepipeline:ListActionExecutions'
+              - 'codepipeline:ListPipelineExecutions'
+              - 'codepipeline:ListPipelines'
+            Resource:
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}'
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}/*'
+          - Sid: AllowCodeBuildActions
+            Effect: Allow
+            Action:
+              - 'codebuild:BatchGetBuilds'
+              - 'codebuild:BatchGetProjects'
+              - 'codebuild:ListBuilds'
+              - 'codebuild:ListBuildsForProject'
+            Resource:
+              - !Sub 'arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${AWS::StackName}-*'
+          - Sid: AllowCodeBuildLogs
+            Effect: Allow
+            Action:
+              - 'logs:GetLogEvents'
+            Resource:
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'
+
+  DeploymentPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DeploymentRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowPipelineActions
+            Effect: Allow
+            Action:
+              - 'codepipeline:DisableStageTransition'
+              - 'codepipeline:EnableStageTransition'
+              - 'codepipeline:GetPipeline'
+              - 'codepipeline:GetPipelineExecution'
+              - 'codepipeline:GetPipelineState'
+              - 'codepipeline:ListActionExecutions'
+              - 'codepipeline:ListPipelineExecutions'
+              - 'codepipeline:ListPipelines'
+              - 'codepipeline:PutApprovalResult'
+              - 'codepipeline:RetryStageExecution'
+              - 'codepipeline:StartPipelineExecution'
+            Resource:
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}'
+              - !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}/*'
+          - Sid: AllowCodeBuildActions
+            Effect: Allow
+            Action:
+              - 'codebuild:BatchGetBuilds'
+              - 'codebuild:BatchGetProjects'
+              - 'codebuild:ListBuilds'
+              - 'codebuild:ListBuildsForProject'
+            Resource:
+              - !Sub 'arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${AWS::StackName}-*'
+          - Sid: AllowCodeBuildLogs
+            Effect: Allow
+            Action:
+              - 'logs:GetLogEvents'
+            Resource:
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'

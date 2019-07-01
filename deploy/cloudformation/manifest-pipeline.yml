@@ -8,6 +8,10 @@ Description: >
   - Creates a bucket that the step functions use as an in process location.
   - Requires the iiif-service and marble-data-broker pipelines to be built.  Uses ssm keys from those services
 Parameters:
+  NetworkStackName:
+    Type: String
+    Description: The name of the parent networking stack created.
+    Default: "marble-network"
   InfrastructureStackName:
     Type: String
     Default: marble-app-infrastructure
@@ -26,11 +30,6 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: The hostname of the IIIF Image Server
     Default: '/all/stacks/marble-image-service/hostname'
-  InfrastructureStackName:
-    Type: String
-    Default: "marble-app-infrastructure"
-    Description: The name of the parent infrastructure/networking stack that you created. Necessary
-                 to locate and reference resources created by that stack.
   AppConfigPath:
     Type: String
     Description: The path to look for the application config from
@@ -58,6 +57,14 @@ Parameters:
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     ConstraintDescription: Must be a valid hostname prefix value.
+  ContainerCpu:
+    Type: Number
+    Default: 1024
+    Description: How much CPU to give the container. 1024 is 1 CPU
+  ContainerMemory:
+    Type: Number
+    Default: 2048
+    Description: How much memory in megabytes to give the container
 
 Conditions:
 
@@ -500,45 +507,69 @@ Resources:
           PROCESS_BUCKET: !Ref ProcessBucket
 
   # PYRAMID GENERATOR PROCESSING
-  PGCounterLambdaFunction:
-    Type: AWS::Serverless::Function
+  ImageTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    DependsOn:
+      - ImageTaskRole
     Properties:
-      Handler: pgcounter.counter
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
-      Runtime: nodejs8.10
-      Timeout: 120
-      MemorySize: 256
-      CodeUri: pyramid-generator/
-      Environment:
-        Variables:
-          PROCESS_BUCKET: !Ref ProcessBucket
+      Family: !Sub '${AWS::StackName}-Manifest'
+      NetworkMode: awsvpc
+      TaskRoleArn: !GetAtt ImageTaskRole.Arn
+      Cpu: !Ref 'ContainerCpu'
+      Memory: !Ref 'ContainerMemory'
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn:
+        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
+      ContainerDefinitions:
+        - Name: !Sub '${AWS::StackName}-Manifest'
+          Cpu: !Ref 'ContainerCpu'
+          Memory: !Ref 'ContainerMemory'
+          EntryPoint: ['pyramid.py']
+          Image: hesburgh/marble-image-processing
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group :
+                Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogGroup']]
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: !Sub '${AWS::StackName}-ManifestTask'
 
-  PGIteratorLambdaFunction:
-    Type: AWS::Serverless::Function
+  ImageTaskRole:
+    Type: AWS::IAM::Role
+    DependsOn:
+      - ProcessBucket
     Properties:
-      Handler: pgiterator.iterator
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
-      Runtime: nodejs8.10
-      Timeout: 120
-      MemorySize: 256
-      CodeUri: pyramid-generator/
-      Environment:
-        Variables:
-          PROCESS_BUCKET: !Ref ProcessBucket
-
-  PGImgProcLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: pgimgproc.processor
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
-      Runtime: nodejs8.10
-      Timeout: 120
-      MemorySize: 3008
-      CodeUri: pyramid-generator/
-      Environment:
-        Variables:
-          PROCESS_BUCKET: !Ref ProcessBucket
-          VIPS_DISC_THRESHOLD: 512 m
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: ProcessBucketPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:DeleteObject"
+                  - "s3:ListBucket"
+                Effect: "Allow"
+                Resource:
+                  - !GetAtt ProcessBucket.Arn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !GetAtt ProcessBucket.Arn
+                        - "/*"
 
   StatesExecutionRole:
     Type: "AWS::IAM::Role"
@@ -561,6 +592,34 @@ Resources:
                 Action:
                   - "lambda:InvokeFunction"
                 Resource: "*"
+        - PolicyName: FargatePassPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iam:PassRole"
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-*'
+                  - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
+        - PolicyName: FargateTaskPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecs:RunTask"
+                  - "ecs:StopTask"
+                  - "ecs:DescribeTasks"
+                Resource:
+                  - !Ref ImageTaskDefinition
+              - Effect: Allow
+                Action:
+                  - "events:PutTargets"
+                  - "events:PutRule"
+                  - "events:DescribeRule"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForECSTaskRule"
 
   StateMachine:
     Type: "AWS::StepFunctions::StateMachine"
@@ -583,7 +642,42 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "ProcessInput"
+                  "Next": "ImageProcessingTask"
+                },
+                "ImageProcessingTask": {
+                  "Type": "Task",
+                  "Resource": "arn:${AWS::Partition}:states:::ecs:runTask.sync",
+                  "ResultPath": "$.ecs.ecsresults",
+                  "Parameters": {
+                    "LaunchType": "FARGATE",
+                    "Cluster": "${InfrastructureStackName}-Cluster",
+                    "TaskDefinition": "${ImageTaskDefinition}",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                          {
+                              "Name": "${AWS::StackName}-Manifest",
+                              "Command.$": "$.ecs-args"
+                          }
+                      ]
+                    },
+                    "NetworkConfiguration": {
+                      "AwsvpcConfiguration": {
+                        "Subnets": [
+                          "${publicSubnet1}",
+                          "${publicSubnet2}"
+                        ],
+                        "AssignPublicIp": "ENABLED"
+                      }
+                    }
+                  },
+                  "Next": "ProcessInput",
+                  "Catch": [
+                      {
+                        "ErrorEquals": [ "States.ALL" ],
+                        "ResultPath": "$.unexpected",
+                        "Next": "Finalize"
+                      }
+                  ]
                 },
                 "ProcessInput": {
                   "Type": "Task",
@@ -607,54 +701,7 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "PGCount"
-                },
-                "PGCount": {
-                  "Type": "Task",
-                  "Resource": "${pgCountLambdaArn}",
-                  "Catch": [
-                    {
-                      "ErrorEquals": [ "States.ALL" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "Finalize"
-                    }
-                  ],
-                  "Next": "PGIterator"
-                },
-                "PGIterator": {
-                    "Type": "Task",
-                    "Resource": "${pgIteratorLambdaArn}",
-                    "Catch": [
-                      {
-                        "ErrorEquals": [ "States.ALL" ],
-                        "ResultPath": "$.unexpected",
-                        "Next": "Finalize"
-                      }
-                    ],
-                    "Next": "PGIsCountReached"
-                },
-                "PGIsCountReached": {
-                    "Type": "Choice",
-                    "Choices": [
-                        {
-                          "Variable": "$.pgimage.iterator.continue",
-                            "BooleanEquals": true,
-                            "Next": "PGImgProcessor"
-                        }
-                    ],
-                    "Default": "Index"
-                },
-                "PGImgProcessor": {
-                    "Type": "Task",
-                    "Resource": "${pgImgProcLambdaArn}",
-                    "Catch": [
-                      {
-                        "ErrorEquals": [ "States.ALL" ],
-                        "ResultPath": "$.unexpected",
-                        "Next": "Finalize"
-                      }
-                    ],
-                    "Next": "PGIterator"
+                  "Next": "Index"
                 },
                 "Index": {
                   "Type": "Task",
@@ -677,14 +724,13 @@ Resources:
             }
           -
             {
+              publicSubnet1: {"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}:PublicSubnet1ID"}},
+              publicSubnet2: {"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}:PublicSubnet2ID"}},
               initManifestLambdaArn: !GetAtt [InitManifestLambdaFunction, Arn],
               csvInputLambdaArn: !GetAtt [ CsvInputLambdaFunction, Arn ],
               manifestLambdaArn: !GetAtt [ ManifestLambdaFunction, Arn ],
-              pgCountLambdaArn: !GetAtt [ PGCounterLambdaFunction, Arn],
-              pgIteratorLambdaArn: !GetAtt [ PGIteratorLambdaFunction, Arn],
-              pgImgProcLambdaArn: !GetAtt [ PGImgProcLambdaFunction, Arn],
               indexLambdaArn: !GetAtt [IndexLambdaFunction, Arn],
-              finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ],
+              finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ]
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
 

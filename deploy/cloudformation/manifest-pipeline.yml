@@ -598,7 +598,9 @@ Resources:
               - Effect: Allow
                 Action:
                   - "iam:PassRole"
-                Resource: "*"
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-*'
+                  - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
         - PolicyName: FargateTaskPolicy
           PolicyDocument:
             Version: "2012-10-17"

@@ -108,7 +108,16 @@ Outputs:
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ApprovalTopic']]
 
+  ImageProcessorContainerRepository:
+    Description: The repository that contains the docker image for image processing 
+    Value: !Ref ImageProcessorContainerRepository
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ImageProcessorContainerRepository']]
+
 Resources:
+  ImageProcessorContainerRepository:
+    Type: AWS::ECR::Repository
+
   CodeBuildTrustRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -139,6 +148,27 @@ Resources:
             Action:
               - 's3:GetObject'
               - 's3:PutObject'
+          # The codebuild pipeline is going to create ECR records. Need to allow certain permissions for the authorization
+          - Effect: Allow
+            Action:
+              - 'ecr:GetAuthorizationToken'
+              - 'ecr:InitiateLayerUpload'
+              - 'ecr:UploadLayerPart'
+              - 'ecr:BatchCheckLayerAvailability'
+              - 'ecr:GetDownloadUrlForLayer'
+              - 'ecr:GetRepositoryPolicy'
+              - 'ecr:DescribeRepositories'
+              - 'ecr:ListImages'
+              - 'ecr:DescribeImages'
+              - 'ecr:BatchGetImage'
+              - 'ecr:CompleteLayerUpload'
+              - 'ecr:PutImage'
+            Resource: 
+              - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ImageProcessorContainerRepository}'
+          - Effect: Allow
+            Action:
+              - 'ecr:GetAuthorizationToken'
+            Resource: '*'
       Roles:
         - !Ref CodeBuildTrustRole
   CloudFormationTrustRole:
@@ -294,6 +324,12 @@ Resources:
               - 'route53:GetChange'
             Resource: '*'
             Effect: Allow
+          # The manifest pipeline is going to register a task definition for ECS. Need to allow certain permissions for ECS
+          - Action:
+              - 'ecs:RegisterTaskDefinition'
+              - 'iam:PassRole'
+            Resource: '*'
+            Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole
   CodePipelineTrustRole:
@@ -436,6 +472,60 @@ Resources:
               - test-stack-configuration.json
               - prod-stack-configuration.json
 
+  DockerImageProcessorBuilder:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub '${AWS::StackName}-docker-image-processor'
+      Description: 'Build Docker Image from GitHub for Image Processor'
+      ServiceRole: !GetAtt
+        - CodeBuildTrustRole
+        - Arn
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        GitCloneDepth: 1
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Logging in to Amazon ECR...
+                - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+                - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+                - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+                - echo $COMMIT_HASH
+                - IMAGE_TAG=${COMMIT_HASH:=latest}
+            build:
+              commands:
+                - echo Build started on `date`
+                - echo Building the Docker image...
+                - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$COMMIT_HASH ./pyramid-generator
+                - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$COMMIT_HASH
+                - docker tag $REPOSITORY_URI:$COMMIT_HASH $REPOSITORY_URI:$COMMIT_HASH
+            post_build:
+              commands:
+                - echo Build completed on `date`
+                - echo Pushing the Docker images...
+                - docker push $REPOSITORY_URI:latest
+                - docker push $REPOSITORY_URI:$COMMIT_HASH
+                - printf '[{"name":"%s","imageUri":"%s"}]' $TEST_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitionstest.json
+                - printf '[{"name":"%s","imageUri":"%s"}]' $PROD_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitionsprod.json
+                - printf $CODEBUILD_RESOLVED_SOURCE_VERSION > sha.txt
+                - printf $REPOSITORY_URI:$IMAGE_TAG > deployed_tag.txt
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:17.09.0
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref ImageProcessorContainerRepository
+
   S3Bucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -516,6 +606,20 @@ Resources:
             ProjectName: !Ref CodeBuildProject
             PrimarySource: AppCode
           RunOrder: 1
+        - Name: BuildDockerImage
+          InputArtifacts:
+          - Name: AppCode
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: "1"
+            Provider: CodeBuild
+          OutputArtifacts:
+          - Name: BuiltCodeDockerImage
+          Configuration:
+            ProjectName: !Ref DockerImageProcessorBuilder
+            PrimarySource: AppCode
+          RunOrder: 2
 
       - Name: Test
         Actions:

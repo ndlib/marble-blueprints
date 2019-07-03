@@ -108,12 +108,6 @@ Outputs:
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ApprovalTopic']]
 
-  ImageProcessorContainerRepository:
-    Description: The repository that contains the docker image for image processing 
-    Value: !Ref ImageProcessorContainerRepository
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ImageProcessorContainerRepository']]
-
 Resources:
   ImageProcessorContainerRepository:
     Type: AWS::ECR::Repository
@@ -322,12 +316,6 @@ Resources:
           - Action:
               - 'route53:ListHostedZones'
               - 'route53:GetChange'
-            Resource: '*'
-            Effect: Allow
-          # The manifest pipeline is going to register a task definition for ECS. Need to allow certain permissions for ECS
-          - Action:
-              - 'ecs:RegisterTaskDefinition'
-              - 'iam:PassRole'
             Resource: '*'
             Effect: Allow
       Roles:

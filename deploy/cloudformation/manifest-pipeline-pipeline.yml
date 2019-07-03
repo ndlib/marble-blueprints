@@ -326,7 +326,7 @@ Resources:
           - Action:
               - 'iam:PassRole'
             Resource:
-              - !Sub 'arn:aws:iam::${AWS::AccountId}:role:${InfrastructureStackName}-*'
+              - !Sub ' arn:aws:iam::${AWS::AccountId}:role/${InfrastructureStackName}-*'
             Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole

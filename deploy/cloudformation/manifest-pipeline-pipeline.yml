@@ -317,6 +317,12 @@ Resources:
               - 'route53:GetChange'
             Resource: '*'
             Effect: Allow
+          # The manifest pipeline is going to register a task definition for ECS. Need to allow certain permissions for ECS
+          - Action:
+              - 'ecs:RegisterTaskDefinition'
+#              - 'iam:PassRole'
+            Resource: '*'
+            Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole
   CodePipelineTrustRole:

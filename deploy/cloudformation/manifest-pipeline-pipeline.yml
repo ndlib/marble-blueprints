@@ -145,7 +145,6 @@ Resources:
           # The codebuild pipeline is going to create ECR records. Need to allow certain permissions for the authorization
           - Effect: Allow
             Action:
-              - 'ecr:GetAuthorizationToken'
               - 'ecr:InitiateLayerUpload'
               - 'ecr:UploadLayerPart'
               - 'ecr:BatchCheckLayerAvailability'

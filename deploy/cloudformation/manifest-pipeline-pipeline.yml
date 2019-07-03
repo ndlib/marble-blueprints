@@ -317,11 +317,16 @@ Resources:
               - 'route53:GetChange'
             Resource: '*'
             Effect: Allow
-          # The manifest pipeline is going to register a task definition for ECS. Need to allow certain permissions for ECS
+          # The manifest pipeline is going to need to RegisterTaskDefinition for ImageTaskDefinition
           - Action:
               - 'ecs:RegisterTaskDefinition'
-#              - 'iam:PassRole'
             Resource: '*'
+            Effect: Allow
+          # The manifest pipeline is going to need PassRole for ImageTaskDefinition
+          - Action:
+              - 'iam:PassRole'
+            Resource:
+              - !Sub 'arn:aws:iam:${AWS::Region}:${AWS::AccountId}:role:${InfrastructureStackName}-*'
             Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole

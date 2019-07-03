@@ -639,6 +639,7 @@ Resources:
               ChangeSetName: TestChangeSetName
               TemplateConfiguration: BuiltCode::test-stack-configuration.json
               TemplatePath: BuiltCode::output.yml
+              ParameterOverrides: !Sub '{"ContainerImageUrl": "${ImageProcessorContainerRepository}:latest"}'
             RunOrder: 1
           - Name: Deploy
             ActionTypeId:
@@ -682,6 +683,7 @@ Resources:
               ChangeSetName: ProdChangeSetName
               TemplateConfiguration: BuiltCode::prod-stack-configuration.json
               TemplatePath: BuiltCode::output.yml
+              ParameterOverrides: !Sub '{"ContainerImageUrl": "${ImageProcessorContainerRepository}:latest"}'
             RunOrder: 1
           - Name: Deploy
             ActionTypeId:

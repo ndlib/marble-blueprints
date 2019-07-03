@@ -320,13 +320,14 @@ Resources:
           # The manifest pipeline is going to need to RegisterTaskDefinition for ImageTaskDefinition
           - Action:
               - 'ecs:RegisterTaskDefinition'
+              - 'ecs:DeregisterTaskDefinition'
             Resource: '*'
             Effect: Allow
           # The manifest pipeline is going to need PassRole for ImageTaskDefinition
           - Action:
               - 'iam:PassRole'
             Resource:
-              - !Sub ' arn:aws:iam::${AWS::AccountId}:role/${InfrastructureStackName}-*'
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${InfrastructureStackName}-*'
             Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole

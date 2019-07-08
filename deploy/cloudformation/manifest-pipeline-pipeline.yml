@@ -317,7 +317,7 @@ Resources:
               - 'route53:GetChange'
             Resource: '*'
             Effect: Allow
-          # The manifest pipeline is going to need to RegisterTaskDefinition for ImageTaskDefinition
+          # The manifest pipeline is going to need to make changes to the TaskDefinition for ImageTaskDefinition
           - Action:
               - 'ecs:RegisterTaskDefinition'
               - 'ecs:DeregisterTaskDefinition'

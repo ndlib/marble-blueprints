@@ -67,7 +67,6 @@ Parameters:
     Description: How much memory in megabytes to give the container
   ContainerImageUrl:
     Type: String
-    Default: hesburgh/marble-image-processing
     Description: The url of a docker image that will handle image processing
 Conditions:
 

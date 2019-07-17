@@ -525,6 +525,50 @@ Resources:
           - Name: IMAGE_REPO_NAME
             Value: !Ref ImageProcessorContainerRepository
 
+  PostDeployDocker:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${AWS::StackName}-docker-add-tag'
+      Description: 'CodeBuild to update the current_release tag in ECR'
+      ServiceRole: !GetAtt
+        - CodeBuildTrustRole
+        - Arn
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        GitCloneDepth: 1
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Pre-build started on `date`
+                - echo Logging in to Amazon ECR...
+                - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+                - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+            build:
+              commands:
+                - DEPLOYED_VERSION=$(cat deployed_tag.txt)
+                - docker pull $DEPLOYED_VERSION
+                - docker tag $DEPLOYED_VERSION $REPOSITORY_URI:current_release
+            post_build:
+              commands:
+                - echo Beginning post build on `date`
+                - docker push $REPOSITORY_URI:current_release
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:17.09.0
+        EnvironmentVariables:
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref ImageProcessorContainerRepository
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+
   S3Bucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -696,6 +740,20 @@ Resources:
               RoleArn: !GetAtt CloudFormationTrustRole.Arn
               StackName: !Ref ProdStackName
             RunOrder: 2
+
+      - Name: PostProduction
+        Actions:
+          - Name: "AddDockerTag"
+            InputArtifacts:
+              - Name: BuiltCode
+            ActionTypeId:
+              Owner: AWS
+              Category: Build
+              Provider: CodeBuild
+              Version: "1"
+            Configuration:
+              ProjectName: !Ref PostDeployDocker
+            RunOrder: 1
 
       ArtifactStore:
         Type: S3

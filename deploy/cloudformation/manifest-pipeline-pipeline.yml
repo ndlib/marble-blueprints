@@ -569,6 +569,47 @@ Resources:
           - Name: AWS_ACCOUNT_ID
             Value: !Ref AWS::AccountId
 
+  PostDeployGitHub:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${AWS::StackName}-add-github-status'
+      Description: 'CodeBuild to tag the latest commit in repo post-deploy'
+      ServiceRole: !GetAtt
+        - CodeBuildTrustRole
+        - Arn
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        GitCloneDepth: 1
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Pre-build started on `date`
+            build:
+              commands:
+                - SOURCE_SHA=$(cat sha.txt)
+                - DATE=$(date)
+            post_build:
+              commands:
+                - curl -i -X POST -H "Authorization:token ${OAUTH_TOKEN}" "${API_URL}/${SOURCE_SHA}" -d "{\"state\":\"success\",\"description\":\"Deployed to production on ${DATE}\",\"context\":\"${CODEBUILD_INITIATOR}\",\"target_url\":\"https://${TARGET_HOST}\"}"
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/ubuntu-base:14.04
+        EnvironmentVariables:
+          - Name: OAUTH_TOKEN
+            Type: PARAMETER_STORE
+            Value: /esu/github/ndlib-git/oauth
+          - Name: API_URL
+            Value: !Sub "https://api.github.com/repos/${GitHubUser}/${ManifestPipelineRepoName}/statuses"
+          - Name: TARGET_HOST
+            Type: PARAMETER_STORE
+            Value: !Sub "/all/stacks/${ImageServiceProdStackName}/hostname"
+
   S3Bucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -753,6 +794,18 @@ Resources:
               Version: "1"
             Configuration:
               ProjectName: !Ref PostDeployDocker
+            RunOrder: 1
+
+          - Name: "AddGitHubStatus"
+            InputArtifacts:
+              - Name: BuiltCode
+            ActionTypeId:
+              Owner: AWS
+              Category: Build
+              Provider: CodeBuild
+              Version: "1"
+            Configuration:
+              ProjectName: !Ref PostDeployGitHub
             RunOrder: 1
 
       ArtifactStore:

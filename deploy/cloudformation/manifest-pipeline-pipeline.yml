@@ -162,6 +162,14 @@ Resources:
             Action:
               - 'ecr:GetAuthorizationToken'
             Resource: '*'
+          - Effect: Allow
+            Action:
+              - ssm:GetParameters
+            Resource:
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/github/ndlib-git/oauth"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ImageServiceProdStackName}/hostname"
+              - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/${ImageServiceTestStackName}/hostname"
+
       Roles:
         - !Ref CodeBuildTrustRole
   CloudFormationTrustRole:

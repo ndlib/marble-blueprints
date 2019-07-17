@@ -519,8 +519,6 @@ Resources:
                 - printf '[{"name":"%s","imageUri":"%s"}]' $PROD_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitionsprod.json
                 - printf $CODEBUILD_RESOLVED_SOURCE_VERSION > sha.txt
                 - printf $REPOSITORY_URI:$IMAGE_TAG > deployed_tag.txt
-                - ls -la
-                - pwd
           artifacts:
             files:
               - imagedefinitionstest.json
@@ -564,8 +562,6 @@ Resources:
                 - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
             build:
               commands:
-                - ls -la
-                - pwd
                 - DEPLOYED_VERSION=$(cat deployed_tag.txt)
                 - docker pull $DEPLOYED_VERSION
                 - docker tag $DEPLOYED_VERSION $REPOSITORY_URI:current_release
@@ -607,8 +603,6 @@ Resources:
                 - echo Pre-build started on `date`
             build:
               commands:
-                - ls -la
-                - pwd
                 - SOURCE_SHA=$(cat sha.txt)
                 - DATE=$(date)
             post_build:
@@ -818,7 +812,7 @@ Resources:
 
           - Name: "AddGitHubStatus"
             InputArtifacts:
-              - Name: BuiltCode
+              - Name: BuiltCodeDockerImage
             ActionTypeId:
               Owner: AWS
               Category: Build

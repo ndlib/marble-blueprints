@@ -65,7 +65,9 @@ Parameters:
     Type: Number
     Default: 2048
     Description: How much memory in megabytes to give the container
-
+  ContainerImageUrl:
+    Type: String
+    Description: The url of a docker image that will handle image processing
 Conditions:
 
   CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
@@ -526,7 +528,7 @@ Resources:
           Cpu: !Ref 'ContainerCpu'
           Memory: !Ref 'ContainerMemory'
           EntryPoint: ['pyramid.py']
-          Image: hesburgh/marble-image-processing
+          Image: !Ref ContainerImageUrl
           LogConfiguration:
             LogDriver: awslogs
             Options:

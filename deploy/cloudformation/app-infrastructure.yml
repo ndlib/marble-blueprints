@@ -113,6 +113,19 @@ Resources:
           ExpirationInDays: 3653
           NoncurrentVersionExpirationInDays: 1
 
+  LogBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LogBucket
+      PolicyDocument:
+        Statement:
+          # Allow ALB access logs
+          - Action: 's3:PutObject'
+            Effect: 'Allow'
+            Resource: !Sub 'arn:aws:s3:::${LogBucket}/web/*/AWSLogs/${AWS::AccountId}/*'
+            Principal:
+              AWS: '127311923021' # us-east-1 ELB AccountId https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html#access-logging-bucket-permissions
+
   SharedLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:

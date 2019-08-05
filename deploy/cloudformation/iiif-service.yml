@@ -222,7 +222,7 @@ Resources:
             - ResolvedDomainName:
                 Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
         - Key: idle_timeout.timeout_seconds
-          Value: '30'
+          Value: '300'
       SecurityGroups:
         -
           Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'PublicLoadBalancerSecurityGroup']]

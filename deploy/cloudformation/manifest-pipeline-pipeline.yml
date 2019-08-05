@@ -292,6 +292,10 @@ Resources:
                 - 'arn:aws:iam::${AWS::AccountId}:role/${ResolvedDataAdminRoleName}'
                 - ResolvedDataAdminRoleName: !ImportValue
                     Fn::Sub: ${InfrastructureStackName}:DataAdminRoleName
+              - !Sub
+                - 'arn:aws:iam::${AWS::AccountId}:role/${ResolvedDebugRoleName}'
+                - ResolvedDebugRoleName: !ImportValue
+                    Fn::Sub: ${InfrastructureStackName}:DebugRoleName
               - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${TestStackName}-*'
               - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${ProdStackName}-*'
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${TestStackName}-*'

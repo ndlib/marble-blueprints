@@ -777,20 +777,15 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: AllowReadBuckets
+          - Sid: AllowReadWriteToBuckets
             Effect: Allow
             Action:
               - 's3:GetObject'
               - 's3:ListBucket'
+              - 's3:PutObject'
+              - 's3:DeleteObject'
             Resource:
               - !GetAtt ProcessBucket.Arn
               - !Sub ${ProcessBucket.Arn}/*
-              - !GetAtt ManifestBucket.Arn
-              - !Sub ${ManifestBucket.Arn}/*
-          - Sid: AllowWriteToManifests
-            Effect: Allow
-            Action:
-              - 's3:PutObject'
-            Resource:
               - !GetAtt ManifestBucket.Arn
               - !Sub ${ManifestBucket.Arn}/*

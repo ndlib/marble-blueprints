@@ -1,0 +1,3 @@
+{
+  "app": "npx ts-node bin/marble-web-kiosk-export-pipeline.ts"
+}

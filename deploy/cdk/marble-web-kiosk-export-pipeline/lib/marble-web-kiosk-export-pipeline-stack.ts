@@ -3,7 +3,6 @@ import { SecretValue, Fn, RemovalPolicy, CfnParameter } from '@aws-cdk/core'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import sns = require('@aws-cdk/aws-sns')
-import { EmailSubscription } from '@aws-cdk/aws-sns-subscriptions'
 import { Role, ServicePrincipal, PolicyStatement, Effect, AnyPrincipal } from '@aws-cdk/aws-iam'
 import { Bucket } from '@aws-cdk/aws-s3'
 import readlineSync = require('readline-sync')

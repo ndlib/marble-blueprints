@@ -63,9 +63,6 @@ export class MarbleWebKioskExportStack extends cdk.Stack {
             projectType: BuildProjectType.BUILD,
             role: codebuild_role,
             stage: stage,
-            context: {
-              // createDns,
-            },
           })
           buildActions.push(new codepipelineActions.CodeBuildAction({
             actionName: `${stage}BuildMarbleWebKioskExportStack`,
@@ -249,7 +246,6 @@ export class MarbleWebKioskExportStack extends cdk.Stack {
         }))
 
         return {
-          // createDns,
           repoName,
           repoOwner,
           repoBranch,

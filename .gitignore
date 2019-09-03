@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/
@@ -111,3 +111,5 @@ output.yml
 
 /tmp
 .DS_Store
+
+cdk.out

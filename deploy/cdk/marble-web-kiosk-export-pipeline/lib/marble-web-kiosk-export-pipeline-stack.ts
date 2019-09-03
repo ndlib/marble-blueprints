@@ -178,7 +178,7 @@ export class MarbleWebKioskExportStack extends cdk.Stack {
 
         // Allow access to Parameter Store
         codebuild_role.addToPolicy(new PolicyStatement({
-            resources:[Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:*')],
+            resources:[Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/marble-data-processing/*')],
             actions: ["ssm:GetParameterHistory",
                 "ssm:GetParametersByPath",
                 "ssm:GetParameters",

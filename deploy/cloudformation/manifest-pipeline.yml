@@ -482,6 +482,16 @@ Resources:
       Timeout: 90
       CodeUri: manifest-from-input-json/
 
+ SchemaLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: manifestpy/
+
+
   FinalizeLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:

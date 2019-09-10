@@ -681,7 +681,7 @@ Resources:
                       }
                     }
                   },
-                  "Next": "ProcessInput",
+                  "Next": "ProcessSchema",
                   "Catch": [
                       {
                         "ErrorEquals": [ "States.ALL" ],
@@ -700,7 +700,8 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "Index"
+                  "Next": "ProcessInput"
+                },
                 "ProcessInput": {
                   "Type": "Task",
                   "Resource": "${csvInputLambdaArn}",

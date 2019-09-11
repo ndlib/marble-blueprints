@@ -681,7 +681,7 @@ Resources:
                       }
                     }
                   },
-                  "Next": "ProcessSchema",
+                  "Next": "ProcessInput",
                   "Catch": [
                       {
                         "ErrorEquals": [ "States.ALL" ],
@@ -690,9 +690,9 @@ Resources:
                       }
                   ]
                 },
-                "ProcessSchema": {
+                "ProcessInput": {
                   "Type": "Task",
-                  "Resource": "${schemaLambdaArn}",
+                  "Resource": "${csvInputLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],
@@ -700,11 +700,11 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "ProcessInput"
+                  "Next": "ProcessSchema"
                 },
-                "ProcessInput": {
+                "ProcessSchema": {
                   "Type": "Task",
-                  "Resource": "${csvInputLambdaArn}",
+                  "Resource": "${schemaLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],

@@ -700,11 +700,11 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "ProcessSchema"
+                  "Next": "ProcessManifest"
                 },
-                "ProcessSchema": {
+                "ProcessManifest": {
                   "Type": "Task",
-                  "Resource": "${schemaLambdaArn}",
+                  "Resource": "${manifestLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],
@@ -712,11 +712,11 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "ProcessManifest"
+                  "Next": "ProcessSchema"
                 },
-                "ProcessManifest": {
+                "ProcessSchema": {
                   "Type": "Task",
-                  "Resource": "${manifestLambdaArn}",
+                  "Resource": "${schemaLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],

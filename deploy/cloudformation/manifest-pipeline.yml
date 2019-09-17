@@ -464,6 +464,15 @@ Resources:
           NO_REPLY_EMAIL: !Ref NoReplyEmailAddr
           TROUBLESHOOTING_EMAIL: !Ref TroubleshooterEmailAddr
 
+  MetsInputLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: process-mets/
+
   CsvInputLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -681,13 +690,28 @@ Resources:
                       }
                     }
                   },
-                  "Next": "ProcessInput",
+                  "Next": "ChoiceSourceType",
                   "Catch": [
                       {
                         "ErrorEquals": [ "States.ALL" ],
                         "ResultPath": "$.unexpected",
                         "Next": "Finalize"
                       }
+                  ]
+                },
+                "ChoiceSourceType": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.metadata-source-type",
+                      "StringEquals": "csv",
+                      "Next": "ProcessInput"
+                    },
+                    {
+                      "Variable": "$.metadata-source-type",
+                      "StringEquals": "mets",
+                      "Next": "ProcessMets"
+                    }
                   ]
                 },
                 "ProcessInput": {
@@ -700,11 +724,11 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "ProcessManifest"
+                  "Next": "ProcessSchema"
                 },
-                "ProcessManifest": {
+                "ProcessMets": {
                   "Type": "Task",
-                  "Resource": "${manifestLambdaArn}",
+                  "Resource": "${metsInputLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],
@@ -724,11 +748,11 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "Index"
+                  "Next": "ProcessManifest"
                 },
-                "Index": {
+                "ProcessManifest": {
                   "Type": "Task",
-                  "Resource": "${indexLambdaArn}",
+                  "Resource": "${manifestLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],
@@ -738,6 +762,7 @@ Resources:
                   ],
                   "Next": "Finalize"
                 },
+
                 "Finalize": {
                   "Type": "Task",
                   "Resource": "${finalizeLambdaArn}",
@@ -753,7 +778,7 @@ Resources:
               csvInputLambdaArn: !GetAtt [ CsvInputLambdaFunction, Arn ],
               manifestLambdaArn: !GetAtt [ ManifestLambdaFunction, Arn ],
               schemaLambdaArn: !GetAtt [ SchemaLambdaFunction, Arn ],
-              indexLambdaArn: !GetAtt [IndexLambdaFunction, Arn],
+              metsInputLambdaArn: !GetAtt [MetsInputLambdaFunction, Arn],
               finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ]
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]

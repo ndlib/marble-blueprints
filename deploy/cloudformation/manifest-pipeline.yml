@@ -739,7 +739,7 @@ Resources:
                 },
                 "ProcessManifest": {
                   "Type": "Task",
-                  "Resource": "${manifestLambdaArn}",
+                  "Resource": "${createManifestLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],

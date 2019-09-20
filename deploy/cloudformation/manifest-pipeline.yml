@@ -464,32 +464,32 @@ Resources:
           NO_REPLY_EMAIL: !Ref NoReplyEmailAddr
           TROUBLESHOOTING_EMAIL: !Ref TroubleshooterEmailAddr
 
-  MetsInputLambdaFunction:
+  ProcessMetsInputLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
       Timeout: 90
-      CodeUri: process-mets/
+      CodeUri: process_mets/
 
-  CsvInputLambdaFunction:
+  ProcessCsvInputLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
       Timeout: 90
-      CodeUri: json-from-csv/
+      CodeUri: process_csv_input/
 
-  ManifestLambdaFunction:
+  CreateManifestLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
       Timeout: 90
-      CodeUri: manifest-from-input-json/
+      CodeUri: create_manifest/
 
   SchemaLambdaFunction:
     Type: AWS::Serverless::Function
@@ -509,19 +509,6 @@ Resources:
       Timeout: 600
       MemorySize: 512
       CodeUri: finalize/
-      Environment:
-        Variables:
-          PROCESS_BUCKET: !Ref ProcessBucket
-
-  IndexLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
-      Runtime: python3.7
-      Timeout: 600
-      MemorySize: 512
-      CodeUri: index/
       Environment:
         Variables:
           PROCESS_BUCKET: !Ref ProcessBucket
@@ -705,18 +692,18 @@ Resources:
                     {
                       "Variable": "$.metadata-source-type",
                       "StringEquals": "csv",
-                      "Next": "ProcessInput"
+                      "Next": "ProcessCsvInput"
                     },
                     {
                       "Variable": "$.metadata-source-type",
                       "StringEquals": "mets",
-                      "Next": "ProcessMets"
+                      "Next": "ProcessMetsInput"
                     }
                   ]
                 },
-                "ProcessInput": {
+                "ProcessCsvInput": {
                   "Type": "Task",
-                  "Resource": "${csvInputLambdaArn}",
+                  "Resource": "${processCsvInputLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],
@@ -726,9 +713,9 @@ Resources:
                   ],
                   "Next": "ProcessSchema"
                 },
-                "ProcessMets": {
+                "ProcessMetsInput": {
                   "Type": "Task",
-                  "Resource": "${metsInputLambdaArn}",
+                  "Resource": "${processMetsInputLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],
@@ -775,10 +762,10 @@ Resources:
               publicSubnet1: {"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}:PublicSubnet1ID"}},
               publicSubnet2: {"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}:PublicSubnet2ID"}},
               initManifestLambdaArn: !GetAtt [InitManifestLambdaFunction, Arn],
-              csvInputLambdaArn: !GetAtt [ CsvInputLambdaFunction, Arn ],
-              manifestLambdaArn: !GetAtt [ ManifestLambdaFunction, Arn ],
+              processCsvInputLambdaArn: !GetAtt [ ProcessCsvInputLambdaFunction, Arn ],
+              createManifestLambdaArn: !GetAtt [ CreateManifestLambdaFunction, Arn ],
               schemaLambdaArn: !GetAtt [ SchemaLambdaFunction, Arn ],
-              metsInputLambdaArn: !GetAtt [MetsInputLambdaFunction, Arn],
+              processMetsInputLambdaArn: !GetAtt [ProcessMetsInputLambdaFunction, Arn],
               finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ]
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]

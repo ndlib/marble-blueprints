@@ -471,7 +471,7 @@ Resources:
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
       Timeout: 90
-      CodeUri: process_mets/
+      CodeUri: process_mets_input/
 
   ProcessCsvInputLambdaFunction:
     Type: AWS::Serverless::Function

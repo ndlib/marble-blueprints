@@ -415,7 +415,7 @@ Resources:
         EnvironmentVariables:
           - Name: S3_BUCKET
             Value: !Ref S3Bucket
-        Image: "aws/codebuild/nodejs:7.0.0"
+        Image: "aws/codebuild/python:3.7"
         Type: LINUX_CONTAINER
       ServiceRole: !GetAtt
         - CodeBuildTrustRole

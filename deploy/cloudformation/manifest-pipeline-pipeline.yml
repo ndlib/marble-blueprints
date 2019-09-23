@@ -415,7 +415,7 @@ Resources:
         EnvironmentVariables:
           - Name: S3_BUCKET
             Value: !Ref S3Bucket
-        Image: "aws/codebuild/python:3.7"
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:1.0"
         Type: LINUX_CONTAINER
       ServiceRole: !GetAtt
         - CodeBuildTrustRole
@@ -427,6 +427,8 @@ Resources:
           version: 0.2
           phases:
             install:
+              runtime-versions:
+                python: 3.7
               commands:
                 - echo "Ensure that the codebuild directory is executable"
                 - chmod -R 755 ./scripts/codebuild/*

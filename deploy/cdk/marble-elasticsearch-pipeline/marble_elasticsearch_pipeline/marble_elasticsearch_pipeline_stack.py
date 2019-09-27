@@ -23,19 +23,21 @@ class MarbleElasticsearchPipelineStack(core.Stack):
 
     :param es_stack: The prefix of the elasticsearch stack
     :param repo_name: The name of the elasticsearch github repo
-    :param repo_owner: The owner of the elasticsearch github repo
     :param repo_branch: The branch name to checkout from the github repo
+    :param repo_owner: The owner of the elasticsearch github repo
+    :param repo_oauth_path: The secrets manager path to the oauth value
     :param artifact_bucket: The S3 bucket for storing artifacts
     :param codepipeline_role: The role for executing pipeline actions
     :param codebuild_role: The role for executing build actions
     :return: returns nothing
     """
-    def __init__(self, scope: core.Construct, id: str, repo_branch, repo_name, repo_owner, **kwargs) -> None:
+    def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
         self.es_stack = 'marble-elasticsearch'
-        self.repo_name = repo_name
-        self.repo_branch = repo_branch
-        self.repo_owner = repo_owner
+        self.repo_name = scope.node.try_get_context('repo_name')
+        self.repo_branch = scope.node.try_get_context('repo_branch')
+        self.repo_owner = scope.node.try_get_context('repo_owner')
+        self.repo_oauth_path = scope.node.try_get_context('repo_oauth_path')
         self._setup_artifact()
         self._setup_iam()
         self.pipeline = codepipeline.Pipeline(self, 'ElasticSearchPipeline',
@@ -45,17 +47,14 @@ class MarbleElasticsearchPipelineStack(core.Stack):
     def add_stages(self):
         # REPOSITORY STAGE
         # Need a cloudformation parameter to keep the token from being exposed in the template
+        oauth_token = core.SecretValue.secrets_manager(self.repo_oauth_path, json_field='oauth')
         oauth_desc = 'Secret. OAuthToken with access to Repo. Long string of characters and digits. Go to https://github.com/settings/tokens'
-        oauth_token_param = core.CfnParameter(self, 'GitHubToken',
-                                              type='String', no_echo=True,
-                                              min_length=8,
-                                              description=oauth_desc)
         source_output = codepipeline.Artifact()
         source_action = codepipeline_actions.GitHubSourceAction(action_name='Github_App_Source',
                                                                 owner=self.repo_owner,
                                                                 repo=self.repo_name,
                                                                 branch=self.repo_branch,
-                                                                oauth_token=core.SecretValue.cfn_parameter(oauth_token_param),
+                                                                oauth_token=oauth_token,
                                                                 output=source_output,
                                                                 trigger=codepipeline_actions.GitHubTrigger.POLL)
         self.pipeline.add_stage(stage_name='Source', actions=[source_action])
@@ -69,9 +68,11 @@ class MarbleElasticsearchPipelineStack(core.Stack):
 
         # SNS topics
         approval_topic = sns.Topic(self, 'PipelineApprovalTopic', display_name='PipelineApprovalTopic')
+        console_link = f'https://console.aws.amazon.com/es/home?region={core.Aws.REGION}#domain:resource={self.es_stack}-test;action=dashboard'
+        approval_msg = f'Approve or Reject this change after testing {self.es_stack}-test elasticsearch instance: {console_link}'
         approval_actions = codepipeline_actions.ManualApprovalAction(action_name='ManualApprovalOfTestEnvironment',
                                                                      notification_topic=approval_topic,
-                                                                     additional_information='Approve or Reject this change after testing',
+                                                                     additional_information=approval_msg,
                                                                      run_order=2)
 
         self.pipeline.add_stage(stage_name='DeployToTest', actions=[test_actions, approval_actions])

@@ -1,23 +1,20 @@
 # Description
 This project creates an AWS pipeline that deploys an elasticsearch cluster specified in the
-repository(see repo.json).
+repository(see cdk.json).
 
 # Prerequisites
 Github oauth token - https://help.github.com/en/articles/git-automation-with-oauth-tokens
 
 # Configuration
-Edit repo.json to point to a different Github elasticsearch application source if desired.
+Edit cdk.json to point to a different Github elasticsearch application source if desired.
 
 # Installation
-Once repo.json is configured properly, simply kick-off the deploy bash script.
-It will execute the AWS cdk synth and cloudformation deploy commands. You will be
-prompted for the Github token(see Prerequisites section)
-
+Once cdk.json is configured properly run through the standard cdk commands to deploy.
 ```
 python3 -m venv .env
 source .env/bin/activate
 pip install -r requirements.txt
-./deploy.sh
+cdk deploy
 deactivate
 ```
 

@@ -3,7 +3,7 @@
     "context": {
         "repo_oauth_path": "/all/github/ndlib-git",
         "repo_name": "marble-elasticsearch",
-        "repo_branch": "es-domain",
+        "repo_branch": "master",
         "repo_owner": "ndlib"
     }
 }

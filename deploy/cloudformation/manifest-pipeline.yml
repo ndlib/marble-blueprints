@@ -491,15 +491,6 @@ Resources:
       Timeout: 90
       CodeUri: create_manifest/
 
-  SchemaLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
-      Runtime: python3.7
-      Timeout: 90
-      CodeUri: manifestpy/
-
   FinalizeLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -711,23 +702,11 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "ProcessSchema"
+                  "Next": "ProcessManifest"
                 },
                 "ProcessMetsInput": {
                   "Type": "Task",
                   "Resource": "${processMetsInputLambdaArn}",
-                  "Catch": [
-                    {
-                      "ErrorEquals": [ "States.ALL" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "Finalize"
-                    }
-                  ],
-                  "Next": "ProcessSchema"
-                },
-                "ProcessSchema": {
-                  "Type": "Task",
-                  "Resource": "${schemaLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],
@@ -764,7 +743,6 @@ Resources:
               initManifestLambdaArn: !GetAtt [InitManifestLambdaFunction, Arn],
               processCsvInputLambdaArn: !GetAtt [ ProcessCsvInputLambdaFunction, Arn ],
               createManifestLambdaArn: !GetAtt [ CreateManifestLambdaFunction, Arn ],
-              schemaLambdaArn: !GetAtt [ SchemaLambdaFunction, Arn ],
               processMetsInputLambdaArn: !GetAtt [ProcessMetsInputLambdaFunction, Arn],
               finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ]
             }

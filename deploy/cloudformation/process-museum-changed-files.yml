@@ -1,0 +1,308 @@
+# Note:  This started as a copy of the manifest-pipeline.yml
+Transform: 'AWS::Serverless-2016-10-31'
+Description: >
+  - Creates a series of lambdas and a step function to process changed museum image and metadata files, and copy them into the manifest pipeline process bucket.
+  - The first lambda finds which image or metadata files have changed, and finds the metadata file for each associated object.
+  - The second lambda finds all images defined in the metadata file for each object.
+  - The third lambda does the following for each object:
+      1.  Created a folder for the object in the process bucket
+      2.  Copies image files for that object from a Google Team Drive to the process bucket folder
+      3.  Copies the metadata file for that object from a Google Team Drive to the process bucket folder
+  - Uses ssm keys to define where to find the process bucket
+
+  - Call similar to the following:
+    aws cloudformation deploy \
+      --region us-east-1 \
+      --stack-name process-museum-files-dev \
+      --template-file deploy/cloudformation/process-museum-changed-files.yml
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    Description: The name of the parent networking stack created.
+    Default: "marble-network"
+  InfrastructureStackName:
+    Type: String
+    Default: marble-app-infrastructure
+    Description: The name of the parent infrastructure/networking stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+  DomainStackName:
+    Type: String
+    Default: marble-domain
+    Description: The name of the parent domain stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+  ManifestPipelineStackName:
+    Type: String
+    Default: manifest-pipeline-v3
+    Description: The name of the parent stack that you created the manifest-pipeline. Necessary
+                 to locate and reference export resources created by that stack.
+  AppConfigPath:
+    Type: String
+    Description: The ssm path to look for the application config from
+    Default: '/all/manifest-pipeline-v3'
+  MarbleProcessingKeyPath:
+    Type: String
+    Description: The ssm path to look for the marble data processing config from
+    Default: '/all/marble-data-processing/test'
+  NoReplyEmailAddr:
+    Type: String
+    Description: Email address notification emails are sent from
+    Default: "noreply@nd.edu"
+  TroubleshooterEmailAddr:
+    Type: String
+    Description: Email address to send errors for debugging
+    Default: "rdought1@nd.edu"
+  ProcessBucket:
+    Type: String
+    Description: Bucket name to receive metadata files and images
+    Default: "manifest-pipeline-v3-processbucket-kmnll9wpj2h3"
+  ProcessBucketArn:
+    Type: String
+    Description: The ARN of the Process Bucket
+    Default: "arn:aws:s3:::manifest-pipeline-v3-processbucket-kmnll9wpj2h3"
+# All Defaults must be a string!
+    # Default: !Sub 'arn:aws:s3:${AWS::Region}:${AWS::AccountId}:${ProcessBucket}'
+# TODO: Need to replace above with an import, once we are exporting from manifest-pipeline.yml
+    # Default:
+    #   Fn::ImportValue: !Join [':', [!Ref ManifestPipelineStackName, 'ProcessBucket']]
+
+Outputs:
+  StateMachine:
+    Value: !Ref StateMachine
+
+Resources:
+  LambdaExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: ManifestPipelineSsmPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "ssm:GetParametersByPath"
+                Effect: "Allow"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
+        - PolicyName: ImageDerivativeCacheBucketPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                  - "s3:ListBucket"
+                  - "s3:ListBucketVersions"
+                  - "s3:PutObjectVersionAcl"
+                  - "s3:PutObjectAcl"
+                Effect: "Allow"
+                Resource:
+                  - !Ref ProcessBucketArn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !Ref ProcessBucketArn
+                        - "/*"
+        - PolicyName: ManifestPipelineSesPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "ses:SendEmail"
+                Effect: "Allow"
+                Resource: "*"
+        - PolicyName: ManifestPipelineLogPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:CreateLogGroup"
+                  - "logs:PutLogEvents"
+                Effect: "Allow"
+                Resource: "*"
+
+  FindObjectsLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: find_objects/
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'states:ListStateMachines'
+                - 'states:StartExecution'
+              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*"
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
+  FindImagesLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: find_images_for_objects/
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
+  PopulatePipelineLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 900
+      CodeUri: send_objects_to_pipeline/
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+
+  StateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      StateMachineName: !Sub "${AWS::StackName}-StateMachine"
+      DefinitionString:
+        !Sub
+          - |-
+            {
+              "Comment": "Populate Manifest Pipeline with Changed metadata and images",
+              "StartAt": "FindObjectsTask",
+              "States": {
+                "FindObjectsTask": {
+                  "Type": "Task",
+                  "Resource": "${findObjectsLambdaArn}",
+                  "Next": "FindImagesTask"
+                },
+                "FindImagesTask": {
+                  "Type": "Task",
+                  "Resource": "${findImagesLambdaArn}",
+                  "Next": "PopulatePipelineTask"
+                },
+                "PopulatePipelineTask": {
+                  "Type": "Task",
+                  "Resource": "${populatePipelineLambdaArn}",
+                  "Next": "ChoiceSourceType"
+                },
+                "ChoiceSourceType": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.populatePipelineCompleted",
+                      "BooleanEquals": false,
+                      "Next": "PopulatePipelineTask"
+                    },
+                    {
+                      "Variable": "$.populatePipelineCompleted",
+                      "BooleanEquals": true,
+                      "Next": "SuccessState"
+                    }
+                  ]
+                },
+                "SuccessState": {
+                  "Type": "Succeed"
+                }
+              }
+            }
+          -
+            {
+              findObjectsLambdaArn: !GetAtt [FindObjectsLambdaFunction, Arn],
+              findImagesLambdaArn: !GetAtt [ FindImagesLambdaFunction, Arn ],
+              populatePipelineLambdaArn: !GetAtt [ PopulatePipelineLambdaFunction, Arn ],
+            }
+      RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
+
+  DebugPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DebugRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !Ref ProcessBucketArn
+              - !Sub ${ProcessBucketArn}/*
+          - Sid: AllowStateMachineActions
+            Effect: Allow
+            Action:
+              - 'states:DescribeStateMachine'
+              - 'states:ListExecutions'
+              - 'states:StartExecution'
+              - 'states:DescribeExecution'
+              - 'states:GetExecutionHistory'
+              - 'states:DescribeStateMachineForExecution'
+            Resource:
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachine.Name}'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachine.Name}:*'
+
+  DataAdminPermissions:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Roles:
+        - !ImportValue
+            Fn::Sub: ${InfrastructureStackName}:DataAdminRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowReadWriteToBuckets
+            Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+              - 's3:PutObject'
+              - 's3:DeleteObject'
+            Resource:
+              - !Ref ProcessBucketArn
+              - !Sub ${ProcessBucketArn}/*

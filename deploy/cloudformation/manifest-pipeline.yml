@@ -33,6 +33,10 @@ Parameters:
   AppConfigPath:
     Type: String
     Description: The path to look for the application config from
+  MarbleProcessingKeyPath:
+    Type: String
+    Description: The ssm path to look for the marble data processing config from
+    Default: '/all/marble-data-processing/test'
   NoReplyEmailAddr:
     Type: String
     Description: Email address notification emails are sent from
@@ -73,8 +77,11 @@ Conditions:
   CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
 
 Outputs:
-  StateMachine:
-    Value: !Ref StateMachine
+  StateMachineSchema:
+    Value: !Ref StateMachineSchema
+
+  StateMachineMets:
+    Value: !Ref StateMachineMets
 
   ProcessBucket:
     Value: !Ref ProcessBucket
@@ -266,7 +273,7 @@ Resources:
           LambdaFunctionAssociations:
             -
               EventType: origin-request
-              LambdaFunctionARN: !Sub ${SPARedirectionLambda.Arn}:${SPARedirectionLambdaV1.Version}
+              LambdaFunctionARN: !Sub ${SPARedirectionLambda.Arn}:${SPARedirectionLambdaV2.Version}
         Origins:
           - Id: Bucket
             DomainName: !GetAtt ManifestBucket.DomainName
@@ -322,7 +329,7 @@ Resources:
           exports.handler = (event, context, callback) => {
               var request = event.Records[0].cf.request;
 
-              if (!request.uri.endsWith('/index.json')) {
+              if (!request.uri.endsWith('/index.json') && !request.uri.endsWith('.xml')) {
                 if (request.uri.endsWith('/')) {
                   request.uri = request.uri + 'index.json'
                 } else {
@@ -336,7 +343,7 @@ Resources:
       Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
       Runtime: nodejs8.10
 
-  SPARedirectionLambdaV1:
+  SPARedirectionLambdaV2:
     Type: AWS::Lambda::Version
     Properties:
       FunctionName: !Ref SPARedirectionLambda
@@ -361,7 +368,10 @@ Resources:
                 Action:
                   - "ssm:GetParametersByPath"
                 Effect: "Allow"
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
+
         - PolicyName: ImageDerivativeCacheBucketPermissions
           PolicyDocument:
             Version: 2012-10-17
@@ -619,10 +629,10 @@ Resources:
                 Resource:
                   - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForECSTaskRule"
 
-  StateMachine:
+  StateMachineSchema:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
-      StateMachineName: !Sub "${AWS::StackName}-StateMachine"
+      StateMachineName: !Sub "${AWS::StackName}-SchemaStateMachine"
       DefinitionString:
         !Sub
           - |-
@@ -690,7 +700,8 @@ Resources:
                       "StringEquals": "mets",
                       "Next": "ProcessMetsInput"
                     }
-                  ]
+                  ],
+                  "Default": "Finalize"
                 },
                 "ProcessCsvInput": {
                   "Type": "Task",
@@ -748,6 +759,130 @@ Resources:
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
 
+  FindObjectsLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: find_objects/
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
+  FindImagesLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: find_images_for_objects/
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
+  PopulatePipelineLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 900
+      CodeUri: send_objects_to_pipeline/
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'states:ListStateMachines'
+                - 'states:StartExecution'
+              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachine"
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+
+  StateMachineMets:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      StateMachineName: !Sub "${AWS::StackName}-MetsStateMachine"
+      DefinitionString:
+        !Sub
+          - |-
+            {
+              "Comment": "Populate Manifest Pipeline with Changed metadata and images",
+              "StartAt": "FindObjectsTask",
+              "States": {
+                "FindObjectsTask": {
+                  "Type": "Task",
+                  "Resource": "${findObjectsLambdaArn}",
+                  "Next": "FindImagesTask"
+                },
+                "FindImagesTask": {
+                  "Type": "Task",
+                  "Resource": "${findImagesLambdaArn}",
+                  "Next": "PopulatePipelineTask"
+                },
+                "PopulatePipelineTask": {
+                  "Type": "Task",
+                  "Resource": "${populatePipelineLambdaArn}",
+                  "Next": "ChoiceSourceType"
+                },
+                "ChoiceSourceType": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.populatePipelineCompleted",
+                      "BooleanEquals": false,
+                      "Next": "PopulatePipelineTask"
+                    },
+                    {
+                      "Variable": "$.populatePipelineCompleted",
+                      "BooleanEquals": true,
+                      "Next": "SuccessState"
+                    }
+                  ]
+                },
+                "SuccessState": {
+                  "Type": "Succeed"
+                }
+              }
+            }
+          -
+            {
+              findObjectsLambdaArn: !GetAtt [FindObjectsLambdaFunction, Arn],
+              findImagesLambdaArn: !GetAtt [ FindImagesLambdaFunction, Arn ],
+              populatePipelineLambdaArn: !GetAtt [ PopulatePipelineLambdaFunction, Arn ],
+            }
+      RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
+
+
   DebugPermissions:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -777,8 +912,10 @@ Resources:
               - 'states:GetExecutionHistory'
               - 'states:DescribeStateMachineForExecution'
             Resource:
-              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachine.Name}'
-              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachine.Name}:*'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachineSchema.Name}'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachineSchema.Name}:*'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachineMets.Name}'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachineMets.Name}:*'
 
   DataAdminPermissions:
     Type: AWS::IAM::ManagedPolicy

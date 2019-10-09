@@ -33,6 +33,10 @@ Parameters:
   AppConfigPath:
     Type: String
     Description: The path to look for the application config from
+  MarbleProcessingKeyPath:
+    Type: String
+    Description: The ssm path to look for the marble data processing config from
+    Default: '/all/marble-data-processing/test'
   NoReplyEmailAddr:
     Type: String
     Description: Email address notification emails are sent from
@@ -361,7 +365,9 @@ Resources:
                 Action:
                   - "ssm:GetParametersByPath"
                 Effect: "Allow"
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
         - PolicyName: ImageDerivativeCacheBucketPermissions
           PolicyDocument:
             Version: 2012-10-17

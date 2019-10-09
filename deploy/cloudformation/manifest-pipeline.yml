@@ -77,8 +77,8 @@ Conditions:
   CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
 
 Outputs:
-  StateMachine:
-    Value: !Ref StateMachine
+  SchemaStateMachine:
+    Value: !Ref SchemaStateMachine
 
   StateMachineMets:
     Value: !Ref StateMachineMets
@@ -500,15 +500,6 @@ Resources:
       Timeout: 90
       CodeUri: create_manifest/
 
-  SchemaLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
-      Runtime: python3.7
-      Timeout: 90
-      CodeUri: manifestpy/
-
   FinalizeLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -637,10 +628,10 @@ Resources:
                 Resource:
                   - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForECSTaskRule"
 
-  StateMachine:
+  SchemaStateMachine:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
-      StateMachineName: !Sub "${AWS::StackName}-StateMachine"
+      StateMachineName: !Sub "${AWS::StackName}-SchemaStateMachine"
       DefinitionString:
         !Sub
           - |-
@@ -761,7 +752,6 @@ Resources:
               initManifestLambdaArn: !GetAtt [InitManifestLambdaFunction, Arn],
               processCsvInputLambdaArn: !GetAtt [ ProcessCsvInputLambdaFunction, Arn ],
               createManifestLambdaArn: !GetAtt [ CreateManifestLambdaFunction, Arn ],
-              schemaLambdaArn: !GetAtt [ SchemaLambdaFunction, Arn ],
               processMetsInputLambdaArn: !GetAtt [ProcessMetsInputLambdaFunction, Arn],
               finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ]
             }
@@ -899,8 +889,8 @@ Resources:
               - 'states:GetExecutionHistory'
               - 'states:DescribeStateMachineForExecution'
             Resource:
-              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachine.Name}'
-              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachine.Name}:*'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${SchemaStateMachine.Name}'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${SchemaStateMachine.Name}:*'
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachineMets.Name}'
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachineMets.Name}:*'
 

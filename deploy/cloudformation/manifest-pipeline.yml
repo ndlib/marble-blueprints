@@ -36,7 +36,7 @@ Parameters:
   MarbleProcessingKeyPath:
     Type: String
     Description: The ssm path to look for the marble data processing config from
-    Default: '/all/marble-data-processing/test'
+    Default: '/all/marble-data-processing/prod'
   NoReplyEmailAddr:
     Type: String
     Description: Email address notification emails are sent from
@@ -369,7 +369,7 @@ Resources:
                 Action:
                   - 'states:ListStateMachines'
                   - 'states:StartExecution'
-                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*"
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
         - PolicyName: ManifestPipelineSsmPermissions
           PolicyDocument:
             Version: 2012-10-17

@@ -80,6 +80,9 @@ Outputs:
   StateMachine:
     Value: !Ref StateMachine
 
+  StateMachineMets:
+    Value: !Ref StateMachineMets
+
   ProcessBucket:
     Value: !Ref ProcessBucket
 
@@ -823,6 +826,62 @@ Resources:
           SSM_KEY_BASE: !Ref AppConfigPath
           SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
 
+  StateMachineMets:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      StateMachineName: !Sub "${AWS::StackName}-MetsStateMachine"
+      DefinitionString:
+        !Sub
+          - |-
+            {
+              "Comment": "Populate Manifest Pipeline with Changed metadata and images",
+              "StartAt": "FindObjectsTask",
+              "States": {
+                "FindObjectsTask": {
+                  "Type": "Task",
+                  "Resource": "${findObjectsLambdaArn}",
+                  "Next": "FindImagesTask"
+                },
+                "FindImagesTask": {
+                  "Type": "Task",
+                  "Resource": "${findImagesLambdaArn}",
+                  "Next": "PopulatePipelineTask"
+                },
+                "PopulatePipelineTask": {
+                  "Type": "Task",
+                  "Resource": "${populatePipelineLambdaArn}",
+                  "Next": "ChoiceSourceType"
+                },
+                "ChoiceSourceType": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.populatePipelineCompleted",
+                      "BooleanEquals": false,
+                      "Next": "PopulatePipelineTask"
+                    },
+                    {
+                      "Variable": "$.populatePipelineCompleted",
+                      "BooleanEquals": true,
+                      "Next": "SuccessState"
+                    }
+                  ]
+                },
+                "SuccessState": {
+                  "Type": "Succeed"
+                }
+              }
+            }
+          -
+            {
+              findObjectsLambdaArn: !GetAtt [FindObjectsLambdaFunction, Arn],
+              findImagesLambdaArn: !GetAtt [ FindImagesLambdaFunction, Arn ],
+              populatePipelineLambdaArn: !GetAtt [ PopulatePipelineLambdaFunction, Arn ],
+            }
+      RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
+
+
+
   DebugPermissions:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -854,6 +913,8 @@ Resources:
             Resource:
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachine.Name}'
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachine.Name}:*'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachineMets.Name}'
+              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachineMets.Name}:*'
 
   DataAdminPermissions:
     Type: AWS::IAM::ManagedPolicy

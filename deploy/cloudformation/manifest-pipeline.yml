@@ -266,7 +266,7 @@ Resources:
           LambdaFunctionAssociations:
             -
               EventType: origin-request
-              LambdaFunctionARN: !Sub ${SPARedirectionLambda.Arn}:${SPARedirectionLambdaV1.Version}
+              LambdaFunctionARN: !Sub ${SPARedirectionLambda.Arn}:${SPARedirectionLambdaV2.Version}
         Origins:
           - Id: Bucket
             DomainName: !GetAtt ManifestBucket.DomainName
@@ -322,7 +322,7 @@ Resources:
           exports.handler = (event, context, callback) => {
               var request = event.Records[0].cf.request;
 
-              if (!request.uri.endsWith('/index.json')) {
+              if (!request.uri.endsWith('/index.json') && !request.uri.endsWith('.xml')) {
                 if (request.uri.endsWith('/')) {
                   request.uri = request.uri + 'index.json'
                 } else {
@@ -336,7 +336,7 @@ Resources:
       Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
       Runtime: nodejs8.10
 
-  SPARedirectionLambdaV1:
+  SPARedirectionLambdaV2:
     Type: AWS::Lambda::Version
     Properties:
       FunctionName: !Ref SPARedirectionLambda

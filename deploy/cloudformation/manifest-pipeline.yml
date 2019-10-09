@@ -776,6 +776,53 @@ Resources:
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
 
+  FindObjectsLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: find_objects/
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
+  FindImagesLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 90
+      CodeUri: find_images_for_objects/
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
+  PopulatePipelineLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Runtime: python3.7
+      Timeout: 900
+      CodeUri: send_objects_to_pipeline/
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'states:ListStateMachines'
+                - 'states:StartExecution'
+              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachine"
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+
   DebugPermissions:
     Type: AWS::IAM::ManagedPolicy
     Properties:

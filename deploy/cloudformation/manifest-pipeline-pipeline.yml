@@ -512,7 +512,7 @@ Resources:
               commands:
                 - echo Build started on `date`
                 - echo Building the Docker image...
-                - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$COMMIT_HASH ./pyramid-generator
+                - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$COMMIT_HASH ./pyramid_generator
                 - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$COMMIT_HASH
                 - docker tag $REPOSITORY_URI:$COMMIT_HASH $REPOSITORY_URI:$COMMIT_HASH
             post_build:

@@ -360,6 +360,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: "sts:AssumeRole"
       Policies:
+        - PolicyName: "StartStateMachine"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - 'states:ListStateMachines'
+                  - 'states:StartExecution'
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*"
         - PolicyName: ManifestPipelineSsmPermissions
           PolicyDocument:
             Version: 2012-10-17
@@ -436,14 +446,6 @@ Resources:
       CodeUri: autorun/
       Runtime: python3.7
       Timeout: 300
-      Policies:
-        - Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*"
       Events:
         S3FileListener:
           Type: S3
@@ -457,7 +459,7 @@ Resources:
                     Value: 'main.csv'
       Environment:
         Variables:
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachine"
+          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
 
   InitManifestLambdaFunction:
     Type: AWS::Serverless::Function
@@ -798,11 +800,13 @@ Resources:
               Action:
                 - 'states:ListStateMachines'
                 - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachine"
+              Resource: !Ref StateMachineMets
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
+
 
   StateMachineMets:
     Type: "AWS::StepFunctions::StateMachine"

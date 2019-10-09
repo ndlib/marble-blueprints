@@ -720,23 +720,11 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "ProcessSchema"
+                  "Next": "ProcessManifest"
                 },
                 "ProcessMetsInput": {
                   "Type": "Task",
                   "Resource": "${processMetsInputLambdaArn}",
-                  "Catch": [
-                    {
-                      "ErrorEquals": [ "States.ALL" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "Finalize"
-                    }
-                  ],
-                  "Next": "ProcessSchema"
-                },
-                "ProcessSchema": {
-                  "Type": "Task",
-                  "Resource": "${schemaLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],

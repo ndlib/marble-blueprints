@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Adds a custom domain (cloudfront), including an optional CNAME record, in front of the API Gateway
+Parameters:
+
+  DomainStackName:
+    Type: String
+    Default: marble-domain
+    Description: The name of the parent domain stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+
+  APIStackName:
+    Type: String
+    Description: The name of the parent domain stack that you created. Necessary
+                 to locate and reference resources created by that stack.
+
+  CreateDNSRecord:
+    Type: String
+    Default: "True"
+    Description: If True, will attempt to create a Route 53 DNS record for the CloudFront.
+
+  HostnamePrefix:
+    Type: String
+    Description: Hostname prefix for the website CDN
+    MaxLength: 63
+    AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
+    ConstraintDescription: Must be a valid hostname prefix value.
+
+Conditions:
+
+  CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
+
+Resources:
+  HostnameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "/all/stacks/${AWS::StackName}/hostname"
+      Value: !Sub
+        - '${HostnamePrefix}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+      Description: The hostname for this component
+  APIDomain:
+    Type: 'AWS::ApiGateway::DomainName'
+    Properties:
+      CertificateArn:
+          Fn::ImportValue: !Join [':', [!Ref DomainStackName, 'ACMCertificateARN']]
+      DomainName: !Sub
+        - '${HostnamePrefix}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+  RootToLatestStageMapping:
+    Type: 'AWS::ApiGateway::BasePathMapping'
+    Properties:
+      BasePath: ''
+      DomainName: !Ref APIDomain
+      RestApiId:
+        Fn::ImportValue: !Sub '${APIStackName}:ApiId'
+      Stage: latest
+  Route53DNSCreation:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      HostedZoneName: !Sub
+        - '${ResolvedDomainName}.'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+      Name: !Sub
+        - '${HostnamePrefix}.${ResolvedDomainName}'
+        - ResolvedDomainName:
+            Fn::ImportValue: !Sub '${DomainStackName}:DomainName'
+      Type: CNAME
+      TTL: '900'
+      ResourceRecords:
+        - !GetAtt APIDomain.DistributionDomainName

@@ -13,8 +13,8 @@ class BuildProject():
         project_name = f"{self.stage}Project"
         env = {'buildImage': codebuild.LinuxBuildImage.STANDARD_2_0}
         env_vars = {
-            'CI': {'value': 'true', type: codebuild.BuildEnvironmentVariableType.PLAINTEXT},
-            'STAGE': {'value': self.stage, type: codebuild.BuildEnvironmentVariableType.PLAINTEXT},
+            'CI': {'value': 'true', 'type': codebuild.BuildEnvironmentVariableType.PLAINTEXT},
+            'STAGE': {'value': self.stage, 'type': codebuild.BuildEnvironmentVariableType.PLAINTEXT},
         }
         artifacts = {
             'files': [
@@ -22,7 +22,7 @@ class BuildProject():
                 'scripts/codebuild/**/*'
             ],
         }
-        return codebuild.PipelineProject(self.scope, project_name, role=self.role, environment=env,
+        return codebuild.PipelineProject(self.scope, project_name, role=self.role, environment=env, environment_variables=env_vars,
                     build_spec=codebuild.BuildSpec.from_object({'version': '0.2', 'phases': self._get_phases(), 'artifacts': artifacts}))
 
     def _get_phases(self):

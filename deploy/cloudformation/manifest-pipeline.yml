@@ -766,12 +766,13 @@ Resources:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
-      Timeout: 90
+      Timeout: 900
       CodeUri: find_objects/
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+          HOURS_THRESHOLD: 240
 
   FindImagesLambdaFunction:
     Type: AWS::Serverless::Function
@@ -779,7 +780,7 @@ Resources:
       Handler: handler.run
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
-      Timeout: 90
+      Timeout: 900
       CodeUri: find_images_for_objects/
       Environment:
         Variables:

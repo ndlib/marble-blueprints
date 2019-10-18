@@ -446,6 +446,7 @@ Resources:
       CodeUri: autorun/
       Runtime: python3.7
       Timeout: 300
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Events:
         S3FileListener:
           Type: S3

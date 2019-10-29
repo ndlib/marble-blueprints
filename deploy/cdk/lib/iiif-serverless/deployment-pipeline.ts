@@ -28,6 +28,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly domainStackName: string;
   readonly domainCertificateArn: string;
   readonly hostnamePrefix: string;
+  readonly createDns: boolean;
 };
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -148,6 +149,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         DomainStackName: props.domainStackName,
         APIStackName: testStackName,
         DomainCertificateArn: props.domainCertificateArn,
+        CreateDNSRecord: props.createDns ? 'True' : 'False',
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,
@@ -216,6 +218,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         DomainStackName: props.domainStackName,
         APIStackName: prodStackName,
         DomainCertificateArn: props.domainCertificateArn,
+        CreateDNSRecord: props.createDns ? 'True' : 'False',
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,

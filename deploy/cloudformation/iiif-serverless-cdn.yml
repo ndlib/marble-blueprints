@@ -8,6 +8,11 @@ Parameters:
     Description: The name of the parent domain stack that you created. Necessary
                  to locate and reference resources created by that stack.
 
+  DomainCertificateArn:
+    Type: String
+    Default: ""
+    Description: If set, will use this ACM for the custom domain. Otherwise, this will be imported from DomainStackName:DomainName. Should only need to set this if this stack is not in us-east-1
+
   APIStackName:
     Type: String
     Description: The name of the parent domain stack that you created. Necessary
@@ -28,6 +33,8 @@ Parameters:
 Conditions:
 
   CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
+  CertARNPresent: !Not
+    - !Equals [ !Ref DomainCertificateArn, '' ]
 
 Resources:
   HostnameParameter:
@@ -43,8 +50,11 @@ Resources:
   APIDomain:
     Type: 'AWS::ApiGateway::DomainName'
     Properties:
-      CertificateArn:
-          Fn::ImportValue: !Join [':', [!Ref DomainStackName, 'ACMCertificateARN']]
+      CertificateArn: !If
+        - CertARNPresent
+        - !Ref DomainCertificateArn
+        - Fn::ImportValue: !Join [':', [!Ref DomainStackName, 'ACMCertificateARN']]
+
       DomainName: !Sub
         - '${HostnamePrefix}.${ResolvedDomainName}'
         - ResolvedDomainName:

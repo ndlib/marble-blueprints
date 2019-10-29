@@ -26,6 +26,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly imageSourceBucketPath: string;
   readonly stackPrefix: string;
   readonly domainStackName: string;
+  readonly domainCertificateArn: string;
   readonly hostnamePrefix: string;
 };
 
@@ -146,6 +147,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         HostnamePrefix: `${props.hostnamePrefix}-test`,
         DomainStackName: props.domainStackName,
         APIStackName: testStackName,
+        DomainCertificateArn: props.domainCertificateArn,
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,
@@ -213,6 +215,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         HostnamePrefix: props.hostnamePrefix,
         DomainStackName: props.domainStackName,
         APIStackName: prodStackName,
+        DomainCertificateArn: props.domainCertificateArn,
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,

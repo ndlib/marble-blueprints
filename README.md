@@ -13,6 +13,7 @@ Before you begin, check that you have the following:
   - A role with permissions to deploy CloudFormation Templates. In most cases, this will also require permissions to create IAM roles/policies (see [Permissions Required to Access IAM Resources](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_permissions-required.html))
   - If you can use Route53, we provide a template for managing the certificate and DNS record sets for you. If not, make sure you have the ability to manage DNS for your organization to validate certificates (see [Use DNS to Validate Domain Ownership](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate-dns.html))
   - Must have the [awscli](https://aws.amazon.com/cli/) installed if using the example deploy commands
+  - Must have the [awscdk](https://aws.amazon.com/cdk/) installed for deploying components that require it
   - If you are contributing to this project, **it is highly recommended you use https://github.com/awslabs/git-secrets to prevent pushing AWS secrets to the repo**
   - You will need to adjust your AWS service limits as follows:
     - Policies per Role: 20

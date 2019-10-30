@@ -1,21 +1,19 @@
 {
   "app": "npx ts-node bin/base.ts",
   "context": {
+    "createDns": "true",
+    "domainStackName": "marble-domain",
+    "oauthTokenPath": "/all/github/ndlib-git",
     "iiifImageService": {
-      "oauthTokenPath": "/all/github/ndlib-git",
       "imageSourceBucketPath": "/all/stacks/marble-data-broker/publicbucket",
-      "stackPrefix": "marble-iiif-serverless",
-      "domainStackName": "marble-domain",
-      "hostnamePrefix": "image-iiif-serverless",
-
+      "stackPrefix": "marble-image-service",
+      "hostnamePrefix": "image-iiif",
       "appRepoOwner": "ndlib",
       "appRepoName": "serverless-iiif",
       "appSourceBranch": "master", 
-
       "infraRepoOwner": "ndlib",
       "infraRepoName": "marble-blueprints",
       "infraSourceBranch": "master", 
-
       "qaRepoOwner": "ndlib",
       "qaRepoName": "iiif-qa",
       "qaSourceBranch": "master"

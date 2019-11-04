@@ -37,7 +37,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
     const resolvedDomain = Fn.importValue(`${props.domainStackName}:DomainName`);
-    const hostedZone = Fn.importValue(`${props.domainStackName}:Zone`);
     const testHost = `${props.hostnamePrefix}-test.${resolvedDomain}`;
     const testStackName = `${props.stackPrefix}-test`;
     const testCDNStackName = `${props.stackPrefix}-cdn-test`;
@@ -294,7 +293,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
     deployTestAction.addToDeploymentRolePolicy(NamespacedPolicy.api());
 
     deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.ssm(testCDNStackName));
-    deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
     deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.apiDomain(testHost));
     deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.globals([GlobalActions.Cloudfront, GlobalActions.Route53]));
 
@@ -315,8 +313,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
     deployProdAction.addToDeploymentRolePolicy(NamespacedPolicy.api());
 
     deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.ssm(prodCDNStackName));
-    deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
     deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.apiDomain(prodHost));
     deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.globals([GlobalActions.Cloudfront, GlobalActions.Route53]));
+
+    if(props.createDns){
+      const hostedZone = Fn.importValue(`${props.domainStackName}:Zone`);
+      deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
+      deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
+    }
   }
 }

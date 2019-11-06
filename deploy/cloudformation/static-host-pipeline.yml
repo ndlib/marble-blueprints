@@ -595,6 +595,7 @@ Resources:
             Resource:
               - !GetAtt CodeBuilder.Arn
               - !GetAtt CodeTestDeployer.Arn
+              - !GetAtt CodeProdBuilder.Arn
               - !GetAtt CodeProdDeployer.Arn
               - !GetAtt PostDeployGitHub.Arn
       Roles:

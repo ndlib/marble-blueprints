@@ -20,7 +20,7 @@ Before you begin, check that you have the following:
 
 # Components
 - [Shared Infrastructure](/docs/shared-infrastructure.md) - All components will require creating a set of shared infrastructure, so begin here.
-- [IIIF Image Service](/docs/iiif-image-service.md) - A scalable IIIF image service using AWS Fargate. See [ndlib/image-server](https://github.com/ndlib/image-server)
+- [IIIF Image Service](/docs/iiif-image-service.md) - A scalable IIIF image service using AWS Lambda. See [nulib/serverless-iiif](https://github.com/nulib/serverless-iiif)
 - [IIIF Image Viewer](/docs/iiif-image-viewer.md) - A IIIF Viewer WebComponent based on UniversalViewer. See [ndlib/marble-image-viewer](https://github.com/ndlib/marble-image-viewer)
 - [IIIF Manifest Pipeline](/docs/iiif-manifest-pipeline.md) - A IIIF Manifest and Image processing pipeline. See [ndlib/marble-manifest-pipeline](https://github.com/ndlib/marble-manifest-pipeline)
 - [Website](/docs/website.md) - The main front end for the project. See [ndlib/marble-website](https://github.com/ndlib/marble-website)

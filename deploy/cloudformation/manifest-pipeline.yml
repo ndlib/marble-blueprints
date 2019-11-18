@@ -187,7 +187,7 @@ Resources:
     Properties:
       Bucket: !Ref ManifestBucket
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
           -
             Effect: Allow
@@ -302,7 +302,7 @@ Resources:
     Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Statement:
           -
             Effect: "Allow"
@@ -349,96 +349,6 @@ Resources:
       FunctionName: !Ref SPARedirectionLambda
       Description: Adds the rewrite rules as needed
 
-  LambdaExecutionRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: "sts:AssumeRole"
-      Policies:
-        - PolicyName: "StartStateMachine"
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              -
-                Effect: Allow
-                Action:
-                  - 'states:ListStateMachines'
-                  - 'states:StartExecution'
-                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
-        - PolicyName: ManifestPipelineSsmPermissions
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              -
-                Action:
-                  - "ssm:GetParametersByPath"
-                Effect: "Allow"
-                Resource:
-                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
-                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
-        - PolicyName: ImageDerivativeCacheBucketPermissions
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              -
-                Action:
-                  - "s3:GetObject"
-                  - "s3:PutObject"
-                  - "s3:ListBucket"
-                  - "s3:ListBucketVersions"
-                  - "s3:PutObjectVersionAcl"
-                  - "s3:PutObjectAcl"
-                Effect: "Allow"
-                Resource:
-                  - !GetAtt ProcessBucket.Arn
-                  - Fn::Join:
-                      - ""
-                      -
-                        - !GetAtt ProcessBucket.Arn
-                        - "/*"
-                  - !GetAtt ManifestBucket.Arn
-                  - Fn::Join:
-                      - ""
-                      -
-                        - !GetAtt ManifestBucket.Arn
-                        - "/*"
-                  - Fn::Join:
-                    - ""
-                    -
-                      - !Sub "arn:aws:s3:::"
-                      - !Ref ImageSourceBucket
-                  - Fn::Join:
-                    - ""
-                    -
-                      - !Sub "arn:aws:s3:::"
-                      - !Ref ImageSourceBucket
-                      - "/*"
-        - PolicyName: ManifestPipelineSesPermissions
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              -
-                Action:
-                  - "ses:SendEmail"
-                Effect: "Allow"
-                Resource: "*"
-        - PolicyName: ManifestPipelineLogPermissions
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              -
-                Action:
-                  - "logs:CreateLogStream"
-                  - "logs:CreateLogGroup"
-                  - "logs:PutLogEvents"
-                Effect: "Allow"
-                Resource: "*"
-
   AutoRun:
     Type: AWS::Serverless::Function
     Properties:
@@ -446,7 +356,14 @@ Resources:
       CodeUri: autorun/
       Runtime: python3.7
       Timeout: 300
-#      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'states:ListStateMachines'
+                - 'states:StartExecution'
+              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
       Events:
         S3FileListener:
           Type: S3
@@ -466,7 +383,22 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParametersByPath"
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:ListBucket"
+              Resource:
+                - !GetAtt ProcessBucket.Arn
       Runtime: python3.7
       Timeout: 90
       CodeUri: init/
@@ -480,7 +412,15 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:GetObject"
+                - "s3:PutObject"
+              Resource:
+                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Runtime: python3.7
       Timeout: 90
       CodeUri: process_mets_input/
@@ -489,7 +429,15 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:GetObject"
+                - "s3:PutObject"
+              Resource:
+                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Runtime: python3.7
       Timeout: 90
       CodeUri: process_csv_input/
@@ -498,7 +446,15 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:GetObject"
+                - "s3:PutObject"
+              Resource:
+                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Runtime: python3.7
       Timeout: 90
       CodeUri: create_manifest/
@@ -507,7 +463,28 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:GetObject"
+                - "s3:PutObject"
+                - "s3:ListBucket"
+                - "s3:ListBucketVersions"
+                - "s3:PutObjectVersionAcl"
+                - "s3:PutObjectAcl"
+              Resource:
+                - !GetAtt ProcessBucket.Arn
+                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+                - !Join ["", [!GetAtt ManifestBucket.Arn, "/*"]]
+                - !Join ["", ["arn:aws:s3:::", !Ref ImageSourceBucket, "/*"]]
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ses:SendEmail"
+              Resource: "*"
       Runtime: python3.7
       Timeout: 900
       MemorySize: 512
@@ -585,7 +562,7 @@ Resources:
     Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Statement:
           - Effect: "Allow"
             Principal:
@@ -596,7 +573,7 @@ Resources:
       Policies:
         - PolicyName: StatesExecutionPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
@@ -604,7 +581,7 @@ Resources:
                 Resource: "*"
         - PolicyName: FargatePassPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
@@ -614,7 +591,7 @@ Resources:
                   - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
         - PolicyName: FargateTaskPolicy
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
@@ -764,7 +741,15 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParametersByPath"
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
       Runtime: python3.7
       Timeout: 900
       CodeUri: find_objects/
@@ -778,7 +763,15 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParametersByPath"
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
       Runtime: python3.7
       Timeout: 900
       CodeUri: find_images_for_objects/
@@ -791,18 +784,32 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
-      Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Runtime: python3.7
       Timeout: 900
       CodeUri: send_objects_to_pipeline/
       Policies:
-        - Version: '2012-10-17'
+        - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Action:
                 - 'states:ListStateMachines'
                 - 'states:StartExecution'
-              Resource: !Ref StateMachineMets
+              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParametersByPath"
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:PutObject"
+              Resource:
+                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
@@ -864,8 +871,6 @@ Resources:
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
 
-
-
   DebugPermissions:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -873,7 +878,7 @@ Resources:
         - !ImportValue
             Fn::Sub: ${InfrastructureStackName}:DebugRoleName
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
           - Sid: AllowReadBuckets
             Effect: Allow
@@ -907,7 +912,7 @@ Resources:
         - !ImportValue
             Fn::Sub: ${InfrastructureStackName}:DataAdminRoleName
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
           - Sid: AllowReadWriteToBuckets
             Effect: Allow

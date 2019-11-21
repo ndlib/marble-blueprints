@@ -721,7 +721,24 @@ Resources:
                 "Finalize": {
                   "Type": "Task",
                   "Resource": "${finalizeLambdaArn}",
-                  "End": true
+                  "Next": "DenoteError"
+                },
+                "DenoteError": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.error_found",
+                      "BooleanEquals": true,
+                      "Next": "FailureState"
+                    }
+                  ],
+                  "Default": "SuccessState"
+                },
+                "SuccessState": {
+                  "Type": "Succeed"
+                },
+                "FailureState": {
+                  "Type": "Fail"
                 }
               }
             }

@@ -10,28 +10,21 @@ Outputs:
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'SentryLayer']]
 
-Parameters:
-  ArtifactBucket:
-    Type: String
-    Description: S3 bucket for layer zip
-
 Resources:
 
   SentryLayer:
-    Type: "AWS::Lambda::LayerVersion"
+    Type: "AWS::Serverless::LayerVersion"
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
+      LayerName: !Sub "${AWS::StackName}-sentry"
+      Description: Error reporting integration
       CompatibleRuntimes:
         - python3.6
         - python3.7
-      Content:
-        S3Bucket: !Ref ArtifactBucket
-        S3Key: layer.zip
-      Description: Error reporting integration
-      LayerName: sentry-layer
+      ContentUri: ./python
       LicenseInfo: Apache-2.0
-  
+
   SentryLayerPermission:
     Type: "AWS::Lambda::LayerVersionPermission"
     DeletionPolicy: Retain

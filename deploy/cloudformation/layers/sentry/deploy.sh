@@ -16,16 +16,22 @@ pip install -r ../requirements.txt -t .
 rm -rf *dist-info
 popd
 
-echo "${magenta}----- SENDING ZIP TO S3 -----${reset}"
-zip -r9 layer.zip python
-aws s3 mv layer.zip s3://${ARTIFACT_BUCKET}/layer.zip
+echo "${magenta}----- SENDING ARTIFACT TO S3 -----${reset}"
+OUTPUT_TEMPLATE="sentry.yml"
+aws cloudformation package \
+    --region ${REGION} \
+    --template-file ./template.yml \
+    --s3-bucket ${ARTIFACT_BUCKET} \
+    --output-template-file ${OUTPUT_TEMPLATE}
 
 echo "${magenta}----- CREATING LAYER -----${reset}"
-aws --region ${REGION} cloudformation deploy \
+aws cloudformation deploy \
+    --region ${REGION} \
     --capabilities CAPABILITY_IAM \
     --stack-name ${STACK_NAME} \
-    --template-file sentry.yml \
+    --template-file ${OUTPUT_TEMPLATE} \
     --parameter-overrides ArtifactBucket=${ARTIFACT_BUCKET}
 
 echo "${magenta}----- CLEAN-UP -----${reset}"
 rm -rf python
+rm ${OUTPUT_TEMPLATE}

@@ -3,16 +3,22 @@
 magenta=`tput setaf 5`
 reset=`tput sgr0`
 
-ARTIFACT_BUCKET=""
-STACK_NAME="marble-manifest-layer"
+if [[ $# -ne 2 ]]; then
+    echo "${magenta}----- INVALID ARGUMENTS -----${reset}"
+    echo "./deploy.sh BUCKET_NAME STACK_NAME"
+    exit 2
+fi
+
+ARTIFACT_BUCKET=${1}
+STACK_NAME=${2}
 REGION="us-east-1"
 
-rm -rf python
-mkdir -p python
+rm -rf layer
+mkdir -p layer/python
 
 echo "${magenta}----- GENERATING DEPENDENCIES -----${reset}"
-pushd python
-pip install -r ../requirements.txt -t .
+pushd layer/python
+pip install -r ../../requirements.txt -t .
 rm -rf *dist-info
 popd
 
@@ -29,9 +35,8 @@ aws cloudformation deploy \
     --region ${REGION} \
     --capabilities CAPABILITY_IAM \
     --stack-name ${STACK_NAME} \
-    --template-file ${OUTPUT_TEMPLATE} \
-    --parameter-overrides ArtifactBucket=${ARTIFACT_BUCKET}
+    --template-file ${OUTPUT_TEMPLATE}
 
 echo "${magenta}----- CLEAN-UP -----${reset}"
-rm -rf python
+rm -rf layer
 rm ${OUTPUT_TEMPLATE}

@@ -2,14 +2,6 @@ Transform: 'AWS::Serverless-2016-10-31'
 Description: >
   - Sentry layer
 
-Outputs:
-
-  Layer:
-    Description: marble sentry layer
-    Value: !Ref SentryLayer
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'SentryLayer']]
-
 Resources:
 
   SentryLayer:
@@ -17,12 +9,12 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      LayerName: !Sub "${AWS::StackName}-sentry"
+      LayerName: !Sub "${AWS::StackName}"
       Description: Error reporting integration
       CompatibleRuntimes:
         - python3.6
         - python3.7
-      ContentUri: ./python
+      ContentUri: ./layer
       LicenseInfo: Apache-2.0
 
   SentryLayerPermission:

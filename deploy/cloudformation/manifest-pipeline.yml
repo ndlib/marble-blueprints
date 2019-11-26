@@ -51,8 +51,8 @@ Parameters:
     Default: 300
   SentryLayer:
     Type: String
-    Description: Cloudformation export key for layer arn
-    Default: 'marble-manifest-layer:SentryLayer'
+    Description: Sentry layer name
+    Default: "marble-sentry-layer"
   SentryDsn:
     Type: AWS::SSM::Parameter::Value<String>
     Description: The sentry data source name(DSN)
@@ -365,7 +365,7 @@ Resources:
       Runtime: python3.7
       Timeout: 300
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5"
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -413,7 +413,7 @@ Resources:
       Runtime: python3.7
       Timeout: 90
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
       CodeUri: init/
       Environment:
         Variables:
@@ -438,7 +438,7 @@ Resources:
       Runtime: python3.7
       Timeout: 90
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
       CodeUri: process_mets_input/
       Environment:
         Variables:
@@ -460,7 +460,7 @@ Resources:
       Runtime: python3.7
       Timeout: 90
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
       CodeUri: process_csv_input/
       Environment:
         Variables:
@@ -482,7 +482,7 @@ Resources:
       Runtime: python3.7
       Timeout: 90
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
       CodeUri: create_manifest/
       Environment:
         Variables:
@@ -518,7 +518,7 @@ Resources:
       Timeout: 900
       MemorySize: 512
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
       CodeUri: finalize/
       Environment:
         Variables:
@@ -802,7 +802,7 @@ Resources:
       Runtime: python3.7
       Timeout: 900
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
       CodeUri: find_objects/
       Environment:
         Variables:
@@ -827,7 +827,7 @@ Resources:
       Runtime: python3.7
       Timeout: 900
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
       CodeUri: find_images_for_objects/
       Environment:
         Variables:
@@ -842,7 +842,7 @@ Resources:
       Runtime: python3.7
       Timeout: 900
       Layers:
-        - Fn::ImportValue: !Ref SentryLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
       CodeUri: send_objects_to_pipeline/
       Policies:
         - Version: 2012-10-17

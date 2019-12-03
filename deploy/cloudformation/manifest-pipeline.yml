@@ -58,9 +58,8 @@ Parameters:
     Description: Sentry layer version
     Default: 1
   SentryDsn:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Description: The sentry data source name(DSN)
-    Default: '/all/stacks/marble-notification/sentry-dsn'
 
   CreateDNSRecord:
     Type: String

@@ -17,7 +17,14 @@ cd /deploy/cloudformation/layers/sentry/
 ```
 
 ## Update Manifest Pipeline with newer layer
-Once you have created and deployed a layer you'll want to utilize it in the manifest pipeline. Simply increment the layer version to match the latest deployed in manifest-pipeline.yml and redeploy the manifest pipeline stack.
+Once you have created and deployed a layer you'll want to utilize it in the manifest pipeline. Redeploy the manifest pipeline stack with the updated layer version.
 ```
-!Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${SentryLayer}:5
+aws cloudformation deploy \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region us-east-1 \
+  --stack-name marble-manifest-deployment \
+  --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
+  --parameter-overrides GitHubToken=my_oauth_key ContactTag=me@myhost.com OwnerTag=me \
+    TestHostnamePrefix='marble-manifest-test' ProdHostnamePrefix='marble-manifest' \
+    SentryDsn='https://123456789@sentry.io/123456789' TestSentryLayerVersion=2 ProdSentryLayerVersion=2
 ```

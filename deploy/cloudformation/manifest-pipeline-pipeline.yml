@@ -93,6 +93,17 @@ Parameters:
   OwnerTag:
     Type: String
     Description: The Owner tag to add to the deployed stacks
+  ProdSentryLayerVersion:
+    Type: Number
+    Description: Production pipeline Sentry layer version
+    Default: 1
+  TestSentryLayerVersion:
+    Type: Number
+    Description: Test pipeline Sentry layer version
+    Default: 1
+  SentryDsn:
+    Type: String
+    Description: The sentry data source name(DSN)
 
 Outputs:
 
@@ -260,6 +271,7 @@ Resources:
             Resource:
               - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TestStackName}-*'
               - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ProdStackName}-*'
+              - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*'
             Effect: Allow
           - Action:
               - 'iam:GetRole'
@@ -452,7 +464,9 @@ Resources:
                         \"HostnamePrefix\" : \"${TestHostnamePrefix}\",
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
-                        \"InfrastructureStackName\" : \"${InfrastructureStackName}\"
+                        \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
+                        \"SentryLayerVersion\" : \"${TestSentryLayerVersion}\",
+                        \"SentryDsn\" : \"${SentryDsn}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${TestStackName}\",
@@ -470,7 +484,9 @@ Resources:
                         \"HostnamePrefix\" : \"${ProdHostnamePrefix}\",
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
-                        \"InfrastructureStackName\" : \"${InfrastructureStackName}\"
+                        \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
+                        \"SentryLayerVersion\" : \"${ProdSentryLayerVersion}\",
+                        \"SentryDsn\" : \"${SentryDsn}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${ProdStackName}\",

@@ -9,7 +9,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      LayerName: !Sub "${AWS::StackName}"
+      LayerName: "marble-sentry"
       Description: Error reporting integration
       CompatibleRuntimes:
         - python3.6
@@ -25,3 +25,11 @@ Resources:
       Action: lambda:GetLayerVersion
       LayerVersionArn: !Ref SentryLayer
       Principal: !Ref AWS::AccountId
+
+  SentryLayerArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: "/all/stacks/marble-layers/sentry"
+      Value: !Ref SentryLayer
+      Description: ARN of Sentry Layer

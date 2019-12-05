@@ -93,14 +93,6 @@ Parameters:
   OwnerTag:
     Type: String
     Description: The Owner tag to add to the deployed stacks
-  ProdSentryLayerVersion:
-    Type: Number
-    Description: Production pipeline Sentry layer version
-    Default: 1
-  TestSentryLayerVersion:
-    Type: Number
-    Description: Test pipeline Sentry layer version
-    Default: 1
   SentryDsn:
     Type: String
     Description: The sentry data source name(DSN)
@@ -465,7 +457,6 @@ Resources:
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
                         \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
-                        \"SentryLayerVersion\" : \"${TestSentryLayerVersion}\",
                         \"SentryDsn\" : \"${SentryDsn}\"
                       },
                       \"Tags\" : {
@@ -485,7 +476,6 @@ Resources:
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
                         \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
-                        \"SentryLayerVersion\" : \"${ProdSentryLayerVersion}\",
                         \"SentryDsn\" : \"${SentryDsn}\"
                       },
                       \"Tags\" : {

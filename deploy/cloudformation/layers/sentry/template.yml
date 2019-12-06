@@ -30,6 +30,6 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: "/all/stacks/marble-layers/sentry"
+      Name: !Sub "/all/stacks/${AWS::StackName}/layer-arn"
       Value: !Ref SentryLayer
       Description: ARN of Sentry Layer

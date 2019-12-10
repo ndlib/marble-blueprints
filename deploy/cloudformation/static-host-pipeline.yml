@@ -561,6 +561,7 @@ Resources:
           Actions:
             -
               Name: "AppCode"
+              Namespace: "AppCodeVars"
               ActionTypeId:
                 Owner: ThirdParty
                 Category: Source
@@ -616,7 +617,7 @@ Resources:
                 NotificationArn: !Ref ApprovalTopic
                 CustomData:
                   Fn::Sub:
-                    - "A new version of https://github.com/${SourceRepoOwner}/${SourceRepoName} has been deployed to https://${TestHostname} and is awaiting your approval. If you approve these changes, they will be deployed to https://${ProdHostname}."
+                    - "A new version of https://github.com/${SourceRepoOwner}/${SourceRepoName}/tree/#{AppCodeVars.BranchName} has been deployed to https://${TestHostname} and is awaiting your approval. If you approve these changes, they will be deployed to https://${ProdHostname}.\n\n*Commit Message*\n#{AppCodeVars.CommitMessage}\n\nFor more details on the changes, see https://github.com/${SourceRepoOwner}/#{AppCodeVars.RepositoryName}/commit/#{AppCodeVars.CommitId}."
                     - TestHostname:
                         Fn::ImportValue: !Join [':', [!Ref TestStackName, 'Hostname']]
                       ProdHostname:

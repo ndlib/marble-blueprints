@@ -662,6 +662,7 @@ Resources:
       - Name: Source
         Actions:
         - Name: AppCode
+          Namespace: "AppCodeVars"
           InputArtifacts: []
           ActionTypeId:
             Version: "1"
@@ -766,7 +767,7 @@ Resources:
               Version: "1"
             Configuration:
               NotificationArn: !Ref ApprovalTopic
-              CustomData: !Sub "A new version of https://github.com/${GitHubUser}/${ManifestPipelineRepoName} has been deployed to the ${TestStackName} stack and is awaiting your approval. If you approve these changes, they will be deployed to the ${ProdStackName} stack."
+              CustomData: !Sub "A new version of https://github.com/${GitHubUser}/${ManifestPipelineRepoName}/tree/#{AppCodeVars.BranchName} has been deployed to the ${TestStackName} stack and is awaiting your approval. If you approve these changes, they will be deployed to the ${ProdStackName} stack.\n\n*Commit Message*\n#{AppCodeVars.CommitMessage}\n\nFor more details on the changes, see https://github.com/${GitHubUser}/#{AppCodeVars.RepositoryName}/commit/#{AppCodeVars.CommitId}."
             RunOrder: 3
 
       - Name: Production

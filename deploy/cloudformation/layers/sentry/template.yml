@@ -9,7 +9,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      LayerName: "marble-sentry"
+      LayerName: !Sub "${AWS::StackName}-layer"
       Description: Error reporting integration
       CompatibleRuntimes:
         - python3.6

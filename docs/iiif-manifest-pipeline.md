@@ -38,4 +38,5 @@ Below is the list of parameters that can be overridden in this template. Paramet
 | AppConfigPathProd | The path the keys for parameter store should be read and written to for config | /all/marble-manifest-pipeline-prod |
 | AppConfigPathTest | The path the keys for parameter store should be read and written to for config | /all/marble-manifest-pipeline-test |
 | ContactTag | The Contact tag to add to the deployed stacks |  |
-| OwnerTag | The Owner tag to add to the deployed stacks |||
+| OwnerTag | The Owner tag to add to the deployed stacks |  |
+| ManifestUtilityLayer | SSM path manifest uility layer ARN | /all/stacks/marble-layers/manifest |

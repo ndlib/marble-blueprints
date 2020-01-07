@@ -1,0 +1,36 @@
+Transform: 'AWS::Serverless-2016-10-31'
+Description: >
+  - Manifest layer
+
+Resources:
+
+  ManifestLayer:
+    Type: "AWS::Serverless::LayerVersion"
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LayerName: !Sub "${AWS::StackName}-manifest-layer"
+      Description: Common manifest pipeline functions
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+        - python3.8
+      ContentUri: ./layer
+      LicenseInfo: Apache-2.0
+
+  ManifestLayerPermission:
+    Type: "AWS::Lambda::LayerVersionPermission"
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Action: lambda:GetLayerVersion
+      LayerVersionArn: !Ref ManifestLayer
+      Principal: !Ref AWS::AccountId
+
+  ManifestLayerArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: "/all/stacks/marble-layers/manifest"
+      Value: !Ref ManifestLayer
+      Description: ARN of Manifest Layer

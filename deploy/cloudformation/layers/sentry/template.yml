@@ -9,11 +9,12 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      LayerName: !Sub "${AWS::StackName}-layer"
+      LayerName: !Sub "${AWS::StackName}-sentry-layer"
       Description: Error reporting integration
       CompatibleRuntimes:
         - python3.6
         - python3.7
+        - python3.8
       ContentUri: ./layer
       LicenseInfo: Apache-2.0
 
@@ -30,6 +31,6 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub "/all/stacks/${AWS::StackName}/layer-arn"
+      Name: !Sub "/all/stacks/${AWS::StackName}/sentry-layer-arn"
       Value: !Ref SentryLayer
       Description: ARN of Sentry Layer

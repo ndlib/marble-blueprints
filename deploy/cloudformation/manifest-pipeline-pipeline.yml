@@ -263,7 +263,8 @@ Resources:
             Resource:
               - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TestStackName}-*'
               - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ProdStackName}-*'
-              - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*'
+              - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*-manifest-layer'
+              - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*-sentry-layer'
             Effect: Allow
           - Action:
               - 'iam:GetRole'

@@ -52,7 +52,7 @@ Parameters:
   SentryLayer:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: Sentry Layer ARN
-    Default: '/all/stacks/marble-sentry/layer-arn'
+    Default: '/all/stacks/marble/sentry-layer-arn'
   SentryDsn:
     Type: String
     Description: The sentry data source name(DSN)

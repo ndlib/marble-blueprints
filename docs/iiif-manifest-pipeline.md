@@ -5,14 +5,21 @@ This will create an AWS CodePipeline that will deploy the [manifest data pipelin
 
 Before you begin see https://developer.github.com/v3/auth/#via-oauth-tokens for how to generate an OAuth token for use with these pipelines. Make sure your token provides the `public_repo` scope.
 
-```console
+## Sentry Integration Prerequisites
+The manifest pipeline reports uncaught errors through [Sentry](sentry.io). For this, you'll need to create a Sentry account and create a project to report errors to(note the DSN of the project). The DSN will be passed as a parameter, SentryDsn, when standing up the pipeline.
+
+Once this is setup we'll create a lambda layer to handle the error reporting. Follow these [steps](sentry-layer.md) before continuing.
+
+## Manifest Pipeline Deployment
+```
 aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --region us-east-1 \
   --stack-name marble-manifest-deployment \
   --template-file deploy/cloudformation/manifest-pipeline-pipeline.yml \
   --parameter-overrides GitHubToken=my_oauth_key ContactTag=me@myhost.com OwnerTag=me \
-    TestHostnamePrefix='marble-manifest-test' ProdHostnamePrefix='marble-manifest'
+    TestHostnamePrefix='marble-manifest-test' ProdHostnamePrefix='marble-manifest' \
+    SentryDsn='https://123456789@sentry.io/123456789'
 ```
 
 Below is the list of parameters that can be overridden in this template. Parameters with no default are required.
@@ -39,3 +46,7 @@ Below is the list of parameters that can be overridden in this template. Paramet
 | AppConfigPathTest | The path the keys for parameter store should be read and written to for config | /all/marble-manifest-pipeline-test |
 | ContactTag | The Contact tag to add to the deployed stacks |  |
 | OwnerTag | The Owner tag to add to the deployed stacks |||
+| SentryLayer | The name of the Sentry layer | marble-sentry-layer |
+| ProdSentryLayerVersion | Production pipeline Sentry layer version | 1 |
+| TestSentryLayerVersion | Test pipeline Sentry layer version | 1 |
+| SentryDsn | The Sentry project DSN |  |

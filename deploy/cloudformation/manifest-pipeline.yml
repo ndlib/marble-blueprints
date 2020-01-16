@@ -52,7 +52,7 @@ Parameters:
   ManifestUtilityLayer:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: Manifest Utility Layer ARN
-    Default: '/all/stacks/marble-layers/manifest'
+    Default: '/all/stacks/marble/manifest-layer-arn'
   SentryLayer:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: Sentry Layer ARN

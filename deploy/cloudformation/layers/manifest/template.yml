@@ -31,6 +31,6 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: "/all/stacks/marble-layers/manifest"
+      Name: !Sub "/all/stacks/${AWS::StackName}/manifest-layer-arn"
       Value: !Ref ManifestLayer
       Description: ARN of Manifest Layer

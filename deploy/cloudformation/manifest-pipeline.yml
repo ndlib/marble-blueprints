@@ -53,6 +53,13 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: Manifest Utility Layer ARN
     Default: '/all/stacks/marble-layers/manifest'
+  SentryLayer:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: Sentry Layer ARN
+    Default: '/all/stacks/marble/sentry-layer-arn'
+  SentryDsn:
+    Type: String
+    Description: The sentry data source name(DSN)
 
   CreateDNSRecord:
     Type: String
@@ -360,6 +367,8 @@ Resources:
       CodeUri: autorun/
       Runtime: python3.7
       Timeout: 300
+      Layers:
+        - !Ref SentryLayer
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -381,6 +390,7 @@ Resources:
                     Value: 'main.csv'
       Environment:
         Variables:
+          SENTRY_DSN: !Ref SentryDsn
           STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
 
   InitManifestLambdaFunction:
@@ -407,12 +417,14 @@ Resources:
       Timeout: 90
       Layers:
         - !Ref ManifestUtilityLayer
+        - !Ref SentryLayer
       CodeUri: init/
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           NO_REPLY_EMAIL: !Ref NoReplyEmailAddr
           TROUBLESHOOTING_EMAIL: !Ref TroubleshooterEmailAddr
+          SENTRY_DSN: !Ref SentryDsn
 
   ProcessMetsInputLambdaFunction:
     Type: AWS::Serverless::Function
@@ -429,7 +441,12 @@ Resources:
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Runtime: python3.7
       Timeout: 90
+      Layers:
+        - !Ref SentryLayer
       CodeUri: process_mets_input/
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDsn
 
   ProcessCsvInputLambdaFunction:
     Type: AWS::Serverless::Function
@@ -446,7 +463,12 @@ Resources:
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Runtime: python3.7
       Timeout: 90
+      Layers:
+        - !Ref SentryLayer
       CodeUri: process_csv_input/
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDsn
 
   CreateManifestLambdaFunction:
     Type: AWS::Serverless::Function
@@ -463,7 +485,12 @@ Resources:
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Runtime: python3.7
       Timeout: 90
+      Layers:
+        - !Ref SentryLayer
       CodeUri: create_manifest/
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDsn
 
   FinalizeLambdaFunction:
     Type: AWS::Serverless::Function
@@ -496,10 +523,13 @@ Resources:
       Layers:
         - !Ref ManifestUtilityLayer
       MemorySize: 512
+      Layers:
+        - !Ref SentryLayer
       CodeUri: finalize/
       Environment:
         Variables:
           PROCESS_BUCKET: !Ref ProcessBucket
+          SENTRY_DSN: !Ref SentryDsn
 
   # PYRAMID GENERATOR PROCESSING
   ImageTaskDefinition:
@@ -779,12 +809,14 @@ Resources:
       Timeout: 900
       Layers:
         - !Ref ManifestUtilityLayer
+        - !Ref SentryLayer
       CodeUri: find_objects/
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
           HOURS_THRESHOLD: 240
+          SENTRY_DSN: !Ref SentryDsn
 
   FindImagesLambdaFunction:
     Type: AWS::Serverless::Function
@@ -801,11 +833,14 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
       Runtime: python3.7
       Timeout: 900
+      Layers:
+        - !Ref SentryLayer
       CodeUri: find_images_for_objects/
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
+          SENTRY_DSN: !Ref SentryDsn
 
   PopulatePipelineLambdaFunction:
     Type: AWS::Serverless::Function
@@ -813,6 +848,8 @@ Resources:
       Handler: handler.run
       Runtime: python3.7
       Timeout: 900
+      Layers:
+        - !Ref SentryLayer
       CodeUri: send_objects_to_pipeline/
       Policies:
         - Version: 2012-10-17
@@ -842,7 +879,7 @@ Resources:
           SSM_KEY_BASE: !Ref AppConfigPath
           SSM_MARBLE_DATA_PROCESSING_KEY_BASE: !Ref MarbleProcessingKeyPath
           STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
-
+          SENTRY_DSN: !Ref SentryDsn
 
   StateMachineMets:
     Type: "AWS::StepFunctions::StateMachine"

@@ -11,7 +11,7 @@ class BuildProject():
 
     def pipeline_project(self):
         project_name = f"{self.stage}Project"
-        env = {'buildImage': codebuild.LinuxBuildImage.STANDARD_2_0}
+        env = {'build_image': codebuild.LinuxBuildImage.STANDARD_2_0}
         env_vars = {
             'CI': {'value': 'true', 'type': codebuild.BuildEnvironmentVariableType.PLAINTEXT},
             'STAGE': {'value': self.stage, 'type': codebuild.BuildEnvironmentVariableType.PLAINTEXT},

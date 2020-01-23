@@ -22,7 +22,6 @@ export class UserContentStack extends cdk.Stack {
         type: dynamodb.AttributeType.STRING
       },
       tableName: `${this.stackName}-users`,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
     });
 
     const collectionDynamoTable = new dynamodb.Table(this, 'CollectionsTable', {
@@ -32,7 +31,6 @@ export class UserContentStack extends cdk.Stack {
         type: dynamodb.AttributeType.STRING
       },
       tableName: `${this.stackName}-collections`,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
     });
     collectionDynamoTable.addGlobalSecondaryIndex({
       indexName: 'userName',
@@ -49,7 +47,6 @@ export class UserContentStack extends cdk.Stack {
         type: dynamodb.AttributeType.STRING
       },
       tableName: `${this.stackName}-items`,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT recommended for production code
     });
     itemDynamoTable.addGlobalSecondaryIndex({
       indexName: 'collection',

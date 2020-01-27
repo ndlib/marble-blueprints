@@ -41,18 +41,10 @@ Parameters:
     Type: String
     Description: Email address notification emails are sent from
     Default: "noreply@nd.edu"
-  TroubleshooterEmailAddr:
-    Type: String
-    Description: Email address to send errors for debugging
-    Default: "rdought1@nd.edu"
   CacheSettings:
     Type: Number
     Description: The cache value to hold the manifests for.
     Default: 300
-  SentryLayer:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Description: Sentry Layer ARN
-    Default: '/all/stacks/marble/sentry-layer-arn'
   SentryDsn:
     Type: String
     Description: The sentry data source name(DSN)
@@ -348,46 +340,13 @@ Resources:
       Description: Basic rewrite rule to send directory requests to appropriate locations in the SPA
       Handler: index.handler
       Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
-      Runtime: nodejs8.10
+      Runtime: nodejs10.x
 
   SPARedirectionLambdaV2:
     Type: AWS::Lambda::Version
     Properties:
       FunctionName: !Ref SPARedirectionLambda
       Description: Adds the rewrite rules as needed
-
-  AutoRun:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      CodeUri: autorun/
-      Runtime: python3.7
-      Timeout: 300
-      Layers:
-        - !Ref SentryLayer
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
-      Events:
-        S3FileListener:
-          Type: S3
-          Properties:
-            Bucket: !Ref ProcessBucket
-            Events: s3:ObjectCreated:Put
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: suffix
-                    Value: 'main.csv'
-      Environment:
-        Variables:
-          SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
 
   InitManifestLambdaFunction:
     Type: AWS::Serverless::Function
@@ -411,17 +370,14 @@ Resources:
                 - !GetAtt ProcessBucket.Arn
       Runtime: python3.7
       Timeout: 90
-      Layers:
-        - !Ref SentryLayer
       CodeUri: init/
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
-          NO_REPLY_EMAIL: !Ref NoReplyEmailAddr
-          TROUBLESHOOTING_EMAIL: !Ref TroubleshooterEmailAddr
           SENTRY_DSN: !Ref SentryDsn
 
-  ProcessMetsInputLambdaFunction:
+
+  ProcessManifestLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: handler.run
@@ -430,59 +386,24 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
-                - "s3:GetObject"
-                - "s3:PutObject"
+                - "ssm:GetParametersByPath"
               Resource:
-                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
-      Runtime: python3.7
-      Timeout: 90
-      Layers:
-        - !Ref SentryLayer
-      CodeUri: process_mets_input/
-      Environment:
-        Variables:
-          SENTRY_DSN: !Ref SentryDsn
-
-  ProcessCsvInputLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      Policies:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Action:
                 - "s3:GetObject"
                 - "s3:PutObject"
+                - "s3:ListBucket"
+                - "s3:ListBucketVersions"
               Resource:
+                - !GetAtt ProcessBucket.Arn
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Runtime: python3.7
-      Timeout: 90
-      Layers:
-        - !Ref SentryLayer
-      CodeUri: process_csv_input/
-      Environment:
-        Variables:
-          SENTRY_DSN: !Ref SentryDsn
-
-  CreateManifestLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - "s3:GetObject"
-                - "s3:PutObject"
-              Resource:
-                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
-      Runtime: python3.7
-      Timeout: 90
-      Layers:
-        - !Ref SentryLayer
-      CodeUri: create_manifest/
+      Timeout: 900
+      CodeUri: process_manifest/
       Environment:
         Variables:
           SENTRY_DSN: !Ref SentryDsn
@@ -492,6 +413,14 @@ Resources:
     Properties:
       Handler: handler.run
       Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParametersByPath"
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
@@ -516,8 +445,6 @@ Resources:
       Runtime: python3.7
       Timeout: 900
       MemorySize: 512
-      Layers:
-        - !Ref SentryLayer
       CodeUri: finalize/
       Environment:
         Variables:
@@ -688,7 +615,7 @@ Resources:
                       }
                     }
                   },
-                  "Next": "ChoiceSourceType",
+                  "Next": "ProcessManifest",
                   "Catch": [
                       {
                         "ErrorEquals": [ "States.ALL" ],
@@ -697,48 +624,9 @@ Resources:
                       }
                   ]
                 },
-                "ChoiceSourceType": {
-                  "Type": "Choice",
-                  "Choices": [
-                    {
-                      "Variable": "$.metadata-source-type",
-                      "StringEquals": "csv",
-                      "Next": "ProcessCsvInput"
-                    },
-                    {
-                      "Variable": "$.metadata-source-type",
-                      "StringEquals": "mets",
-                      "Next": "ProcessMetsInput"
-                    }
-                  ]
-                },
-                "ProcessCsvInput": {
-                  "Type": "Task",
-                  "Resource": "${processCsvInputLambdaArn}",
-                  "Catch": [
-                    {
-                      "ErrorEquals": [ "States.ALL" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "Finalize"
-                    }
-                  ],
-                  "Next": "ProcessManifest"
-                },
-                "ProcessMetsInput": {
-                  "Type": "Task",
-                  "Resource": "${processMetsInputLambdaArn}",
-                  "Catch": [
-                    {
-                      "ErrorEquals": [ "States.ALL" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "Finalize"
-                    }
-                  ],
-                  "Next": "ProcessManifest"
-                },
                 "ProcessManifest": {
                   "Type": "Task",
-                  "Resource": "${createManifestLambdaArn}",
+                  "Resource": "${processManifestLambdaArn}",
                   "Catch": [
                     {
                       "ErrorEquals": [ "States.ALL" ],
@@ -748,7 +636,6 @@ Resources:
                   ],
                   "Next": "Finalize"
                 },
-
                 "Finalize": {
                   "Type": "Task",
                   "Resource": "${finalizeLambdaArn}",
@@ -778,9 +665,7 @@ Resources:
               publicSubnet1: {"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}:PublicSubnet1ID"}},
               publicSubnet2: {"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}:PublicSubnet2ID"}},
               initManifestLambdaArn: !GetAtt [InitManifestLambdaFunction, Arn],
-              processCsvInputLambdaArn: !GetAtt [ ProcessCsvInputLambdaFunction, Arn ],
-              createManifestLambdaArn: !GetAtt [ CreateManifestLambdaFunction, Arn ],
-              processMetsInputLambdaArn: !GetAtt [ProcessMetsInputLambdaFunction, Arn],
+              processManifestLambdaArn: !GetAtt [ ProcessManifestLambdaFunction, Arn ],
               finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ]
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
@@ -800,8 +685,6 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
       Runtime: python3.7
       Timeout: 900
-      Layers:
-        - !Ref SentryLayer
       CodeUri: find_objects/
       Environment:
         Variables:
@@ -825,8 +708,6 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
       Runtime: python3.7
       Timeout: 900
-      Layers:
-        - !Ref SentryLayer
       CodeUri: find_images_for_objects/
       Environment:
         Variables:
@@ -840,8 +721,6 @@ Resources:
       Handler: handler.run
       Runtime: python3.7
       Timeout: 900
-      Layers:
-        - !Ref SentryLayer
       CodeUri: send_objects_to_pipeline/
       Policies:
         - Version: 2012-10-17

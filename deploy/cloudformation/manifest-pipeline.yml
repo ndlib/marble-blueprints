@@ -529,11 +529,7 @@ Resources:
                 Effect: "Allow"
                 Resource:
                   - !Ref RBSCS3ImageBucketArn
-                  - Fn::Join:
-                      - ""
-                      -
-                        - !Ref RBSCS3ImageBucketArn
-                        - "/*"
+                  - !Sub "${RBSCS3ImageBucketArn}/*"
 
   StatesExecutionRole:
     Type: "AWS::IAM::Role"

@@ -96,6 +96,10 @@ Parameters:
   SentryDsn:
     Type: String
     Description: The sentry data source name(DSN)
+  RBSCS3ImageBucketArn:
+    Type: String
+    Default: "libnd-smb-rbsc"
+    Description: "The bucjet that rarebooks images are in for the search process"
 
 Outputs:
 
@@ -458,7 +462,8 @@ Resources:
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
                         \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
-                        \"SentryDsn\" : \"${SentryDsn}\"
+                        \"SentryDsn\" : \"${SentryDsn}\",
+                        \"RBSCS3ImageBucketArn\" : \"${RBSCS3ImageBucketArn}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${TestStackName}\",
@@ -477,7 +482,8 @@ Resources:
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
                         \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
-                        \"SentryDsn\" : \"${SentryDsn}\"
+                        \"SentryDsn\" : \"${SentryDsn}\",
+                        \"RBSCS3ImageBucketArn\" : \"${RBSCS3ImageBucketArn}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${ProdStackName}\",

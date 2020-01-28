@@ -10,13 +10,18 @@
       "hostnamePrefix": "image-iiif",
       "appRepoOwner": "ndlib",
       "appRepoName": "serverless-iiif",
-      "appSourceBranch": "master", 
+      "appSourceBranch": "master",
       "infraRepoOwner": "ndlib",
       "infraRepoName": "marble-blueprints",
-      "infraSourceBranch": "master", 
+      "infraSourceBranch": "master",
       "qaRepoOwner": "ndlib",
       "qaRepoName": "iiif-qa",
       "qaSourceBranch": "master"
+    },
+    "userContent": {
+      "lambdaCodePath": "../../../marble-user-content/src",
+      "tokenAudiencePath": "/all/stacks/marble-user-content/tokenAudiencePath",
+      "tokenIssuerPath": "/all/stacks/marble-user-content/tokenIssuerPath"
     }
   }
 }

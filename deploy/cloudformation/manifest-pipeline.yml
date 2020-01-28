@@ -50,7 +50,7 @@ Parameters:
     Description: The sentry data source name(DSN)
   RBSCS3ImageBucketArn:
     Type: String
-    Description: "The bucjet that rarebooks images are in for the search process"
+    Description: "The bucket that rarebooks images are in for the search process"
 
   CreateDNSRecord:
     Type: String

@@ -48,6 +48,9 @@ Parameters:
   SentryDsn:
     Type: String
     Description: The sentry data source name(DSN)
+  RBSCS3ImageBucketArn:
+    Type: String
+    Description: "The bucjet that rarebooks images are in for the search process"
 
   CreateDNSRecord:
     Type: String
@@ -514,6 +517,22 @@ Resources:
                       - ""
                       -
                         - !GetAtt ProcessBucket.Arn
+                        - "/*"
+        - PolicyName: RBSCS3ImageBucketPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                Effect: "Allow"
+                Resource:
+                  - !Ref RBSCS3ImageBucketArn
+                  - Fn::Join:
+                      - ""
+                      -
+                        - !Ref RBSCS3ImageBucketArn
                         - "/*"
 
   StatesExecutionRole:

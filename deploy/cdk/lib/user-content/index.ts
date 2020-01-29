@@ -85,12 +85,12 @@ export class UserContentStack extends cdk.Stack {
     // API Gateway
     const api = new apigateway.RestApi(this, 'userContentApi', {
       restApiName: 'Marble User Content Service',
-      endpointExportName: `${this.stackName}-api-url`,
       defaultCorsPreflightOptions: {
         allowOrigins: ['*'],
         allowCredentials: false,
         statusCode: 200,
       },
+      endpointExportName: `${this.stackName}-api-url`
     });
     const userContentIntegration = new apigateway.LambdaIntegration(userContentLambda);
 

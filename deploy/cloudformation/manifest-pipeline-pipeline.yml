@@ -509,6 +509,7 @@ Resources:
           phases:
             pre_build:
               commands:
+                - cp ./pipelineutilities/pipelineutilities/*.py ./pyramid_generator
                 - echo Logging in to Amazon ECR...
                 - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
                 - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME

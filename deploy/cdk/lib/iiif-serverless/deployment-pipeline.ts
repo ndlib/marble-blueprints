@@ -24,7 +24,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly qaRepoName: string;
   readonly qaSourceBranch: string;
   readonly imageSourceBucketPath: string;
-  readonly stackPrefix: string;
+  readonly namespace: string;
   readonly domainStackName: string;
   readonly domainCertificateArn: string;
   readonly hostnamePrefix: string;
@@ -38,11 +38,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
     const resolvedDomain = Fn.importValue(`${props.domainStackName}:DomainName`);
     const testHost = `${props.hostnamePrefix}-test.${resolvedDomain}`;
-    const testStackName = `${props.stackPrefix}-test`;
-    const testCDNStackName = `${props.stackPrefix}-cdn-test`;
+    const testStackName = `${props.namespace}-image-service-test`;
+    const testCDNStackName = `${props.namespace}-image-service-cdn-test`;
     const prodHost = `${props.hostnamePrefix}.${resolvedDomain}`;
-    const prodStackName = `${props.stackPrefix}-prod`;
-    const prodCDNStackName = `${props.stackPrefix}-cdn-prod`;
+    const prodStackName = `${props.namespace}-image-service-prod`;
+    const prodCDNStackName = `${props.namespace}-image-service-cdn-prod`;
     const sourceBucketParam = ssm.StringParameter.fromStringParameterName(this, 'SourceBucket', props.imageSourceBucketPath);
 
     const artifactBucket = new Bucket(this, 'artifactBucket', { 

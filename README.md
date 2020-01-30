@@ -25,3 +25,4 @@ Before you begin, check that you have the following:
 - [IIIF Manifest Pipeline](/docs/iiif-manifest-pipeline.md) - A IIIF Manifest and Image processing pipeline. See [ndlib/marble-manifest-pipeline](https://github.com/ndlib/marble-manifest-pipeline)
 - [Website](/docs/website.md) - The main front end for the project. See [ndlib/marble-website](https://github.com/ndlib/marble-website)
 - [Primo Passthrough](/docs/primo-passthrough.md) - Proxies queries for the Website to a Primo server. See [ndlib/marble-passthrough-primo](https://github.com/ndlib/marble-passthrough-primo)
+- [User Content](/docs/user-content.md) - Manages user content such as collections and items. See [ndlib/marble-user-content](https://github.com/ndlib/marble-user-content)

@@ -1,28 +1,3 @@
 {
-  "app": "npx ts-node bin/base.ts",
-  "context": {
-    "createDns": "true",
-    "domainStackName": "marble-domain",
-    "oauthTokenPath": "/all/github/ndlib-git",
-    "iiifImageService": {
-      "imageSourceBucketPath": "/all/stacks/marble-data-broker/publicbucket",
-      "stackPrefix": "marble-image-service",
-      "hostnamePrefix": "image-iiif",
-      "appRepoOwner": "ndlib",
-      "appRepoName": "serverless-iiif",
-      "appSourceBranch": "master",
-      "infraRepoOwner": "ndlib",
-      "infraRepoName": "marble-blueprints",
-      "infraSourceBranch": "master",
-      "qaRepoOwner": "ndlib",
-      "qaRepoName": "iiif-qa",
-      "qaSourceBranch": "master"
-    },
-    "userContent": {
-      "allowedOrigins": "*",
-      "lambdaCodePath": "../../../marble-user-content/src",
-      "tokenAudiencePath": "/all/stacks/marble-user-content/tokenAudiencePath",
-      "tokenIssuerPath": "/all/stacks/marble-user-content/tokenIssuerPath"
-    }
-  }
+  "app": "npx ts-node bin/base.ts"
 }

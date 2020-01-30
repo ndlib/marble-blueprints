@@ -6,6 +6,7 @@ import cdk = require('@aws-cdk/core');
 
 export interface UserContentStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string
+  readonly allowedOrigins: string
   readonly tokenAudiencePath: string
   readonly tokenIssuerPath: string
 };
@@ -86,7 +87,7 @@ export class UserContentStack extends cdk.Stack {
     const api = new apigateway.RestApi(this, 'userContentApi', {
       restApiName: 'Marble User Content Service',
       defaultCorsPreflightOptions: {
-        allowOrigins: ['*'],
+        allowOrigins: [props.allowedOrigins],
         allowCredentials: false,
         statusCode: 200,
       },

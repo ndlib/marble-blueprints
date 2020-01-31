@@ -3,6 +3,7 @@ import { App } from '@aws-cdk/core';
 import { StackTags } from '@ndlib/ndlib-cdk';
 import 'source-map-support/register';
 import IIIF = require('../lib/iiif-serverless');
+import userContent = require('../lib/user-content');
 
 const app = new App();
 
@@ -16,6 +17,14 @@ new IIIF.DeploymentPipelineStack(app, 'marble-image-service-deployment', {
   domainStackName,
   oauthTokenPath,
   ...imageServiceContext
+});
+
+const userContentContext = app.node.tryGetContext('userContent')
+new userContent.UserContentStack(app, 'marble-user-content', {
+  createDns,
+  domainStackName,
+  oauthTokenPath,
+  ...userContentContext
 });
 
 app.node.applyAspect(new StackTags());

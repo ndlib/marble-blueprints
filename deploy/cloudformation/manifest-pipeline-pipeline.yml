@@ -509,7 +509,6 @@ Resources:
           phases:
             pre_build:
               commands:
-                - cp ./pipelineutilities/pipelineutilities/*.py ./pyramid_generator
                 - echo Logging in to Amazon ECR...
                 - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
                 - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
@@ -520,7 +519,7 @@ Resources:
               commands:
                 - echo Build started on `date`
                 - echo Building the Docker image...
-                - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$COMMIT_HASH ./pyramid_generator
+                - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$COMMIT_HASH -f docker/Dockerfile .
                 - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$COMMIT_HASH
                 - docker tag $REPOSITORY_URI:$COMMIT_HASH $REPOSITORY_URI:$COMMIT_HASH
             post_build:

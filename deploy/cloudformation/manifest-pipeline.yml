@@ -662,7 +662,22 @@ Resources:
                 "Finalize": {
                   "Type": "Task",
                   "Resource": "${finalizeLambdaArn}",
-                  "Next": "DenoteError"
+                  "Next": "RestartFinalize"
+                },
+                "RestartFinalize": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.finalize_complete",
+                      "BooleanEquals": false,
+                      "Next": "Finalize"
+                    },
+                    {
+                      "Variable": "$.finalize_complete",
+                      "BooleanEquals": true,
+                      "Next": "DenoteError"
+                    }
+                  ]
                 },
                 "DenoteError": {
                   "Type": "Choice",

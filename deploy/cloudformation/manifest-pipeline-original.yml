@@ -51,14 +51,6 @@ Parameters:
   RBSCS3ImageBucketArn:
     Type: String
     Description: "The bucket that rarebooks images are in for the search process"
-  GoogleKeyPath:
-    Type: String
-    Description: The ssm path to look for the google team drive credentials and drive-id
-    Default: '/all/marble/google'
-  MuseumKeyPath:
-    Type: String
-    Description: The ssm path to look for the EmbARK museum credentials
-    Default: '/all/marble/museum'
 
   CreateDNSRecord:
     Type: String
@@ -89,9 +81,6 @@ Conditions:
 Outputs:
   SchemaStateMachine:
     Value: !Ref SchemaStateMachine
-
-  StateMachineCreateCSVs:
-    Value: !Ref StateMachineCreateCSVs
 
   StateMachineMets:
     Value: !Ref StateMachineMets
@@ -865,9 +854,6 @@ Resources:
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${SchemaStateMachine.Name}:*'
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachineMets.Name}'
               - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachineMets.Name}:*'
-              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StateMachineCreateCSVs.Name}'
-              - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:${StateMachineCreateCSVs.Name}:*'
-
 
   DataAdminPermissions:
     Type: AWS::IAM::ManagedPolicy
@@ -890,138 +876,3 @@ Resources:
               - !Sub ${ProcessBucket.Arn}/*
               - !GetAtt ManifestBucket.Arn
               - !Sub ${ManifestBucket.Arn}/*
-
-
-  HarvestEADsLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      Runtime: python3.7
-      Timeout: 900
-      CodeUri: harvest_eads/
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - 's3:ListObjects'
-                - 's3:ListBucket'
-              Resource:
-                - !Ref RBSCS3ImageBucketArn
-                - !Sub "${RBSCS3ImageBucketArn}/*"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - "ssm:GetParametersByPath"
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - "s3:PutObject"
-              Resource:
-                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
-      Environment:
-        Variables:
-          SSM_KEY_BASE: !Ref AppConfigPath
-          SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
-
-
-  MuseumExportLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      Runtime: python3.7
-      Timeout: 900
-      CodeUri: museum_export/
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - "ssm:GetParametersByPath"
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${GoogleKeyPath}/*"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MuseumKeyPath}/*"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - "s3:PutObject"
-              Resource:
-                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
-      Environment:
-        Variables:
-          SSM_KEY_BASE: !Ref AppConfigPath
-          SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
-
-
-
-  StateMachineCreateCSVs:
-    Type: "AWS::StepFunctions::StateMachine"
-    Properties:
-      StateMachineName: !Sub "${AWS::StackName}-StateMachineCreateCSVs"
-      DefinitionString:
-        !Sub
-          - |-
-            {
-              "Comment": "Create CSVs of ArchivesSpace EAD metadata and image info",
-              "StartAt": "MuseumExportTask",
-              "States": {
-                "MuseumExportTask": {
-                  "Type": "Task",
-                  "Resource": "${museumExportLambdaArn}",
-                  "Next": "ExportEADsTask"
-                },
-                "ExportEADsTask": {
-                  "Type": "Task",
-                  "Resource": "${harvestEADsLambdaArn}",
-                  "Next": "ChoiceSourceType"
-                },
-                "ChoiceSourceType": {
-                  "Type": "Choice",
-                  "Choices": [
-                    {
-                      "Variable": "$.eadHarvestComplete",
-                      "BooleanEquals": false,
-                      "Next": "ExportEADsTask"
-                    },
-                    {
-                      "Variable": "$.eadHarvestComplete",
-                      "BooleanEquals": true,
-                      "Next": "SuccessState"
-                    }
-                  ]
-                },
-                "SuccessState": {
-                  "Type": "Succeed"
-                }
-              }
-            }
-          -
-            {
-              harvestEADsLambdaArn: !GetAtt [HarvestEADsLambdaFunction, Arn],
-              museumExportLambdaArn:  !GetAtt [MuseumExportLambdaFunction, Arn],
-            }
-      RoleArn: !GetAtt [ StatesExecutionRole, Arn ]

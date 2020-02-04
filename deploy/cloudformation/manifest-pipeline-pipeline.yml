@@ -98,7 +98,7 @@ Parameters:
     Description: The sentry data source name(DSN)
   RBSCS3ImageBucketArn:
     Type: String
-    Default: "libnd-smb-rbsc"
+    Default: "arn:aws:s3:::libnd-smb-rbsc"
     Description: "The bucjet that rarebooks images are in for the search process"
 
 Outputs:

@@ -96,10 +96,15 @@ Parameters:
   SentryDsn:
     Type: String
     Description: The sentry data source name(DSN)
-  RBSCS3ImageBucketArn:
+  RBSCS3ProdImageBucketArn:
     Type: String
     Default: "arn:aws:s3:::libnd-smb-rbsc"
     Description: "The bucjet that rarebooks images are in for the search process"
+  RBSCS3TestImageBucketArn:
+    Type: String
+    Default: "arn:aws:s3:::libnd-smb-rbsc"
+    Description: "The bucjet that rarebooks images are in for the search process"
+
 
 Outputs:
 
@@ -463,7 +468,7 @@ Resources:
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
                         \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
                         \"SentryDsn\" : \"${SentryDsn}\",
-                        \"RBSCS3ImageBucketArn\" : \"${RBSCS3ImageBucketArn}\"
+                        \"RBSCS3ImageBucketArn\" : \"${RBSCS3TestImageBucketArn}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${TestStackName}\",
@@ -483,7 +488,7 @@ Resources:
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
                         \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
                         \"SentryDsn\" : \"${SentryDsn}\",
-                        \"RBSCS3ImageBucketArn\" : \"${RBSCS3ImageBucketArn}\"
+                        \"RBSCS3ImageBucketArn\" : \"${RBSCS3ProdImageBucketArn}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${ProdStackName}\",

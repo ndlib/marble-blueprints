@@ -530,6 +530,16 @@ Resources:
                 Resource:
                   - !Ref RBSCS3ImageBucketArn
                   - !Sub "${RBSCS3ImageBucketArn}/*"
+        - PolicyName: GDriveSsmPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Action:
+                  - "ssm:GetParameter"
+                Effect: "Allow"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/marble/google/*"
 
   StatesExecutionRole:
     Type: "AWS::IAM::Role"

@@ -6,6 +6,7 @@ import cdk = require('@aws-cdk/core');
 
 export interface UserContentStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string
+  readonly allowedOrigins: string
   readonly tokenAudiencePath: string
   readonly tokenIssuerPath: string
 };
@@ -18,10 +19,17 @@ export class UserContentStack extends cdk.Stack {
     const userDynamoTable = new dynamodb.Table(this, 'UsersTable', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: {
-        name: 'userName',
+        name: 'uuid',
         type: dynamodb.AttributeType.STRING
       },
       tableName: `${this.stackName}-users`,
+    });
+    userDynamoTable.addGlobalSecondaryIndex({
+      indexName: 'userName',
+      partitionKey: {
+        name: 'userName',
+        type: dynamodb.AttributeType.STRING
+      }
     });
 
     const collectionDynamoTable = new dynamodb.Table(this, 'CollectionsTable', {
@@ -33,9 +41,9 @@ export class UserContentStack extends cdk.Stack {
       tableName: `${this.stackName}-collections`,
     });
     collectionDynamoTable.addGlobalSecondaryIndex({
-      indexName: 'userName',
+      indexName: 'userId',
       partitionKey: {
-        name: 'userName',
+        name: 'userId',
         type: dynamodb.AttributeType.STRING
       }
     });
@@ -49,9 +57,9 @@ export class UserContentStack extends cdk.Stack {
       tableName: `${this.stackName}-items`,
     });
     itemDynamoTable.addGlobalSecondaryIndex({
-      indexName: 'collection',
+      indexName: 'collectionId',
       partitionKey: {
-        name: 'collection',
+        name: 'collectionId',
         type: dynamodb.AttributeType.STRING
       }
     });
@@ -64,16 +72,16 @@ export class UserContentStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_10_X,
       environment: {
         USER_TABLE_NAME: userDynamoTable.tableName,
-        USER_PRIMARY_KEY: 'userName',
+        USER_PRIMARY_KEY: 'uuid',
+        USER_SECONDARY_KEY: 'userName',
         COLLECTION_TABLE_NAME: collectionDynamoTable.tableName,
         COLLECTION_PRIMARY_KEY: 'uuid',
-        COLLECTION_SECONDARY_KEY: 'userName',
+        COLLECTION_SECONDARY_KEY: 'userId',
         ITEM_TABLE_NAME: itemDynamoTable.tableName,
         ITEM_PRIMARY_KEY: 'uuid',
-        ITEM_SECONDARDY_KEY: 'collection',
+        ITEM_SECONDARDY_KEY: 'collectionId',
         TOKEN_ISSUER: ssm.StringParameter.fromStringParameterName(this, 'TokenIssuer', props.tokenIssuerPath).stringValue,
         TOKEN_AUDIENCE: ssm.StringParameter.fromStringParameterName(this, 'Audience', props.tokenAudiencePath).stringValue,
-        USERNAME_CLAIM: 'netid'
       }
     });
 
@@ -85,6 +93,11 @@ export class UserContentStack extends cdk.Stack {
     // API Gateway
     const api = new apigateway.RestApi(this, 'userContentApi', {
       restApiName: 'Marble User Content Service',
+      defaultCorsPreflightOptions: {
+        allowOrigins: [props.allowedOrigins],
+        allowCredentials: false,
+        statusCode: 200,
+      },
       endpointExportName: `${this.stackName}-api-url`
     });
     const userContentIntegration = new apigateway.LambdaIntegration(userContentLambda);
@@ -96,6 +109,10 @@ export class UserContentStack extends cdk.Stack {
     userId.addMethod('GET', userContentIntegration);
     userId.addMethod('PATCH', userContentIntegration);
     userId.addMethod('DELETE', userContentIntegration);
+
+    const userByUuid = api.root.addResource('user-id');
+    const userByUuidId = userByUuid.addResource('{id}')
+    userByUuidId.addMethod('GET', userContentIntegration);
 
     // collection endpoints
     const collection = api.root.addResource('collection');

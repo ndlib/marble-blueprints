@@ -19,6 +19,7 @@
       "qaSourceBranch": "master"
     },
     "userContent": {
+      "allowedOrigins": "*",
       "lambdaCodePath": "../../../marble-user-content/src",
       "tokenAudiencePath": "/all/stacks/marble-user-content/tokenAudiencePath",
       "tokenIssuerPath": "/all/stacks/marble-user-content/tokenIssuerPath"

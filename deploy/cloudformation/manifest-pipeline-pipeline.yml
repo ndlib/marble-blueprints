@@ -96,6 +96,15 @@ Parameters:
   SentryDsn:
     Type: String
     Description: The sentry data source name(DSN)
+  RBSCS3ProdImageBucketArn:
+    Type: String
+    Default: "arn:aws:s3:::libnd-smb-rbsc"
+    Description: "The bucjet that rarebooks images are in for the search process"
+  RBSCS3TestImageBucketArn:
+    Type: String
+    Default: "arn:aws:s3:::libnd-smb-rbsc"
+    Description: "The bucjet that rarebooks images are in for the search process"
+
 
 Outputs:
 
@@ -458,7 +467,8 @@ Resources:
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
                         \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
-                        \"SentryDsn\" : \"${SentryDsn}\"
+                        \"SentryDsn\" : \"${SentryDsn}\",
+                        \"RBSCS3ImageBucketArn\" : \"${RBSCS3TestImageBucketArn}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${TestStackName}\",
@@ -477,7 +487,8 @@ Resources:
                         \"DomainStackName\" : \"${DomainStackName}\",
                         \"CreateDNSRecord\" : \"${CreateDNSRecord}\",
                         \"InfrastructureStackName\" : \"${InfrastructureStackName}\",
-                        \"SentryDsn\" : \"${SentryDsn}\"
+                        \"SentryDsn\" : \"${SentryDsn}\",
+                        \"RBSCS3ImageBucketArn\" : \"${RBSCS3ProdImageBucketArn}\"
                       },
                       \"Tags\" : {
                         \"Name\" : \"${ProdStackName}\",
@@ -519,7 +530,7 @@ Resources:
               commands:
                 - echo Build started on `date`
                 - echo Building the Docker image...
-                - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$COMMIT_HASH ./pyramid_generator
+                - docker build -t $REPOSITORY_URI:latest -t $REPOSITORY_URI:$COMMIT_HASH -f docker/Dockerfile .
                 - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$COMMIT_HASH
                 - docker tag $REPOSITORY_URI:$COMMIT_HASH $REPOSITORY_URI:$COMMIT_HASH
             post_build:

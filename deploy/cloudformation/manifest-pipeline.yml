@@ -51,6 +51,10 @@ Parameters:
   RBSCS3ImageBucketArn:
     Type: String
     Description: "The bucket that rarebooks images are in for the search process"
+  GoogleKeyPath:
+      Type: String
+      Description: The ssm path to look for the google team drive credentials and drive-id
+      Default: '/all/marble/google'
 
   CreateDNSRecord:
     Type: String
@@ -539,7 +543,7 @@ Resources:
                   - "ssm:GetParameter"
                 Effect: "Allow"
                 Resource:
-                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/marble/google/*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${GoogleKeyPath}/*"
 
   StatesExecutionRole:
     Type: "AWS::IAM::Role"

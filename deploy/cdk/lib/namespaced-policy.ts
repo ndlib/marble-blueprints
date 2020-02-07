@@ -61,6 +61,7 @@ export class NamespacedPolicy {
   public static api(): PolicyStatement {
     return new PolicyStatement({
       resources: [
+        Fn.sub('arn:aws:apigateway:${AWS::Region}::/account'),
         Fn.sub('arn:aws:apigateway:${AWS::Region}::/restapis'),
         Fn.sub('arn:aws:apigateway:${AWS::Region}::/restapis/*'),
       ],
@@ -120,6 +121,24 @@ export class NamespacedPolicy {
       ],
       resources: [
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/' + stackName + '/*'),
+      ],
+    });
+  };
+
+  public static dynamodb(stackName: string): PolicyStatement  {
+    return new PolicyStatement({
+      resources: [ Fn.sub('arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/' + stackName + '*') ],
+      actions: [
+        'dynamodb:CreateBackup',
+        'dynamodb:CreateTable',
+        'dynamodb:UpdateTable',
+        'dynamodb:DeleteTable',
+        'dynamodb:UpdateTimeToLive',
+        'dynamodb:DescribeTable',
+        'dynamodb:DescribeTimeToLive',
+        'dynamodb:TagResource',
+        'dynamodb:UntagResource',
+        'dynamodb:ListTagsOfResource',
       ],
     });
   };

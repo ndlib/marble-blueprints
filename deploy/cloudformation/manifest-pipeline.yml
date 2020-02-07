@@ -442,10 +442,14 @@ Resources:
                 - "s3:ListBucketVersions"
                 - "s3:PutObjectVersionAcl"
                 - "s3:PutObjectAcl"
+                - "s3:DeleteObject"
+                - "s3:DeleteObjectVersion"
               Resource:
                 - !GetAtt ProcessBucket.Arn
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+                - !GetAtt ManifestBucket.Arn
                 - !Join ["", [!GetAtt ManifestBucket.Arn, "/*"]]
+                - !Join ["", ["arn:aws:s3:::", !Ref ImageSourceBucket ]]
                 - !Join ["", ["arn:aws:s3:::", !Ref ImageSourceBucket, "/*"]]
         - Version: 2012-10-17
           Statement:

@@ -26,3 +26,7 @@ cdk deploy [NAMESPACE]-user-content-deployment \
   -c "userContent:infraSourceBranch"="master" \
   -c "userContent:appSourceBranch"="master"
 ```
+
+If you're using our [Slack approval bot](https://github.com/ndlib/codepipeline-approvals/blob/master/slack_approval.md), you can associate this pipeline to a channel notifier with an optional context parameter `-c slackNotifyStackName=slack-approval-bot-marble-notifier`
+
+If you want to receive email notifications any time the pipeline state changes, specify an additional context paramter `-c "userContent:deployNotificationReceivers=me@myhost.com"`

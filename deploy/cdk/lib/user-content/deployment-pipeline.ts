@@ -6,7 +6,7 @@ import { PolicyStatement } from '@aws-cdk/aws-iam';
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import { Topic } from '@aws-cdk/aws-sns';
 import cdk = require('@aws-cdk/core');
-import { SlackApproval } from '@ndlib/ndlib-cdk';
+import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk';
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
 import { NamespacedPolicy } from '../namespaced-policy';
 import { Artifact } from '@aws-cdk/aws-codepipeline';
@@ -25,6 +25,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly tokenAudiencePath: string;
   readonly tokenIssuerPath: string;
   readonly slackNotifyStackName?: string;
+  readonly allowedOrigins: string;
+  readonly notificationReceivers?: string;
 };
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -54,6 +56,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           owner: props.owner,
           contact: props.contact,
           "userContent:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/src",
+          "userContent:allowedOrigins": props.allowedOrigins,
         },
         postDeployCommands: [
           // This API isn't using DNS, and the endpoint isn't created until the deploy command completes,
@@ -205,5 +208,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
         }
       ],
     });
+    if(props.notificationReceivers){
+      const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
+        pipeline,
+        receivers: props.notificationReceivers,
+      });
+    }
   }
 }

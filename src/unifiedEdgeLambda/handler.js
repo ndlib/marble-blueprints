@@ -1,13 +1,27 @@
 'use strict';
-// https://github.com/ndlib/esu-cloudformation/blob/master/lambda-edge-utils/default-directory-index.js
+const path = require('path');
+
+// https://medium.com/radon-dev/redirection-on-cloudfront-with-lambda-edge-e72fd633603e
 exports.handler = (event, context, callback) => {
-    var request = event.Records[0].cf.request;
-    var olduri = request.uri;
-    // Add a trailing slash to a sub path if there is none. Anything without a
-    // '.' in the last part of the URI is considered a sub path.
-    var newuri = olduri.replace(/^.*\/([^.|^\/]+)$/, olduri + '/');
-    // Append index.html to any request with a trailing slash
-    newuri = newuri.replace(/\/$/, '\/index.html');
-    request.uri = newuri;
-    return callback(null, request);
+  const { request } = event.Records[0].cf;
+
+  const parsedPath = path.parse(request.uri);
+  let newUri;
+
+  // this is not the best way that this we may need to do an s3 head request to fully
+  // detect if the file exists.
+  let valid_extensions = ['.html', '.js', '.json', '.css', '.jpg', '.jpeg', '.png', '.ico', '.map', '.txt', '.kml', '.svg', '.webmanifest', '.xml', '.zip']
+  // if there is no extension or it is not in one of the extensions we expect to find on the
+  // server.
+  if (parsedPath.ext == '' || !valid_extensions.includes(parsedPath.ext)) {
+    newUri = path.join(parsedPath.dir, parsedPath.base, 'index.html');
+  } else {
+    newUri = request.uri;
+  }
+
+  // Replace the received URI with the URI that includes the index page
+  request.uri = newUri;
+
+  // Return to CloudFront
+  return callback(null, request);
 }

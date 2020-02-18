@@ -1,4 +1,6 @@
-// https://github.com/ndlib/esu-cloudformation/blob/master/lambda-edge-utils/default-directory-index.test.js
+// To run this
+// yarn run jest handler.test.js
+//
 const test_handler = require('./handler').handler
 
 // Function to make it easier to create test event objects
@@ -22,16 +24,15 @@ describe('URL ReWrites', () => {
 
   // Array of requested URIs and what we expect the function to rewrite it to
   var test_uris = [
-    { test_uri: '', expected_uri: '' },
+    { test_uri: '', expected_uri: 'index.html' },
     { test_uri: '/', expected_uri: '/index.html' },
     { test_uri: '/sub_path', expected_uri: '/sub_path/index.html' },
     { test_uri: '/sub_path/', expected_uri: '/sub_path/index.html' },
     { test_uri: '/sub_path/sub_path', expected_uri: '/sub_path/sub_path/index.html' },
     { test_uri: '/sub_path/sub_path/', expected_uri: '/sub_path/sub_path/index.html' },
     { test_uri: '/page.html', expected_uri: '/page.html' },
-    // Note: this next one has implications for what we consider valid sub path names
-    // If this is unacceptable, we'll have to be a bit more precise with our regex
-    { test_uri: '/sub.path', expected_uri: '/sub.path' },
+    { test_uri: '/sub.path', expected_uri: '/sub.path/index.html' },
+    { test_uri: '/1999.024', expected_uri: '/1999.024/index.html' },
   ]
 
   // Loop through each of the test URIs and make sure the function under test rewrites

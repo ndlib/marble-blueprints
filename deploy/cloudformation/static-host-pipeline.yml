@@ -53,6 +53,11 @@ Parameters:
     Type: String
     Description: The name of the CloudFormation stack that created the test static host
 
+  AppConfigPath:
+    Type: String
+    Default: "/all/static-host/"
+    Description: The path the keys for parameter store should be read and written to for config
+
 Outputs:
 
   PipelineName:
@@ -118,6 +123,16 @@ Resources:
                         - !GetAtt CodeS3Bucket.Arn
                         - "/*"
         -
+          PolicyName: "ReadAppConfig"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - ssm:GetParametersByPath
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/static-host/*"
+        -
           PolicyName: "ReadGitOauth"
           PolicyDocument:
             Version: '2012-10-17'
@@ -148,7 +163,7 @@ Resources:
               commands:
                 - echo Install started on `date`
                 - chmod -R 755 ${BuildScriptsDir}/*
-                - ${BuildScriptsDir}/install.sh
+                - ${BuildScriptsDir}/install.sh ${AppConfigPath}${TestStackName}/
             pre_build:
               commands:
                 - echo Pre-build started on `date`
@@ -392,6 +407,43 @@ Resources:
             Value:
               Fn::ImportValue: !Join [':', [!Ref TestStackName, 'BucketName']]
 
+
+  CodeProdBuilder:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub '${AWS::StackName}-CodeProdBuilder'
+      ServiceRole: !Ref CodeBuildRole
+      TimeoutInMinutes: 10
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+
+          phases:
+            install:
+              runtime-versions:
+                nodejs: 10
+              commands:
+                - echo Install started on `date`
+                - chmod -R 755 ${BuildScriptsDir}/*
+                - ${BuildScriptsDir}/install.sh ${AppConfigPath}${ProdStackName}/
+          artifacts:
+            base-directory: ${BuildOutputDir}
+            files:
+              - '**/*'
+
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:2.0
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+
   CodeProdDeployer:
     Type: 'AWS::CodeBuild::Project'
     Properties:
@@ -543,6 +595,7 @@ Resources:
             Resource:
               - !GetAtt CodeBuilder.Arn
               - !GetAtt CodeTestDeployer.Arn
+              - !GetAtt CodeProdBuilder.Arn
               - !GetAtt CodeProdDeployer.Arn
               - !GetAtt PostDeployGitHub.Arn
       Roles:
@@ -627,6 +680,18 @@ Resources:
         -
           Name: Production
           Actions:
+            -
+              Name: "Build"
+              InputArtifacts:
+                - Name: SourceCode
+              ActionTypeId:
+                Owner: AWS
+                Category: Build
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref CodeProdBuilder
+              RunOrder: 1
             - Name: "Deploy"
               ActionTypeId:
                 Category: Build
@@ -639,7 +704,7 @@ Resources:
               - Name: ProdDeployOutput
               Configuration:
                 ProjectName: !Ref CodeProdDeployer
-              RunOrder: 1
+              RunOrder: 2
         -
           Name: PostProduction
           Actions:

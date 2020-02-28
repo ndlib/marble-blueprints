@@ -195,6 +195,19 @@ Resources:
                 - cloudformation.amazonaws.com
             Action: 'sts:AssumeRole'
       Path: /
+      Policies:
+        - PolicyName: PutRulePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "events:PutTargets"
+                  - "events:PutRule"
+                  - "events:DescribeRule"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartHarvestAndCreateCSVRule*"
+
   CloudFormationRolePolicy:
     Type: 'AWS::IAM::Policy'
     Properties:
@@ -806,11 +819,7 @@ Resources:
               ChangeSetName: ProdChangeSetName
               TemplateConfiguration: BuiltCode::prod-stack-configuration.json
               TemplatePath: BuiltCode::output.yml
-              ParameterOverrides: |
-                {
-                  !Sub '"ContainerImageUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageProcessorContainerRepository}:latest"',
-                  "CreateHarvestRule": "True"
-                }
+              ParameterOverrides: !Sub '{"ContainerImageUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageProcessorContainerRepository}:latest", "CreateHarvestRule": "True"}'
             RunOrder: 1
           - Name: Deploy
             ActionTypeId:

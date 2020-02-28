@@ -806,7 +806,11 @@ Resources:
               ChangeSetName: ProdChangeSetName
               TemplateConfiguration: BuiltCode::prod-stack-configuration.json
               TemplatePath: BuiltCode::output.yml
-              ParameterOverrides: !Sub '{"ContainerImageUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageProcessorContainerRepository}:latest"}'
+              ParameterOverrides: |
+                {
+                  !Sub '"ContainerImageUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageProcessorContainerRepository}:latest"',
+                  "CreateHarvestRule": "True"
+                }
             RunOrder: 1
           - Name: Deploy
             ActionTypeId:

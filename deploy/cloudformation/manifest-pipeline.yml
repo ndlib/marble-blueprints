@@ -616,8 +616,6 @@ Resources:
                   - "states:StartExecution"
                 Resource:
                   - !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
-                Principal:
-                  Service: events.amazonaws.com
 
   SchemaStateMachine:
     Type: "AWS::StepFunctions::StateMachine"

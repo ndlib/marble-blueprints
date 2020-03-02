@@ -607,6 +607,17 @@ Resources:
                   - "events:DescribeRule"
                 Resource:
                   - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForECSTaskRule"
+        - PolicyName: GrantAccessToRulePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "states:StartExecution"
+                Resource:
+                  - !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
+                Principal:
+                  Service: events.amazonaws.com
 
   SchemaStateMachine:
     Type: "AWS::StepFunctions::StateMachine"

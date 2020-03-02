@@ -296,8 +296,10 @@ Resources:
               - 'iam:AttachRolePolicy'
               - 'iam:DetachRolePolicy'
               - 'iam:DeleteRolePolicy'
+              - 'iam:GetRolePolicy'
               - 'iam:PutRolePolicy'
               - 'iam:PassRole'
+              - 'iam:TagRole'
             Resource:
               - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${TestStackName}-*'
               - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${ProdStackName}-*'

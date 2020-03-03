@@ -568,6 +568,7 @@ Resources:
             Principal:
               Service:
                 - !Sub states.${AWS::Region}.amazonaws.com
+                - "events.amazonaws.com"
             Action: "sts:AssumeRole"
       Path: "/"
       Policies:
@@ -616,6 +617,19 @@ Resources:
                   - "states:StartExecution"
                 Resource:
                   - !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
+        - PolicyName: AllowStepFunctionLoggingPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                  Action:
+                    - 'logs:CreateLogStream'
+                    - 'logs:PutLogEvents'
+                  Resource:
+                    - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ResolvedLogGroup}:*'
+                    - ResolvedLogGroup:
+                        Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
+
 
   SchemaStateMachine:
     Type: "AWS::StepFunctions::StateMachine"
@@ -987,9 +1001,22 @@ Resources:
     Condition: CreateHarvestAndCSVRule
     Properties:
       Description: "Starts the Step Functions to harvest metadata and create CSVs."
-      ScheduleExpression: "cron(0 7 * * ? *)"
+      ScheduleExpression: "cron(0 6 * * ? *)"
       Targets:
         -
           Arn: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
           Id: "StartStateMachineCreateCSVs"
+          RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
+
+
+  StartManifestPipelineRule:
+    Type: AWS::Events::Rule
+    Condition: CreateHarvestAndCSVRule
+    Properties:
+      Description: "Starts the Step Functions to process images and create manifests."
+      ScheduleExpression: "cron(0 8 * * ? *)"
+      Targets:
+        -
+          Arn: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
+          Id: "StartManifestPipeline"
           RoleArn: !GetAtt [ StatesExecutionRole, Arn ]

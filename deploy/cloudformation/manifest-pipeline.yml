@@ -628,7 +628,7 @@ Resources:
                 Resource: !Sub
                   - "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ResolvedLogGroup}:*"
                   - ResolvedLogGroup:
-                      Fn::ImportValue: !Sub "${InfrastructureStackName}:SharedLogGroup"
+                      Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
 
 
   SchemaStateMachine:

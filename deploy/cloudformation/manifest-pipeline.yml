@@ -625,8 +625,8 @@ Resources:
                 Action:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
-                Resource:
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ResolvedLogGroup}:*"
+                Resource: !Sub
+                  - "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ResolvedLogGroup}:*"
                   - ResolvedLogGroup:
                       Fn::ImportValue: !Sub "${InfrastructureStackName}:SharedLogGroup"
 

@@ -622,13 +622,13 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
-                  Action:
-                    - "logs:CreateLogStream"
-                    - "logs:PutLogEvents"
-                  Resource:
-                    - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ResolvedLogGroup}:*""
-                    - ResolvedLogGroup:
-                        Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ResolvedLogGroup}:*""
+                  - ResolvedLogGroup:
+                      Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
 
 
   SchemaStateMachine:

@@ -217,8 +217,8 @@ Resources:
                 Action:
                   - "iam:UpdateAssumeRolePolicy"
                 Resource:
-                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:role/${TestStackName}-StatesExecutionRole*"
-                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:role/${ProdStackName}-StatesExecutionRole*"
+                  - !Sub "arn:${AWS::Partition}:iam:${AWS::Region}:${AWS::AccountId}:role/${TestStackName}-StatesExecutionRole*"
+                  - !Sub "arn:${AWS::Partition}:iam:${AWS::Region}:${AWS::AccountId}:role/${ProdStackName}-StatesExecutionRole*"
 
   CloudFormationRolePolicy:
     Type: 'AWS::IAM::Policy'

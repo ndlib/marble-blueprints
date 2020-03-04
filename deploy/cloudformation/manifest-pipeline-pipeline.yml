@@ -208,6 +208,16 @@ Resources:
                 Resource:
                   - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartHarvestAndCreateCSVRule*"
                   - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartManifestPipelineRule*"
+      Policies:
+        - PolicyName: UpdateAssumeRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iam:UpdateAssumeRolePolicy"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:role/${ProdStackName}-StatesExecutionRole*"
 
   CloudFormationRolePolicy:
     Type: 'AWS::IAM::Policy'

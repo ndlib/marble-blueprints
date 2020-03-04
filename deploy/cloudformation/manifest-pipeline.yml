@@ -82,9 +82,14 @@ Parameters:
   ContainerImageUrl:
     Type: String
     Description: The url of a docker image that will handle image processing
-Conditions:
+  CreateHarvestRule:
+    Type: String
+    Default: "False"
+    Description: If True, will attempt to create a Rule to harvest metadata and create a CSV.
 
+Conditions:
   CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
+  CreateHarvestAndCSVRule: !Equals [ !Ref CreateHarvestRule, 'True' ]
 
 Outputs:
   SchemaStateMachine:
@@ -563,6 +568,7 @@ Resources:
             Principal:
               Service:
                 - !Sub states.${AWS::Region}.amazonaws.com
+                - "events.amazonaws.com"
             Action: "sts:AssumeRole"
       Path: "/"
       Policies:
@@ -602,6 +608,28 @@ Resources:
                   - "events:DescribeRule"
                 Resource:
                   - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForECSTaskRule"
+        - PolicyName: GrantAccessToRulePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "states:StartExecution"
+                Resource:
+                  - !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
+        - PolicyName: AllowStepFunctionLoggingPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: !Sub
+                  - "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ResolvedLogGroup}:*"
+                  - ResolvedLogGroup:
+                      Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
+
 
   SchemaStateMachine:
     Type: "AWS::StepFunctions::StateMachine"
@@ -817,6 +845,7 @@ Resources:
             - Effect: Allow
               Action:
                 - "s3:PutObject"
+                - 's3:GetObject'
               Resource:
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Environment:
@@ -865,6 +894,52 @@ Resources:
           STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
 
 
+  AlephExportLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Runtime: python3.7
+      Timeout: 900
+      CodeUri: aleph_export/
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - 's3:ListObjects'
+                - 's3:ListBucket'
+              Resource:
+                - !Ref RBSCS3ImageBucketArn
+                - !Sub "${RBSCS3ImageBucketArn}/*"
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'states:ListStateMachines'
+                - 'states:StartExecution'
+              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParametersByPath"
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:PutObject"
+              Resource:
+                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SENTRY_DSN: !Ref SentryDsn
+          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
+
+
 
   StateMachineCreateCSVs:
     Type: "AWS::StepFunctions::StateMachine"
@@ -880,6 +955,11 @@ Resources:
                 "MuseumExportTask": {
                   "Type": "Task",
                   "Resource": "${museumExportLambdaArn}",
+                  "Next": "AlephExportTask"
+                },
+                "AlephExportTask": {
+                  "Type": "Task",
+                  "Resource": "${alephExportLambdaArn}",
                   "Next": "ExportEADsTask"
                 },
                 "ExportEADsTask": {
@@ -911,5 +991,32 @@ Resources:
             {
               harvestEADsLambdaArn: !GetAtt [HarvestEADsLambdaFunction, Arn],
               museumExportLambdaArn:  !GetAtt [MuseumExportLambdaFunction, Arn],
+              alephExportLambdaArn:  !GetAtt [AlephExportLambdaFunction, Arn],
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
+
+
+  StartHarvestAndCreateCSVRule:
+    Type: AWS::Events::Rule
+    Condition: CreateHarvestAndCSVRule
+    Properties:
+      Description: "Starts the Step Functions to harvest metadata and create CSVs."
+      ScheduleExpression: "cron(0 6 * * ? *)"
+      Targets:
+        -
+          Arn: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
+          Id: "StartStateMachineCreateCSVs"
+          RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
+
+
+  StartManifestPipelineRule:
+    Type: AWS::Events::Rule
+    Condition: CreateHarvestAndCSVRule
+    Properties:
+      Description: "Starts the Step Functions to process images and create manifests."
+      ScheduleExpression: "cron(0 8 * * ? *)"
+      Targets:
+        -
+          Arn: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-SchemaStateMachine"
+          Id: "StartManifestPipeline"
+          RoleArn: !GetAtt [ StatesExecutionRole, Arn ]

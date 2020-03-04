@@ -195,19 +195,6 @@ Resources:
                 - cloudformation.amazonaws.com
             Action: 'sts:AssumeRole'
       Path: /
-      Policies:
-        - PolicyName: PutRulePolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "events:PutTargets"
-                  - "events:PutRule"
-                  - "events:DescribeRule"
-                Resource:
-                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartHarvestAndCreateCSVRule*"
-                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartManifestPipelineRule*"
 
   CloudFormationRolePolicy:
     Type: 'AWS::IAM::Policy'
@@ -372,8 +359,18 @@ Resources:
             Resource:
               - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${InfrastructureStackName}-*'
             Effect: Allow
+          # The manifest pipeline is going to need to create rules for StartHarvest and StartManifestPipeline
+          - Action:
+              - "events:PutTargets"
+              - "events:PutRule"
+              - "events:DescribeRule"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartHarvestAndCreateCSVRule*"
+              - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartManifestPipelineRule*"
+            Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole
+
   CodePipelineTrustRole:
     Type: 'AWS::IAM::Role'
     Properties:

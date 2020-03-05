@@ -48,9 +48,9 @@ Parameters:
   SentryDsn:
     Type: String
     Description: The sentry data source name(DSN)
-  RBSCS3ImageBucketArn:
+  RBSCS3ImageBucketName:
     Type: String
-    Description: "The bucket that rarebooks images are in for the search process"
+    Description: "The name of the bucket that rarebooks images are in for the search process"
   GoogleKeyPath:
     Type: String
     Description: The ssm path to look for the google team drive credentials and drive-id
@@ -161,6 +161,14 @@ Resources:
       Name: !Sub "${AppConfigPath}/process-bucket"
       Value: !Ref ProcessBucket
       Description: Manifest Server URL
+
+  SSMRBSCS3ImageBucketName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub "${AppConfigPath}/rbsc-image-bucket"
+      Value: !Ref RBSCS3ImageBucketName
+      Description: Name of RBSC Image Bucket
 
   ProcessBucket:
     Type: AWS::S3::Bucket
@@ -545,8 +553,8 @@ Resources:
                   - "s3:ListBucket"
                 Effect: "Allow"
                 Resource:
-                  - !Ref RBSCS3ImageBucketArn
-                  - !Sub "${RBSCS3ImageBucketArn}/*"
+                  - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}"
+                  - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}/*"
         - PolicyName: GDriveSsmPermissions
           PolicyDocument:
             Version: 2012-10-17
@@ -823,8 +831,8 @@ Resources:
                 - 's3:ListObjects'
                 - 's3:ListBucket'
               Resource:
-                - !Ref RBSCS3ImageBucketArn
-                - !Sub "${RBSCS3ImageBucketArn}/*"
+                - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}"
+                - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}/*"
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
@@ -909,8 +917,8 @@ Resources:
                 - 's3:ListObjects'
                 - 's3:ListBucket'
               Resource:
-                - !Ref RBSCS3ImageBucketArn
-                - !Sub "${RBSCS3ImageBucketArn}/*"
+                - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}"
+                - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}/*"
         - Version: 2012-10-17
           Statement:
             - Effect: Allow

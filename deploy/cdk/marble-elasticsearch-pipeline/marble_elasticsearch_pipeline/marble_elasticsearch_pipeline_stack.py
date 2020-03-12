@@ -163,12 +163,46 @@ class MarbleElasticsearchPipelineStack(core.Stack):
             )
         )
 
-        # Allow fetching details about and updating the application stack
+        # Explicit permissions
         self.codebuild_role.add_to_policy(
             iam.PolicyStatement(
                 resources=[f'arn:aws:es:{region}:{account_id}:domain/{self.es_stack}*'],
                 actions=[
-                    'es:*',
+                    'es:AddTags',
+                    'es:CreateElasticsearchDomain',
+                    'es:DeleteElasticsearchDomain',
+                    'es:DescribeElasticsearchDomain',
+                    'es:DescribeElasticsearchDomainConfig',
+                    'es:ESHttpDelete',
+                    'es:ESHttpGet',
+                    'es:ESHttpHead',
+                    'es:ESHttpPatch',
+                    'es:ESHttpPost',
+                    'es:ESHttpPut',
+                    'es:GetCompatibleElasticsearchVersions',
+                    'es:GetUpgradeHistory',
+                    'es:GetUpgradeStatus',
+                    'es:ListTags',
+                    'es:RemoveTags',
+                    'es:UpdateElasticsearchDomainConfig',
+                    'es:UpgradeElasticsearchDomain',
+                ],
+            )
+        )
+
+        self.codebuild_role.add_to_policy(
+            iam.PolicyStatement(
+                resources=[f'arn:aws:es:{region}:{account_id}:domain/*'],
+                actions=[
+                    'es:CreateElasticsearchServiceRole',
+                    'es:DeleteElasticsearchServiceRole',
+                    'es:DescribeElasticsearchInstanceTypeLimits',
+                    'es:DescribeReservedElasticsearchInstanceOfferings',
+                    'es:DescribeReservedElasticsearchInstances',
+                    'es:ListDomainNames',
+                    'es:ListElasticsearchInstanceTypeDetails',
+                    'es:ListElasticsearchInstanceTypes',
+                    'es:ListElasticsearchVersions',
                 ],
             )
         )

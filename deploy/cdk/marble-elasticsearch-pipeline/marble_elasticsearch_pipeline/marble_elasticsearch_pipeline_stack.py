@@ -172,6 +172,7 @@ class MarbleElasticsearchPipelineStack(core.Stack):
                     'es:CreateElasticsearchDomain',
                     'es:UpdateElasticsearchDomainConfig',
                     'es:UpgradeElasticsearchDomain',
+                    'es:RemoveTags',
                 ],
             )
         )

@@ -58,6 +58,11 @@ Parameters:
     Default: "/all/static-host/"
     Description: The path the keys for parameter store should be read and written to for config
 
+  ElasticsearchDomain:
+    Type: String
+    Default: "marble"
+    Description: The domain name of the marble elasticsearch instance
+
 Outputs:
 
   PipelineName:
@@ -142,7 +147,20 @@ Resources:
                 Action:
                   - ssm:GetParameters
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/github/ndlib-git/oauth"
-
+        -
+          PolicyName: "ElasticsearchPolicy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - es:ESHttpHead
+                  - es:ESHttpPost
+                  - es:ESHttpGet
+                  - es:ESHttpPut
+                  - es:ESHttpDelete
+                Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${ElasticsearchDomain}*/*"
 
   CodeBuilder:
     Type: 'AWS::CodeBuild::Project'

@@ -168,17 +168,26 @@ class MarbleElasticsearchPipelineStack(core.Stack):
             iam.PolicyStatement(
                 resources=[f'arn:aws:es:{region}:{account_id}:domain/{self.es_stack}*'],
                 actions=[
-                    'es:AddTags',
                     'es:CreateElasticsearchDomain',
-                    'es:DeleteElasticsearchDomain',
-                    'es:DescribeElasticsearchDomain',
-                    'es:DescribeElasticsearchDomainConfig',
                     'es:ESHttpDelete',
                     'es:ESHttpGet',
                     'es:ESHttpHead',
                     'es:ESHttpPatch',
                     'es:ESHttpPost',
                     'es:ESHttpPut',
+                ],
+            )
+        )
+
+        self.codebuild_role.add_to_policy(
+            iam.PolicyStatement(
+                resources=[f'arn:aws:es:{region}:{account_id}:domain/*'],
+                actions=[
+                    'es:AddTags',
+                    'es:DeleteElasticsearchDomain',
+                    'es:DescribeElasticsearchDomain',
+                    'es:DescribeElasticsearchDomainConfig',
+                    'es:DescribeElasticsearchDomains',
                     'es:GetCompatibleElasticsearchVersions',
                     'es:GetUpgradeHistory',
                     'es:GetUpgradeStatus',
@@ -192,9 +201,8 @@ class MarbleElasticsearchPipelineStack(core.Stack):
 
         self.codebuild_role.add_to_policy(
             iam.PolicyStatement(
-                resources=[f'arn:aws:es:{region}:{account_id}:domain/*'],
+                resources=['*'],
                 actions=[
-                    'es:AddTags',
                     'es:CreateElasticsearchServiceRole',
                     'es:DeleteElasticsearchServiceRole',
                     'es:DescribeElasticsearchInstanceTypeLimits',
@@ -204,7 +212,7 @@ class MarbleElasticsearchPipelineStack(core.Stack):
                     'es:ListElasticsearchInstanceTypeDetails',
                     'es:ListElasticsearchInstanceTypes',
                     'es:ListElasticsearchVersions',
-                    'es:RemoveTags',
+                    'es:PurchaseReservedElasticsearchInstanceOffering',
                 ],
             )
         )

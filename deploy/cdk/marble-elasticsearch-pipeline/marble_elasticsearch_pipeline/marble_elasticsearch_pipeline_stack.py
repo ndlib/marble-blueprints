@@ -168,11 +168,7 @@ class MarbleElasticsearchPipelineStack(core.Stack):
             iam.PolicyStatement(
                 resources=[f'arn:aws:es:{region}:{account_id}:domain/{self.es_stack}*'],
                 actions=[
-                    'es:DescribeElasticsearchDomain',
-                    'es:CreateElasticsearchDomain',
-                    'es:UpdateElasticsearchDomainConfig',
-                    'es:UpgradeElasticsearchDomain',
-                    'es:RemoveTags',
+                    'es:*',
                 ],
             )
         )

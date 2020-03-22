@@ -427,6 +427,19 @@ Resources:
                 - echo Install started on `date`
                 - chmod -R 755 ${BuildScriptsDir}/*
                 - ${BuildScriptsDir}/install.sh ${AppConfigPath}${ProdStackName}/
+            pre_build:
+              commands:
+                - echo Pre-build started on `date`
+                - ${BuildScriptsDir}/pre_build.sh
+            build:
+              commands:
+                - echo Build started on `date`
+                - ${BuildScriptsDir}/build.sh
+            post_build:
+              commands:
+                - echo Beginning post build on `date`
+                - ${BuildScriptsDir}/post_build.sh
+                - printf $CODEBUILD_RESOLVED_SOURCE_VERSION > ${BuildOutputDir}/sha.txt
           artifacts:
             base-directory: ${BuildOutputDir}
             files:

@@ -216,7 +216,7 @@ Resources:
       Description: Basic rewrite rule to send directory requests to appropriate locations in the SPA
       Handler: handler.handler
       Role: !GetAtt LambdaEdgeBasicExecutionRole.Arn
-      Runtime: nodejs12
+      Runtime: nodejs12.x
       AutoPublishAlias: live
 
   DebugPermissions:

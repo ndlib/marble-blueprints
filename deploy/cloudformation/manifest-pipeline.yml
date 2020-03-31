@@ -707,7 +707,22 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "Finalize"
+                  "Next": "RestartProcessManifest"
+                },
+                "RestartProcessManifest": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.process_manifest_complete",
+                      "BooleanEquals": false,
+                      "Next": "ProcessManifest"
+                    },
+                    {
+                      "Variable": "$.process_manifest_complete",
+                      "BooleanEquals": true,
+                      "Next": "Finalize"
+                    }
+                  ]
                 },
                 "Finalize": {
                   "Type": "Task",

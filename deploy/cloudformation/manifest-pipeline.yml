@@ -659,7 +659,7 @@ Resources:
                   "Resource": "${initManifestLambdaArn}",
                   "Catch": [
                     {
-                      "ErrorEquals": [ "CustomError" ],
+                      "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
                       "Next": "Finalize"
                     },
@@ -705,7 +705,7 @@ Resources:
                   "Next": "ProcessManifest",
                   "Catch": [
                     {
-                      "ErrorEquals": [ "CustomError" ],
+                      "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
                       "Next": "Finalize"
                     },
@@ -726,7 +726,7 @@ Resources:
                   "Resource": "${processManifestLambdaArn}",
                   "Catch": [
                     {
-                      "ErrorEquals": [ "CustomError" ],
+                      "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
                       "Next": "Finalize"
                     },
@@ -1051,7 +1051,7 @@ Resources:
                   "Resource": "${museumExportLambdaArn}",
                   "Catch": [
                     {
-                      "ErrorEquals": [ "CustomError" ],
+                      "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
                       "Next": "AlephExportTask"
                     },
@@ -1073,7 +1073,7 @@ Resources:
                   "Resource": "${alephExportLambdaArn}",
                   "Catch": [
                     {
-                      "ErrorEquals": [ "CustomError" ],
+                      "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
                       "Next": "CurateExportTask"
                     },
@@ -1095,7 +1095,7 @@ Resources:
                   "Resource": "${curateExportLambdaArn}",
                   "Catch": [
                     {
-                      "ErrorEquals": [ "CustomError" ],
+                      "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
                       "Next": "ExportEADsTask"
                     },
@@ -1132,7 +1132,7 @@ Resources:
                   "Resource": "${harvestEADsLambdaArn}",
                   "Catch": [
                     {
-                      "ErrorEquals": [ "CustomError" ],
+                      "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
                       "Next": "FailState"
                     },

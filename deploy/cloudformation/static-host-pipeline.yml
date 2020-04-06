@@ -168,7 +168,7 @@ Resources:
       Name: !Sub '${AWS::StackName}-CodeBuilder'
       Description: 'Builds source web component from GitHub'
       ServiceRole: !Ref CodeBuildRole
-      TimeoutInMinutes: 10
+      TimeoutInMinutes: 30
       Source:
         Type: CODEPIPELINE
         BuildSpec: !Sub |
@@ -431,7 +431,7 @@ Resources:
     Properties:
       Name: !Sub '${AWS::StackName}-CodeProdBuilder'
       ServiceRole: !Ref CodeBuildRole
-      TimeoutInMinutes: 10
+      TimeoutInMinutes: 30
       Source:
         Type: CODEPIPELINE
         BuildSpec: !Sub |

@@ -637,10 +637,21 @@ Resources:
                 Action:
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
+                  - "logs:DescribeLogGroups"
                 Resource: !Sub
                   - "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${ResolvedLogGroup}:*"
                   - ResolvedLogGroup:
                       Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogDelivery"
+                  - "logs:GetLogDelivery"
+                  - "logs:UpdateLogDelivery"
+                  - "logs:DeleteLogDelivery"
+                  - "logs:ListLogDeliveries"
+                  - "logs:PutResourcePolicy"
+                  - "logs:DescribeResourcePolicies"
+                Resource: "*"
 
 
   SchemaStateMachine:
@@ -1039,6 +1050,15 @@ Resources:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
       StateMachineName: !Sub "${AWS::StackName}-StateMachineCreateCSVs"
+      LoggingConfiguration:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !Sub
+                - "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${FindLogGroup}:*"
+                - FindLogGroup:
+                    Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
+        IncludeExecutionData: true
+        Level: ALL
       DefinitionString:
         !Sub
           - |-

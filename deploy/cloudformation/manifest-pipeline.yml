@@ -1050,15 +1050,15 @@ Resources:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
       StateMachineName: !Sub "${AWS::StackName}-StateMachineCreateCSVs"
-      LoggingConfiguration:
-        Destinations:
-          - CloudWatchLogsLogGroup:
-              LogGroupArn: !Sub
-                - "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${FindLogGroup}:*"
-                - FindLogGroup:
-                    Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
-        IncludeExecutionData: true
-        Level: ALL
+      # LoggingConfiguration:
+      #   Destinations:
+      #     - CloudWatchLogsLogGroup:
+      #         LogGroupArn: !Sub
+      #           - "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${FindLogGroup}:*"
+      #           - FindLogGroup:
+      #               Fn::ImportValue: !Sub "${InfrastructureStackName}:LogGroup"
+      #   IncludeExecutionData: true
+      #   Level: ALL
       DefinitionString:
         !Sub
           - |-

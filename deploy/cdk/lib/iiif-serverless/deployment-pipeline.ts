@@ -45,8 +45,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodCDNStackName = `${props.namespace}-image-service-cdn-prod`;
     const sourceBucketParam = ssm.StringParameter.fromStringParameterName(this, 'SourceBucket', props.imageSourceBucketPath);
 
-    const artifactBucket = new Bucket(this, 'artifactBucket', { 
-      encryption: BucketEncryption.KMS_MANAGED, 
+    const artifactBucket = new Bucket(this, 'artifactBucket', {
+      encryption: BucketEncryption.KMS_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
@@ -102,7 +102,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           },
         },
         version: '0.2',
-        artifacts: { 
+        artifacts: {
           files: ['package_output.yml']
         }
       }),
@@ -117,7 +117,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }));
     const buildAction = new codepipelineActions.CodeBuildAction({
       actionName: 'Build',
-      input: appSourceArtifact, 
+      input: appSourceArtifact,
       outputs: [builtCodeArtifact],
       project: build,
     });
@@ -129,7 +129,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       stackName: testStackName,
       adminPermissions: false,
       parameterOverrides: {
-        SourceBucket: sourceBucketParam.stringValue
+        SourceBucket: sourceBucketParam.stringValue,
+        IiifLambdaTimeout: 20
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,
@@ -178,7 +179,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       },
     });
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
-      input: qaSourceArtifact, 
+      input: qaSourceArtifact,
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
@@ -199,7 +200,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       stackName: prodStackName,
       adminPermissions: false,
       parameterOverrides: {
-        SourceBucket: sourceBucketParam.stringValue
+        SourceBucket: sourceBucketParam.stringValue,
+        IiifLambdaTimeout: 20
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,
@@ -247,7 +249,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       },
     });
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
-      input: qaSourceArtifact, 
+      input: qaSourceArtifact,
       project: smokeTestsProdProject,
       actionName: 'SmokeTests',
       runOrder: 98,

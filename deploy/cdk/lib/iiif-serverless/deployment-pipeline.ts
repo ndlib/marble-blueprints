@@ -129,7 +129,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       stackName: testStackName,
       adminPermissions: false,
       parameterOverrides: {
-        SourceBucket: sourceBucketParam.stringValue
+        SourceBucket: sourceBucketParam.stringValue,
+        IiifLambdaTimeout: 20
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,

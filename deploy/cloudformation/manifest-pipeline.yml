@@ -396,11 +396,12 @@ Resources:
                 - "s3:GetObject"
                 - "s3:PutObject"
                 - "s3:PutObjectVersionAcl"
-                - "s3:PutObjectAcl"                       
+                - "s3:PutObjectAcl"
                 - "s3:ListBucket"
                 - "s3:ListBucketVersions"
               Resource:
                 - !GetAtt ProcessBucket.Arn
+                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
       Runtime: python3.7
       Timeout: 90
       CodeUri: init/

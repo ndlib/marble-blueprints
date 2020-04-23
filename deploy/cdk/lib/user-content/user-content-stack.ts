@@ -3,7 +3,8 @@ import dynamodb = require('@aws-cdk/aws-dynamodb');
 import lambda = require('@aws-cdk/aws-lambda');
 import ssm = require('@aws-cdk/aws-ssm');
 import cdk = require('@aws-cdk/core');
-import { Fn } from '@aws-cdk/core'
+import { Fn } from '@aws-cdk/core';
+import { Certificate } from '@aws-cdk/aws-certificatemanager';
 
 export interface UserContentStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string
@@ -89,10 +90,10 @@ export class UserContentStack extends cdk.Stack {
     itemDynamoTable.grantReadWriteData(userContentLambda);
 
     // API Gateway
-    const stage = process.env.STAGE || 'dev'
     const domainStackName = this.node.tryGetContext('domainStackName') || 'libraries-domain'
+    const stage = (this.node.tryGetContext('namespace') === 'marble-prod') ? 'prod' : 'test'
     const domainName = (stage === 'prod') ? 'marble-user-content.library.nd.edu' : 'marble-user-content-test.library.nd.edu'
-    const domainCert = const domainCert = Certificate.fromCertificateArn(this, 'LibraryCertificate', Fn.importValue(`${domainStackName}:ACMCertificateARN`))
+    const domainCert = Certificate.fromCertificateArn(this, 'LibraryCertificate', Fn.importValue(`${domainStackName}:ACMCertificateARN`))
     const api = new apigateway.RestApi(this, 'userContentApi', {
       restApiName: 'Marble User Content Service',
       defaultCorsPreflightOptions: {

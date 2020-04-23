@@ -36,6 +36,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     super(scope, id, props);
 
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
+    const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`;
     const resolvedDomain = Fn.importValue(`${props.domainStackName}:DomainName`);
     const testHost = `${props.hostnamePrefix}-test.${resolvedDomain}`;
     const testStackName = `${props.namespace}-image-service-test`;
@@ -81,6 +82,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     const builtCodeArtifact = new codepipeline.Artifact('BuiltCode');
     const build = new PipelineProject(this, 'IIIFServerlessBuild', {
+      environment: {
+        buildImage: LinuxBuildImage.fromDockerRegistry('lambci/lambda:build-nodejs12.x'),
+      },
       buildSpec: BuildSpec.fromObject({
         phases: {
           install: {
@@ -88,7 +92,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
               'cd $CODEBUILD_SRC_DIR/dependencies/nodejs',
               'npm install',
             ],
-            'runtime-versions': Runtime.NODEJS_10_X,
           },
           build: {
             commands: [
@@ -130,7 +133,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       adminPermissions: false,
       parameterOverrides: {
         SourceBucket: sourceBucketParam.stringValue,
-        IiifLambdaTimeout: 20
+        IiifLambdaTimeout: '20'
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,
@@ -158,7 +161,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       runOrder: 2,
     });
 
-    const smokeTestsProject = new PipelineProject(this, 'ResearchAwardSmokeTests', {
+    const smokeTestsProject = new PipelineProject(this, 'IIIFServerlessSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {
           build: {
@@ -189,7 +192,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const approvalTopic = new Topic(this, 'ApprovalTopic');
     const approvalAction = new ManualApprovalAction({
       actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testHost} and is awaiting your approval. If you approve these changes, they will be deployed to https://${prodHost}.`,
+      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testHost} and is awaiting your approval. If you approve these changes, they will be deployed to https://${prodHost}.\n\n*Application Changes:*\n${appSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.\n\n*Infrastructure Changes:*\n${infraSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${infraRepoUrl}/commit/${infraSourceAction.variables.commitId}.`,
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     });
@@ -201,7 +204,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       adminPermissions: false,
       parameterOverrides: {
         SourceBucket: sourceBucketParam.stringValue,
-        IiifLambdaTimeout: 20
+        IiifLambdaTimeout: '20'
       },
       capabilities: [
         CloudFormationCapabilities.AUTO_EXPAND,
@@ -228,7 +231,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       runOrder: 2,
     });
 
-    const smokeTestsProdProject = new PipelineProject(this, 'ResearchAwardSmokeTestsProd', {
+    const smokeTestsProdProject = new PipelineProject(this, 'IIIFServerlessSmokeTestsProd', {
       buildSpec: BuildSpec.fromObject({
         phases: {
           build: {

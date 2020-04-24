@@ -3,14 +3,19 @@ import dynamodb = require('@aws-cdk/aws-dynamodb');
 import lambda = require('@aws-cdk/aws-lambda');
 import ssm = require('@aws-cdk/aws-ssm');
 import cdk = require('@aws-cdk/core');
-import { Fn } from '@aws-cdk/core';
+import { Fn, Duration } from '@aws-cdk/core';
 import { Certificate } from '@aws-cdk/aws-certificatemanager';
+import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53';
 
 export interface UserContentStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string
   readonly allowedOrigins: string
   readonly tokenAudiencePath: string
   readonly tokenIssuerPath: string
+  readonly hostnamePrefix: string
+  readonly domainStackName: string
+  readonly createDns: boolean
+  readonly namespace: string
 };
 
 export class UserContentStack extends cdk.Stack {
@@ -90,12 +95,10 @@ export class UserContentStack extends cdk.Stack {
     itemDynamoTable.grantReadWriteData(userContentLambda);
 
     // API Gateway
-    const domainStackName = this.node.tryGetContext('domainStackName') || 'libraries-domain'
-    const stage = (this.node.tryGetContext('namespace') === 'marble-prod') ? 'prod' : 'test'
-    const domainName = (stage === 'prod') ? 'marble-user-content.library.nd.edu' : 'marble-user-content-test.library.nd.edu'
-    const domainCert = Certificate.fromCertificateArn(this, 'LibraryCertificate', Fn.importValue(`${domainStackName}:ACMCertificateARN`))
+    const domainName = `${props.hostnamePrefix}.` + Fn.importValue(`${props.domainStackName}:DomainName`);
+    const domainCert = Certificate.fromCertificateArn(this, 'MarbleCertificate', Fn.importValue(`${props.domainStackName}:ACMCertificateARN`))
     const api = new apigateway.RestApi(this, 'userContentApi', {
-      restApiName: 'Marble User Content Service',
+      restApiName: `${props.namespace}-user-content`,
       defaultCorsPreflightOptions: {
         allowOrigins: [props.allowedOrigins],
         allowCredentials: false,
@@ -103,12 +106,23 @@ export class UserContentStack extends cdk.Stack {
       },
       domainName: {
         certificate: domainCert,
-        domainName: domainName,
+        domainName,
       },
       endpointExportName: `${this.stackName}-api-url`
     });
     const userContentIntegration = new apigateway.LambdaIntegration(userContentLambda);
 
+    if (props.createDns) {
+      new CnameRecord(this, `${id}-Route53CnameRecord`, {
+        recordName: props.hostnamePrefix,
+        domainName: api.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+        zone: HostedZone.fromHostedZoneAttributes(this, 'ApiDomainHostedZone', {
+          hostedZoneId: Fn.importValue(`${props.domainStackName}:Zone`),
+          zoneName: Fn.importValue(`${props.domainStackName}:DomainName`),
+        }),
+        ttl: Duration.minutes(15),
+      })
+    }
     // user endpoints
     const user = api.root.addResource('user');
     const userId = user.addResource('{id}')

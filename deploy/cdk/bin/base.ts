@@ -36,6 +36,10 @@ const userContentContext = {
   infraRepoName: app.node.tryGetContext('userContent:infraRepoName'),
   infraSourceBranch: app.node.tryGetContext('userContent:infraSourceBranch'),
   notificationReceivers: app.node.tryGetContext('userContent:deployNotificationReceivers'),
+  hostnamePrefix: app.node.tryGetContext('userContent:hostnamePrefix'),
+  domainStackName,
+  createDns,
+  namespace,
 };
 new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
 new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {

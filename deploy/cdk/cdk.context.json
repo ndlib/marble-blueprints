@@ -26,5 +26,5 @@
   "userContent:infraRepoOwner": "ndlib",
   "userContent:infraRepoName": "marble-blueprints",
   "userContent:infraSourceBranch": "master",
-  "userContent:hostnamePrefix": "user-content"
+  "userContent:hostnamePrefix": "marble-user-content"
 }

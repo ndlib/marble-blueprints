@@ -64,6 +64,8 @@ export class NamespacedPolicy {
         Fn.sub('arn:aws:apigateway:${AWS::Region}::/account'),
         Fn.sub('arn:aws:apigateway:${AWS::Region}::/restapis'),
         Fn.sub('arn:aws:apigateway:${AWS::Region}::/restapis/*'),
+        Fn.sub('arn:aws:apigateway:${AWS::Region}::/domainnames/*'),
+        Fn.sub('arn:aws:apigateway:${AWS::Region}::/domainnames'),
       ],
       actions: [
         'apigateway:*',

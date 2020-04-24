@@ -48,6 +48,8 @@ new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployme
   owner,
   contact,
   slackNotifyStackName,
+  domainStackName,
+  createDns,
   ...userContentContext,
 });
 

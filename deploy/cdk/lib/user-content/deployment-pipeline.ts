@@ -10,6 +10,7 @@ import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk';
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
 import { NamespacedPolicy } from '../namespaced-policy';
 import { Artifact } from '@aws-cdk/aws-codepipeline';
+import { Fn } from '@aws-cdk/core';
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
@@ -27,6 +28,9 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly slackNotifyStackName?: string;
   readonly allowedOrigins: string;
   readonly notificationReceivers?: string;
+  readonly domainStackName: string;
+  readonly hostnamePrefix: string;
+  readonly createDns: boolean;
 };
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -37,7 +41,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-user-content`;
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, outputArtifact: Artifact) => {
+    const createDeploy = (targetStack: string, namespace: string, outputArtifact: Artifact, hostnamePrefix: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -57,6 +61,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
           "userContent:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/src",
           "userContent:allowedOrigins": props.allowedOrigins,
+          "userContent:hostnamePrefix": hostnamePrefix,
+          "domainStackName": props.domainStackName,
+          "createDns": props.createDns ? "true" : "false",
         },
         postDeployCommands: [
           // This API isn't using DNS, and the endpoint isn't created until the deploy command completes,
@@ -82,6 +89,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.dynamodb(targetStack));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack));
+
+      if(props.createDns){
+        const hostedZone = Fn.importValue(`${props.domainStackName}:Zone`);
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
+      }
       return cdkDeploy;
     }
 
@@ -112,7 +124,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testOutputArtifact = new codepipeline.Artifact('TestDeploy');
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testOutputArtifact);
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testOutputArtifact, `${props.hostnamePrefix}-test`);
     const smokeTestsProject = new PipelineProject(this, 'MarbleUserContentSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {
@@ -160,7 +172,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Production
     const prodOutputArtifact = new codepipeline.Artifact('ProdDeploy');
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodOutputArtifact);
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodOutputArtifact, props.hostnamePrefix);
     const smokeTestsProdProject = new PipelineProject(this, 'MarbleUserContentProdSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {

@@ -10,6 +10,7 @@ import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk';
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
 import { NamespacedPolicy } from '../namespaced-policy';
 import { Artifact } from '@aws-cdk/aws-codepipeline';
+import { Fn } from '@aws-cdk/core';
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
@@ -27,6 +28,9 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly slackNotifyStackName?: string;
   readonly allowedOrigins: string;
   readonly notificationReceivers?: string;
+  readonly domainStackName: string;
+  readonly hostnamePrefix: string;
+  readonly createDns: boolean;
 };
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -37,7 +41,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-user-content`;
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, outputArtifact: Artifact) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -57,19 +61,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
           "userContent:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/src",
           "userContent:allowedOrigins": props.allowedOrigins,
+          "userContent:hostnamePrefix": hostnamePrefix,
+          "domainStackName": props.domainStackName,
+          "createDns": props.createDns ? "true" : "false",
         },
-        postDeployCommands: [
-          // This API isn't using DNS, and the endpoint isn't created until the deploy command completes,
-          // so we have to do a lookup here at execution time and pass it to the next test stage instead
-          // of importing it. If we change this app to create the test/prod stacks as a precondition to
-          // deploying the pipeline, then we can change this to just import it.
-          `aws cloudformation describe-stacks \
-            --stack-name ${targetStack} \
-            --query 'Stacks[].Outputs[?contains(OutputKey,\`userContentApiEndpoint\`)].OutputValue' \
-            --output text > $CODEBUILD_SRC_DIR/apiEndpoint.txt`,
-        ],
-        outputFiles: ['apiEndpoint.txt'],
-        outputArtifacts: [outputArtifact],
       });
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['ssm:GetParameters'],
@@ -82,6 +77,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.dynamodb(targetStack));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack));
+
+      if(props.createDns){
+        const hostedZone = Fn.importValue(`${props.domainStackName}:Zone`);
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
+      }
       return cdkDeploy;
     }
 
@@ -111,20 +111,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
     });
 
     // Deploy to Test
-    const testOutputArtifact = new codepipeline.Artifact('TestDeploy');
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testOutputArtifact);
+    const testHostnamePrefix = `${props.hostnamePrefix}-test`;
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix);
+    const testHostname = `https://${testHostnamePrefix}.` + Fn.importValue(`${props.domainStackName}:DomainName`);
     const smokeTestsProject = new PipelineProject(this, 'MarbleUserContentSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {
-          pre_build: {
-            commands: [
-              'cat $CODEBUILD_SRC_DIR_TestDeploy/apiEndpoint.txt',
-              'apiEndpoint=$(cat $CODEBUILD_SRC_DIR_TestDeploy/apiEndpoint.txt)'
-            ]
-          },
           build: {
             commands: [
-              'newman run tests/postman/collection.json --folder Smoke --env-var api=$apiEndpoint'
+              `newman run tests/postman/collection.json --folder Smoke --env-var api=${testHostname}`
             ],
           },
         },
@@ -136,7 +131,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
     });
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
       input: appSourceArtifact,
-      extraInputs: [testOutputArtifact],
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
@@ -159,20 +153,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    const prodOutputArtifact = new codepipeline.Artifact('ProdDeploy');
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodOutputArtifact);
+    const prodHostnamePrefix = props.hostnamePrefix;
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix);
+    const prodHostname = `https://${prodHostnamePrefix}.` + Fn.importValue(`${props.domainStackName}:DomainName`);
     const smokeTestsProdProject = new PipelineProject(this, 'MarbleUserContentProdSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {
-          pre_build: {
-            commands: [
-              'cat $CODEBUILD_SRC_DIR_ProdDeploy/apiEndpoint.txt',
-              'apiEndpoint=$(cat $CODEBUILD_SRC_DIR_ProdDeploy/apiEndpoint.txt)'
-            ]
-          },
           build: {
             commands: [
-              'newman run tests/postman/collection.json --folder Smoke --env-var api=$apiEndpoint'
+              `newman run tests/postman/collection.json --folder Smoke --env-var api=${prodHostname}`
             ],
           },
         },
@@ -184,7 +173,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
     });
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
       input: appSourceArtifact,
-      extraInputs: [prodOutputArtifact],
       project: smokeTestsProdProject,
       actionName: 'SmokeTests',
       runOrder: 98,

@@ -715,6 +715,8 @@ Resources:
               Name: "Build"
               InputArtifacts:
                 - Name: SourceCode
+              OutputArtifacts:
+                - Name: ProdBuiltCode
               ActionTypeId:
                 Owner: AWS
                 Category: Build
@@ -730,7 +732,7 @@ Resources:
                 Version: '1'
                 Provider: CodeBuild
               InputArtifacts:
-              - Name: BuiltCode
+              - Name: ProdBuiltCode
               OutputArtifacts:
               - Name: ProdDeployOutput
               Configuration:

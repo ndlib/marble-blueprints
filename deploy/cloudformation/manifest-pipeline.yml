@@ -1178,7 +1178,22 @@ Resources:
                       "Next": "AlephExportTask"
                     }
                   ],
-                  "Next": "AlephExportTask"
+                  "Next": "MuseumLoopChoice"
+                },
+                "MuseumLoopChoice": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.museumHarvestComplete",
+                      "BooleanEquals": false,
+                      "Next": "MuseumExportTask"
+                    },
+                    {
+                      "Variable": "$.museumHarvestComplete",
+                      "BooleanEquals": true,
+                      "Next": "AlephExportTask"
+                    }
+                  ]
                 },
                 "AlephExportTask": {
                   "Type": "Task",

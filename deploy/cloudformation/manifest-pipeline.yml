@@ -960,9 +960,14 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
+                - "s3:GetObject"
                 - "s3:PutObject"
+                - "s3:DeleteObject"
+                - "s3:ListBucket"
               Resource:
+                - !GetAtt ProcessBucket.Arn
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath

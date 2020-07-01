@@ -965,7 +965,9 @@ Resources:
                 - "s3:DeleteObject"
                 - "s3:ListBucket"
               Resource:
+                - !GetAtt ProcessBucket.Arn
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath

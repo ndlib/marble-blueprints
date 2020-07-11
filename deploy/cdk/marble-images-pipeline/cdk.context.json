@@ -1,0 +1,22 @@
+{
+  "projectName": "marble-images-blueprints",
+  "description": "Infrastucture for marble images service",
+  "envSettings": {
+    "test": {
+      "rbscBucket": "marble-rbsc",
+      "processBucket": "marble-image",
+      "imageBucket": "marble-image"
+    },
+    "prod": {
+      "rbscBucket": "libnd-smb-rbsc",
+      "processBucket": "marble-manifest-prod-processbucket-kskqchthxshg",
+      "imageBucket": "marble-data-broker-publicbucket-1kvqtwnvkhra2"
+    }
+  },
+  "gitTokenPath": "/all/github/ndlib-git",
+  "gitOwner": "ndlib",
+  "marbleImagesRepository": "marble-images",
+  "marbleImagesBranch": "master",
+  "blueprintsRepository": "marble-blueprints",
+  "blueprintsBranch": "master"
+}

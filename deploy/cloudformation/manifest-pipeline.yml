@@ -884,53 +884,6 @@ Resources:
               - !Sub ${ManifestBucket.Arn}/*
 
 
-  HarvestEADsLambdaFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: handler.run
-      Runtime: python3.7
-      Timeout: 900
-      CodeUri: harvest_eads/
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - 's3:ListObjects'
-                - 's3:ListBucket'
-              Resource:
-                - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}"
-                - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}/*"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - "ssm:GetParametersByPath"
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - "s3:PutObject"
-                - 's3:GetObject'
-              Resource:
-                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
-      Environment:
-        Variables:
-          SSM_KEY_BASE: !Ref AppConfigPath
-          SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-StateMachineCreateCSVs"
-
-
   MuseumExportLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -967,7 +920,8 @@ Resources:
               Resource:
                 - !GetAtt ProcessBucket.Arn
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
-
+                - !GetAtt ManifestBucket.Arn
+                - !Join ["", [!GetAtt ManifestBucket.Arn, "/*"]]
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
@@ -1014,6 +968,7 @@ Resources:
                 - "s3:PutObject"
               Resource:
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+                - !Join ["", [!GetAtt ManifestBucket.Arn, "/*"]]
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
@@ -1052,6 +1007,7 @@ Resources:
                 - "s3:PutObject"
               Resource:
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+                - !Join ["", [!GetAtt ManifestBucket.Arn, "/*"]]
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
@@ -1099,6 +1055,7 @@ Resources:
                 - 's3:GetObject'
               Resource:
                 - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+                - !Join ["", [!GetAtt ManifestBucket.Arn, "/*"]]
       Environment:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
@@ -1229,17 +1186,17 @@ Resources:
                     {
                       "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
-                      "Next": "ExportEADsTask"
+                      "Next": "FailState"
                     },
                     {
                       "ErrorEquals": [ "States.TaskFailed" ],
                       "ResultPath": "$.unexpected",
-                      "Next": "ExportEADsTask"
+                      "Next": "FailState"
                     },
                     {
                       "ErrorEquals": [ "States.ALL" ],
                       "ResultPath": "$.unexpected",
-                      "Next": "ExportEADsTask"
+                      "Next": "FailState"
                     }
                   ],
                   "Next": "CurateLoopChoice"
@@ -1255,43 +1212,6 @@ Resources:
                     {
                       "Variable": "$.curateHarvestComplete",
                       "BooleanEquals": true,
-                      "Next": "ExportEADsTask"
-                    }
-                  ]
-                },
-                "ExportEADsTask": {
-                  "Type": "Task",
-                  "Resource": "${harvestEADsLambdaArn}",
-                  "Catch": [
-                    {
-                      "ErrorEquals": [ "Lambda.Unknown" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "FailState"
-                    },
-                    {
-                      "ErrorEquals": [ "States.TaskFailed" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "FailState"
-                    },
-                    {
-                      "ErrorEquals": [ "States.ALL" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "FailState"
-                    }
-                  ],
-                  "Next": "EADLoopChoice"
-                },
-                "EADLoopChoice": {
-                  "Type": "Choice",
-                  "Choices": [
-                    {
-                      "Variable": "$.eadHarvestComplete",
-                      "BooleanEquals": false,
-                      "Next": "ExportEADsTask"
-                    },
-                    {
-                      "Variable": "$.eadHarvestComplete",
-                      "BooleanEquals": true,
                       "Next": "SuccessState"
                     }
                   ]
@@ -1306,7 +1226,6 @@ Resources:
             }
           -
             {
-              harvestEADsLambdaArn: !GetAtt [HarvestEADsLambdaFunction, Arn],
               museumExportLambdaArn:  !GetAtt [MuseumExportLambdaFunction, Arn],
               alephExportLambdaArn:  !GetAtt [AlephExportLambdaFunction, Arn],
               curateExportLambdaArn:  !GetAtt [CurateExportLambdaFunction, Arn],

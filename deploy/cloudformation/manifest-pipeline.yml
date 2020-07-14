@@ -1238,17 +1238,17 @@ Resources:
                     {
                       "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
-                      "Next": "FailState"
+                      "Next": "CollectionsApiTask"
                     },
                     {
                       "ErrorEquals": [ "States.TaskFailed" ],
                       "ResultPath": "$.unexpected",
-                      "Next": "FailState"
+                      "Next": "CollectionsApiTask"
                     },
                     {
                       "ErrorEquals": [ "States.ALL" ],
                       "ResultPath": "$.unexpected",
-                      "Next": "FailState"
+                      "Next": "CollectionsApiTask"
                     }
                   ],
                   "Next": "CurateLoopChoice"

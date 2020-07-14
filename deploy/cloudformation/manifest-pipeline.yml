@@ -896,13 +896,6 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
                 - "ssm:GetParametersByPath"
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
@@ -926,7 +919,6 @@ Resources:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
 
 
   AlephExportLambdaFunction:
@@ -950,13 +942,6 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
                 - "ssm:GetParametersByPath"
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
@@ -973,7 +958,6 @@ Resources:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
 
 
   CurateExportLambdaFunction:
@@ -984,13 +968,6 @@ Resources:
       Timeout: 900
       CodeUri: curate_export/
       Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
@@ -1012,7 +989,6 @@ Resources:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
 
 
   ArchivesSpaceExportLambdaFunction:
@@ -1036,13 +1012,6 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
                 - "ssm:GetParametersByPath"
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
@@ -1060,7 +1029,6 @@ Resources:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
 
 
   CollectionsApiLambdaFunction:
@@ -1080,13 +1048,6 @@ Resources:
               Resource:
                 - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}"
                 - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}/*"
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'states:ListStateMachines'
-                - 'states:StartExecution'
-              Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
@@ -1112,7 +1073,6 @@ Resources:
         Variables:
           SSM_KEY_BASE: !Ref AppConfigPath
           SENTRY_DSN: !Ref SentryDsn
-          STATE_MACHINE: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-MarbleSourceSystemHarvest"
 
 
   MarbleSourceSystemHarvest:

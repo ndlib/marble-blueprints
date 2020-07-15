@@ -110,6 +110,13 @@ export default class MarbleImagesStack extends cdk.Stack {
     taskRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       resources: [
+        cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/marble*'),
+      ],
+      actions: ["ssm:GetParameter"],
+    }))
+    taskRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      resources: [
         rbscBucket.bucketArn + '/*',
       ],
       actions: [

@@ -110,10 +110,25 @@ export class MarbleImagesBuildRole extends Role {
     this.addToPolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
+        resources: ['*'],
+        actions: ['ecr:GetAuthorizationToken'],
+      }),
+    )
+    this.addToPolicy(
+      new PolicyStatement({
+        effect: Effect.ALLOW,
         resources: [
           Fn.sub('arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/aws-cdk/assets'),
         ],
-        actions: ['ecr:DescribeRepositories', 'ecr:DescribeImages'],
+        actions: [
+          'ecr:DescribeRepositories',
+          'ecr:DescribeImages',
+          'ecr:InitiateLayerUpload',
+          'ecr:UploadLayerPart',
+          'ecr:CompleteLayerUpload',
+          'ecr:BatchCheckLayerAvailability',
+          'ecr:PutImage',
+        ],
       }),
     )
 
@@ -164,7 +179,12 @@ export class MarbleImagesBuildRole extends Role {
       new PolicyStatement({
         effect: Effect.ALLOW,
         resources: ['*'],
-        actions: ['ecs:Describe*', 'ecs:CreateCluster', 'ecs:RegisterTaskDefinition'],
+        actions: [
+            'ecs:Describe*',
+            'ecs:CreateCluster',
+            'ecs:RegisterTaskDefinition',
+            'ecs:DeregisterTaskDefinition',
+        ],
       }),
     )
 

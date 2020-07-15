@@ -17,6 +17,7 @@ export class MarbleImagesBuildProject extends codebuild.PipelineProject {
     const pipelineProps = {
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_4_0,
+        privileged: true,
         environmentVariables: {
           STACK_NAME: {
             value: `${serviceStackPrefix}-${props.stage}`,

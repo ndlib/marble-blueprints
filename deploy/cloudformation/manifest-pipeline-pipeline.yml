@@ -360,8 +360,10 @@ Resources:
               - "events:PutTargets"
               - "events:PutRule"
               - "events:DescribeRule"
+              - "events:RemoveTargets"
             Resource:
               - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartHarvestAndCreateCSVRule*"
+              - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartHarvestAndCreateStandardJsonRule*"
               - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartManifestPipelineRule*"
             Effect: Allow
       Roles:

@@ -93,7 +93,7 @@ Parameters:
 
 Conditions:
   CreateDNS: !Equals [ !Ref CreateDNSRecord, 'True' ]
-  CreateHarvestAndCSVRule: !Equals [ !Ref CreateHarvestRule, 'True' ]
+  CreateHarvestAndStdJsonCondition: !Equals [ !Ref CreateHarvestRule, 'True' ]
 
 Outputs:
   SchemaStateMachine:
@@ -626,7 +626,6 @@ Resources:
                   - "events:PutTargets"
                   - "events:PutRule"
                   - "events:DescribeRule"
-                  - "events:RemoveTargets"
                 Resource:
                   - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForECSTaskRule"
         - PolicyName: GrantAccessToRulePolicy
@@ -1270,9 +1269,9 @@ Resources:
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
 
 
-  StartHarvestAndCreateCSVRule:
+  StartHarvestAndCreateStandardJsonRule:
     Type: AWS::Events::Rule
-    Condition: CreateHarvestAndCSVRule
+    Condition: CreateHarvestAndStdJsonCondition
     Properties:
       Description: "Starts the Step Functions to harvest metadata and create standard json."
       ScheduleExpression: "cron(0 6 * * ? *)"
@@ -1285,7 +1284,7 @@ Resources:
 
   StartManifestPipelineRule:
     Type: AWS::Events::Rule
-    Condition: CreateHarvestAndCSVRule
+    Condition: CreateHarvestAndStdJsonCondition
     Properties:
       Description: "Starts the Step Functions to process images and create manifests."
       ScheduleExpression: "cron(0 8 * * ? *)"

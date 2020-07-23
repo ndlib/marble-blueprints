@@ -362,9 +362,7 @@ Resources:
               - "events:DescribeRule"
               - "events:RemoveTargets"
             Resource:
-              - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartHarvestAndCreateCSVRule*"
-              - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartHarvestAndCreateStandardJsonRule*"
-              - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-StartManifestPipelineRule*"
+              - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${ProdStackName}-*"
             Effect: Allow
       Roles:
         - !Ref CloudFormationTrustRole

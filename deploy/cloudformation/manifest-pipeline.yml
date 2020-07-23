@@ -1075,6 +1075,50 @@ Resources:
           SENTRY_DSN: !Ref SentryDsn
 
 
+  ObjectFilesApiLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.run
+      Runtime: python3.7
+      Timeout: 900
+      CodeUri: object_files_api/
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - 's3:ListObjects'
+                - 's3:ListBucket'
+              Resource:
+                - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}"
+                - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}/*"
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "ssm:GetParametersByPath"
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppConfigPath}/*"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MarbleProcessingKeyPath}/*"
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:PutObject"
+                - 's3:GetObject'
+                - "s3:ListBucket"
+                - "s3:ListBucketVersions"
+              Resource:
+                - !Join ["", [!GetAtt ProcessBucket.Arn, "/*"]]
+                - !Join ["", [!GetAtt ManifestBucket.Arn, "/*"]]
+                - !GetAtt ProcessBucket.Arn
+                - !GetAtt ManifestBucket.Arn
+      Environment:
+        Variables:
+          SSM_KEY_BASE: !Ref AppConfigPath
+          SENTRY_DSN: !Ref SentryDsn
+
+
   MarbleSourceSystemHarvest:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
@@ -1235,6 +1279,28 @@ Resources:
                     {
                       "ErrorEquals": [ "Lambda.Unknown" ],
                       "ResultPath": "$.unexpected",
+                      "Next": "ObjectFilesApiTask"
+                    },
+                    {
+                      "ErrorEquals": [ "States.TaskFailed" ],
+                      "ResultPath": "$.unexpected",
+                      "Next": "ObjectFilesApiTask"
+                    },
+                    {
+                      "ErrorEquals": [ "States.ALL" ],
+                      "ResultPath": "$.unexpected",
+                      "Next": "ObjectFilesApiTask"
+                    }
+                  ],
+                  "Next": "ObjectFilesApiTask"
+                },
+                "ObjectFilesApiTask": {
+                  "Type": "Task",
+                  "Resource": "${objectFilesApiLambdaArn}",
+                  "Catch": [
+                    {
+                      "ErrorEquals": [ "Lambda.Unknown" ],
+                      "ResultPath": "$.unexpected",
                       "Next": "FailState"
                     },
                     {
@@ -1265,6 +1331,7 @@ Resources:
               curateExportLambdaArn:  !GetAtt [CurateExportLambdaFunction, Arn],
               archivesSpaceExportLambdaArn:  !GetAtt [ArchivesSpaceExportLambdaFunction, Arn],
               collectionsApiLambdaArn:  !GetAtt [CollectionsApiLambdaFunction, Arn],
+              objectFilesApiLambdaArn:  !GetAtt [ObjectFilesApiLambdaFunction, Arn],
             }
       RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
 

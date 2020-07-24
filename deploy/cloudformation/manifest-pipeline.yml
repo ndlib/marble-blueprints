@@ -1081,6 +1081,7 @@ Resources:
       Handler: handler.run
       Runtime: python3.7
       Timeout: 900
+      MemorySize: 512
       CodeUri: object_files_api/
       Policies:
         - Version: 2012-10-17

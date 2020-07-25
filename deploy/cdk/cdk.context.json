@@ -16,6 +16,19 @@
     "qaRepoName": "iiif-qa",
     "qaSourceBranch": "master"
   },
+  "imageProcessing": {
+    "rbscBucketName": "marble-rbsc",
+    "processBucketName": "marble-image",
+    "imageBucketName": "marble-image",
+    "lambdaCodePath": "../../../marble-images/s3_event",
+    "dockerfilePath": "../../../marble-images/",
+    "appRepoOwner": "ndlib",
+    "appRepoName": "marble-images",
+    "appRepoBranch": "master",
+    "infraRepoOwner": "ndlib",
+    "infraRepoName": "marble-blueprints",
+    "infraRepoBranch": "img_processing"
+  },
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",
   "userContent:tokenAudiencePath": "/all/stacks/marble-user-content/tokenAudiencePath",

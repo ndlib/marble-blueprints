@@ -24,10 +24,10 @@
     "dockerfilePath": "../../../marble-images/",
     "appRepoOwner": "ndlib",
     "appRepoName": "marble-images",
-    "appRepoBranch": "master",
+    "appSourceBranch": "layout_change",
     "infraRepoOwner": "ndlib",
     "infraRepoName": "marble-blueprints",
-    "infraRepoBranch": "img_processing"
+    "infraSourceBranch": "img_processing"
   },
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",

@@ -1,12 +1,16 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild';
+import { BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild';
 import codepipeline = require('@aws-cdk/aws-codepipeline');
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions');
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
 import { PolicyStatement } from '@aws-cdk/aws-iam';
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
+import { Topic } from '@aws-cdk/aws-sns';
 import cdk = require('@aws-cdk/core');
-import { CloudFormationCapabilities } from '@aws-cdk/aws-cloudformation';
-
+import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk';
+import { CDKRedDeploy } from '../cdk-red-deploy';
+import { NamespacedPolicy } from '../namespaced-policy';
+import { Artifact } from '@aws-cdk/aws-codepipeline';
+import { Fn } from '@aws-cdk/core';
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
@@ -19,19 +23,50 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly namespace: string;
   readonly owner: string;
   readonly contact: string;
+  readonly tokenAudiencePath: string;
+  readonly tokenIssuerPath: string;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
-  readonly domainStackName: string;
 };
 
 export class DeploymentPipelineStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props);
 
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
-    const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`;
-    const testStackName = `${props.namespace}-image-test`;
-    const prodStackName = `${props.namespace}-image-prod`;
+    const testStackName = `${props.namespace}-test-user-content`;
+    const prodStackName = `${props.namespace}-prod-user-content`;
+
+    // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
+    const createDeploy = (targetStack: string, namespace: string) => {
+      const cdkDeploy = new CDKRedDeploy(this, `${namespace}-deploy`, {
+        targetStack,
+        dependsOnStacks: [],
+        infraSourceArtifact,
+        appSourceArtifact,
+        appBuildCommands: [],
+        cdkDirectory: 'deploy/cdk',
+        namespace: `${namespace}`,
+        additionalContext: {
+          description: "Image processing",
+          projectName: "marble",
+          owner: props.owner,
+          contact: props.contact,
+          "lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/s3_event",
+          "dockerfilePath": "$CODEBUILD_SRC_DIR_AppCode/",
+        },
+      });
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: ['ssm:GetParameters'],
+        resources:[
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.tokenAudiencePath), 
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.tokenIssuerPath),
+        ],
+      }));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack));
+
+      return cdkDeploy;
+    }
 
     const artifactBucket = new Bucket(this, 'artifactBucket', { 
       encryption: BucketEncryption.KMS_MANAGED, 
@@ -58,90 +93,12 @@ export class DeploymentPipelineStack extends cdk.Stack {
         repo: props.infraRepoName,
     });
 
-    const builtCodeArtifact = new codepipeline.Artifact('BuiltCode');
-    const build = new PipelineProject(this, 'ImageProcessingBuild', {
-      environment: {
-        buildImage: LinuxBuildImage.STANDARD_4_0,
-        privileged: true,
-        environmentVariables: {
-          STACK_NAME: {
-            value: testStackName,
-            type: BuildEnvironmentVariableType.PLAINTEXT,
-          },
-          CI: {
-            value: 'true',
-            type: BuildEnvironmentVariableType.PLAINTEXT,
-          },
-          CONTACT: {
-            value: props.contact,
-            type: BuildEnvironmentVariableType.PLAINTEXT,
-          },
-          OWNER: {
-            value: props.owner,
-            type: BuildEnvironmentVariableType.PLAINTEXT,
-          },
-        },
-      },
-      buildSpec: BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          install: {
-            commands: [
-              'yarn install',
-            ],
-          },
-          build: {
-            commands: [
-              'cd $CODEBUILD_SRC_DIR',
-              'echo FOO',
-              'echo $CODEBUILD_SRC_DIR_AppCode',
-              'echo MOVE',
-              'echo $CODEBUILD_SRC_DIR_InfraCode',
-              'ls -ld $CODEBUILD_SRC_DIR_InfraCode/*',
-              'ls -ld $CODEBUILD_SRC_DIR_InfraCode/deploy/cdk/lib/image-processing/*',
-              'echo TRIAL_1',
-              `aws cloudformation package \
-                --template-file ./template.yml \
-                --s3-bucket ${artifactBucket.bucketName} \
-                --s3-prefix 'CloudformationPackages' \
-                --output-template-file package_output.yml`,
-            ]
-          },
-        },
-        artifacts: {
-          files: ['package_output.yml']
-        }
-      }),
-    });
-    build.addToRolePolicy(new PolicyStatement({
-      actions: [
-        's3:ListBucket',
-        's3:GetObject',
-        's3:PutObject',
-      ],
-      resources: [artifactBucket.bucketArn]
-    }));
-    const buildAction = new codepipelineActions.CodeBuildAction({
-      actionName: 'Build',
-      input: appSourceArtifact,
-      extraInputs: [infraSourceArtifact],
-      outputs: [builtCodeArtifact],
-      project: build,
-    });
-    const builtTemplatePath = new codepipeline.ArtifactPath(builtCodeArtifact, 'package_output.yml');
-    const deployTestAction = new codepipelineActions.CloudFormationCreateUpdateStackAction({
-      actionName: 'Deploy',
-      templatePath: builtTemplatePath,
-      stackName: testStackName,
-      adminPermissions: false,
-      capabilities: [
-        CloudFormationCapabilities.AUTO_EXPAND,
-        CloudFormationCapabilities.ANONYMOUS_IAM,
-      ],
-      runOrder: 1,
-    });
+    // Deploy to Test
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`);
 
+    console.log("UNCOMMENT APPROVAL STEP")
     // Approval
+    // const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
     // const approvalTopic = new Topic(this, 'ApprovalTopic');
     // const approvalAction = new ManualApprovalAction({
     //   actionName: 'Approval',
@@ -156,7 +113,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     //   });
     // }
 
-    // // Deploy to Production
+    // Deploy to Production
     // const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`);
 
     // Pipeline
@@ -168,20 +125,20 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [buildAction],
-          stageName: 'Build',
-        },
-        {
-          actions: [deployTestAction],
+          actions: [deployTest.action],
           stageName: 'Test',
         },
+        // {
+        //   actions: [deployProd.action],
+        //   stageName: 'Production',
+        // }
       ],
     });
-    // if(props.notificationReceivers){
-    //   const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
-    //     pipeline,
-    //     receivers: props.notificationReceivers,
-    //   });
-    // }
+    if(props.notificationReceivers){
+      const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
+        pipeline,
+        receivers: props.notificationReceivers,
+      });
+    }
   }
 }

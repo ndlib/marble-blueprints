@@ -2,6 +2,7 @@
 import { App } from '@aws-cdk/core';
 import { StackTags } from '@ndlib/ndlib-cdk';
 import 'source-map-support/register';
+import { FoundationStack } from '../lib/foundation';
 import IIIF = require('../lib/iiif-serverless');
 import userContent = require('../lib/user-content');
 
@@ -15,8 +16,14 @@ const owner = app.node.tryGetContext('owner');
 const contact = app.node.tryGetContext('contact');
 const slackNotifyStackName = app.node.tryGetContext('slackNotifyStackName'); // Notifier for CD pipeline approvals
 
+
+const baseStack = new FoundationStack(app, `${namespace}-base`, {
+  domainName: 'library.nd.edu',
+});
+
 const imageServiceContext = app.node.tryGetContext('iiifImageService');
 new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
+  baseStack,
   createDns,
   domainStackName,
   oauthTokenPath,
@@ -37,6 +44,7 @@ const userContentContext = {
   infraSourceBranch: app.node.tryGetContext('userContent:infraSourceBranch'),
   notificationReceivers: app.node.tryGetContext('userContent:deployNotificationReceivers'),
   hostnamePrefix: app.node.tryGetContext('userContent:hostnamePrefix'),
+  baseStack,
   domainStackName,
   createDns,
   namespace,
@@ -44,12 +52,9 @@ const userContentContext = {
 new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
 new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
   oauthTokenPath,
-  namespace,
   owner,
   contact,
   slackNotifyStackName,
-  domainStackName,
-  createDns,
   ...userContentContext,
 });
 

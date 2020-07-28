@@ -54,10 +54,20 @@ new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployme
   ...userContentContext,
 });
 
-const imageProcessingContext = app.node.tryGetContext('imageProcessing');
+const imageProcessingContext = {
+  rbscBucketName: app.node.tryGetContext('imageProcessing:rbscBucketName'),
+  processBucketName: app.node.tryGetContext('imageProcessing:processBucketName'),
+  imageBucketName: app.node.tryGetContext('imageProcessing:imageBucketName'),
+  lambdaCodePath: app.node.tryGetContext('imageProcessing:lambdaCodePath'),
+  dockerfilePath: app.node.tryGetContext('imageProcessing:dockerfilePath'),
+  appRepoOwner: app.node.tryGetContext('imageProcessing:appRepoOwner'),
+  appRepoName: app.node.tryGetContext('imageProcessing:appRepoName'),
+  appSourceBranch: app.node.tryGetContext('imageProcessing:appSourceBranch'),
+  infraRepoOwner: app.node.tryGetContext('imageProcessing:infraRepoOwner'),
+  infraRepoName: app.node.tryGetContext('imageProcessing:infraRepoName'),
+  infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
+}
 new imageProcessing.ImagesStack(app, `${namespace}-image`, {
-  oauthTokenPath,
-  namespace,
   ...imageProcessingContext
 });
 new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {

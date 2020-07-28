@@ -96,8 +96,7 @@ export class CDKRedDeploy extends Construct {
               `npm run cdk deploy -- ${props.targetStack} \
                 --require-approval never --exclusively \
                 -c "namespace=${props.namespace}" \
-                -c "lambdaPath=$CODEBUILD_SRC_DIR_AppCode/s3_event" \
-                -c "dockerfilePath=$CODEBUILD_SRC_DIR_AppCode"`
+                ${addtlContext}`
             ]
           },
         },

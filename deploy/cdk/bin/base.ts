@@ -70,7 +70,7 @@ const imageProcessingContext = {
 new imageProcessing.ImagesStack(app, `${namespace}-image`, {
   ...imageProcessingContext
 });
-new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
+new imageProcessing.ImageDeploymentPipelineStack(app, `${namespace}-image-deployment`, {
   oauthTokenPath,
   namespace,
   owner,

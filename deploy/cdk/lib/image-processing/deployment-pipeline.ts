@@ -33,8 +33,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props);
 
-    const testStackName = `${props.namespace}-test-user-content`;
-    const prodStackName = `${props.namespace}-prod-user-content`;
+    const testStackName = `${props.namespace}-test-image`;
+    const prodStackName = `${props.namespace}-prod-image`;
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
     const createDeploy = (targetStack: string, namespace: string) => {
@@ -51,8 +51,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: "marble",
           owner: props.owner,
           contact: props.contact,
-          "lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/s3_event",
-          "dockerfilePath": "$CODEBUILD_SRC_DIR_AppCode/",
+          lambdaCodePath: "$CODEBUILD_SRC_DIR_AppCode/s3_event",
+          dockerfilePath: "$CODEBUILD_SRC_DIR_AppCode/",
         },
       });
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({

@@ -21,6 +21,8 @@ export class ImagesStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: ImagesStackProps) {
     super(scope, id, props);
 
+    console.log(`LAMBDACODEPATH = ${props.lambdaCodePath}`)
+    console.log(`DOCKERFILEPATH = ${props.dockerfilePath}`)
     const rbscBucketName = props.rbscBucketName;
     const rbscBucket = s3.Bucket.fromBucketName(this, 'RbscBucket', rbscBucketName);
     const processBucketName = props.processBucketName;

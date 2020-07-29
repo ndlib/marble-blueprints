@@ -94,7 +94,7 @@ export class CDKRedDeploy extends Construct {
             commands: [
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory}/lib/image-processing/`,
               `npm run cdk deploy -- ${props.targetStack} \
-                --require-approval never --exclusively \
+                --require-approval never --exclusively -c "exclusiveStack=marble-image" \
                 -c "namespace=${props.namespace}" \
                 ${addtlContext}`
             ]

@@ -48,7 +48,7 @@ const imageProcessingContext = {
   infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
 }
 
-if(app.node.tryGetContext('exclusiveStack') === `${namespace}-image-service-deployment`) {
+if (String(app.node.tryGetContext('exclusiveStack')).endsWith('image-service-deployment')) {
   new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
     createDns,
     domainStackName,
@@ -57,10 +57,10 @@ if(app.node.tryGetContext('exclusiveStack') === `${namespace}-image-service-depl
     ...imageServiceContext
   });
 }
-else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-user-content`) {
+else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-user-content')) {
   new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
 }
-else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-user-content-deployment`) {
+else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-user-content-deployment')) {
   new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
     oauthTokenPath,
     owner,
@@ -69,12 +69,12 @@ else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-user-content-
     ...userContentContext,
   });
 }
-else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-image`) {
+else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-image')) {
   new imageProcessing.ImagesStack(app, `${namespace}-image`, {
     ...imageProcessingContext
   });
 }
-else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-image-deployment`) {
+else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-image-deployment')) {
   new imageProcessing.ImageDeploymentPipelineStack(app, `${namespace}-image-deployment`, {
     oauthTokenPath,
     namespace,

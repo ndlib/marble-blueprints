@@ -17,14 +17,6 @@ const contact = app.node.tryGetContext('contact');
 const slackNotifyStackName = app.node.tryGetContext('slackNotifyStackName'); // Notifier for CD pipeline approvals
 
 const imageServiceContext = app.node.tryGetContext('iiifImageService');
-new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
-  createDns,
-  domainStackName,
-  oauthTokenPath,
-  namespace,
-  ...imageServiceContext
-});
-
 const userContentContext = {
   allowedOrigins: app.node.tryGetContext('userContent:allowedOrigins'),
   lambdaCodePath: app.node.tryGetContext('userContent:lambdaCodePath'),
@@ -42,18 +34,6 @@ const userContentContext = {
   createDns,
   namespace,
 };
-new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
-new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
-  oauthTokenPath,
-  namespace,
-  owner,
-  contact,
-  slackNotifyStackName,
-  domainStackName,
-  createDns,
-  ...userContentContext,
-});
-
 const imageProcessingContext = {
   rbscBucketName: app.node.tryGetContext('imageProcessing:rbscBucketName'),
   processBucketName: app.node.tryGetContext('imageProcessing:processBucketName'),
@@ -67,15 +47,69 @@ const imageProcessingContext = {
   infraRepoName: app.node.tryGetContext('imageProcessing:infraRepoName'),
   infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
 }
-new imageProcessing.ImagesStack(app, `${namespace}-image`, {
-  ...imageProcessingContext
-});
-new imageProcessing.ImageDeploymentPipelineStack(app, `${namespace}-image-deployment`, {
-  oauthTokenPath,
-  namespace,
-  owner,
-  contact,
-  ...imageProcessingContext,
-});
+
+if(app.node.tryGetContext('exclusiveStack') === `${namespace}-image-service-deployment`) {
+  new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
+    createDns,
+    domainStackName,
+    oauthTokenPath,
+    namespace,
+    ...imageServiceContext
+  });
+}
+else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-user-content`) {
+  new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
+}
+else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-user-content-deployment`) {
+  new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
+    oauthTokenPath,
+    owner,
+    contact,
+    slackNotifyStackName,
+    ...userContentContext,
+  });
+}
+else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-image`) {
+  new imageProcessing.ImagesStack(app, `${namespace}-image`, {
+    ...imageProcessingContext
+  });
+}
+else if(app.node.tryGetContext('exclusiveStack') === `${namespace}-image-deployment`) {
+  new imageProcessing.ImageDeploymentPipelineStack(app, `${namespace}-image-deployment`, {
+    oauthTokenPath,
+    namespace,
+    owner,
+    contact,
+    ...imageProcessingContext,
+  });
+}
+else {
+  console.log("You must specify a stackname to deploy(cdk ls)\n-c exclusiveStack=<stackname>")
+  // new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
+  //   createDns,
+  //   domainStackName,
+  //   oauthTokenPath,
+  //   namespace,
+  //   ...imageServiceContext
+  // });
+  // new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
+  // new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
+  //   oauthTokenPath,
+  //   owner,
+  //   contact,
+  //   slackNotifyStackName,
+  //   ...userContentContext,
+  // });
+  // new imageProcessing.ImagesStack(app, `${namespace}-image`, {
+  //   ...imageProcessingContext
+  // });
+  // new imageProcessing.ImageDeploymentPipelineStack(app, `${namespace}-image-deployment`, {
+  //   oauthTokenPath,
+  //   namespace,
+  //   owner,
+  //   contact,
+  //   ...imageProcessingContext,
+  // });
+}
 
 app.node.applyAspect(new StackTags());

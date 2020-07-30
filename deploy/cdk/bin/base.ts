@@ -19,6 +19,7 @@ const slackNotifyStackName = app.node.tryGetContext('slackNotifyStackName'); // 
 
 const baseStack = new FoundationStack(app, `${namespace}-base`, {
   domainName: 'library.nd.edu',
+  doCreateZone: false,
 });
 
 const imageServiceContext = app.node.tryGetContext('iiifImageService');

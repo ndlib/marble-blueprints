@@ -11,9 +11,9 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "^1.54.0",
+    "@aws-cdk/assert": "^1.55.0",
     "@types/jest": "^24.0.25",
-    "aws-cdk": "^1.54.0",
+    "aws-cdk": "^1.55.0",
     "jest": "^24.9.0",
     "ts-jest": "^24.3.0",
     "ts-node": "^8.6.0",
@@ -22,16 +22,21 @@
     "typescript": "~3.6.2"
   },
   "dependencies": {
-    "@aws-cdk/aws-apigateway": "^1.54.0",
-    "@aws-cdk/aws-codepipeline": "^1.54.0",
-    "@aws-cdk/aws-codepipeline-actions": "^1.54.0",
-    "@aws-cdk/aws-dynamodb": "^1.54.0",
-    "@aws-cdk/aws-ec2": "^1.54.0",
-    "@aws-cdk/aws-lambda": "^1.54.0",
-    "@aws-cdk/aws-s3": "^1.54.0",
-    "@aws-cdk/aws-ssm": "^1.54.0",
-    "@aws-cdk/core": "^1.54.0",
-    "@ndlib/ndlib-cdk": "^1.2.2",
+    "@aws-cdk/aws-apigateway": "^1.55.0",
+    "@aws-cdk/aws-codepipeline": "^1.55.0",
+    "@aws-cdk/aws-codepipeline-actions": "^1.55.0",
+    "@aws-cdk/aws-dynamodb": "^1.55.0",
+    "@aws-cdk/aws-ec2": "^1.55.0",
+    "@aws-cdk/aws-ecs": "^1.55.0",
+    "@aws-cdk/aws-lambda": "^1.55.0",
+    "@aws-cdk/aws-logs": "^1.55.0",
+    "@aws-cdk/aws-route53": "^1.55.0",
+    "@aws-cdk/aws-s3": "^1.55.0",
+    "@aws-cdk/aws-ssm": "^1.55.0",
+    "@aws-cdk/core": "^1.55.0",
+    "@ndlib/ndlib-cdk": "^1.5.0",
+    "@types/source-map-support": "^0.5.2",
+    "constructs": "^3.0.2",
     "source-map-support": "^0.5.16"
   }
 }

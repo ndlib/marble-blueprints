@@ -68,8 +68,6 @@ export class CDKRedDeploy extends Construct {
         addtlContext += ` -c "${val[0]}=${val[1]}"`;
       });
     }
-    console.log("ADDITIONAL CONTEXT")
-    console.log(addtlContext)
     this.project = new PipelineProject(scope, `${id}Project`, {
       environment: {
         buildImage: LinuxBuildImage.STANDARD_4_0,
@@ -137,6 +135,9 @@ export class CDKRedDeploy extends Construct {
         's3:ListBucket',
         's3:GetObject',
         's3:PutObject',
+        's3:ListBucketVersions',
+        's3:GetBucketLocation',
+        's3:GetBucketPolicy',
       ],
       resources: [ 'arn:aws:s3:::cdktoolkit-stagingbucket-*' ],
     }));

@@ -3,9 +3,13 @@ import { Fn, Stack } from '@aws-cdk/core';
 
 export enum GlobalActions {
   None,
-  S3,
+  Autoscaling,
   Cloudfront,
+  EC2,
+  ECS,
+  ECR,
   Route53,
+  S3,
 }
 
 export class NamespacedPolicy {
@@ -32,7 +36,29 @@ export class NamespacedPolicy {
     if(actionOptions.includes(GlobalActions.Route53)){
       actions.push('route53:ListHostedZones');
     }
-    
+    if(actionOptions.includes(GlobalActions.ECR)) {
+      actions.push('ecr:GetAuthorizationToken');
+    }
+    if(actionOptions.includes(GlobalActions.Autoscaling)) {
+      actions.push('autoscaling:Describe*');
+    }
+    if(actionOptions.includes(GlobalActions.EC2)) {
+      actions = [...actions,
+        'ec2:Describe*',
+        'ec2:CreateSecurityGroup',
+        'ec2:CreateTags',
+        'ec2:RevokeSecurityGroupEgress',
+        'ec2:AuthorizeSecurityGroupEgress',
+      ];
+    }
+    if(actionOptions.includes(GlobalActions.ECS)) {
+      actions = [...actions,
+        'ecs:Describe*',
+        'ecs:CreateCluster',
+        'ecs:RegisterTaskDefinition',
+        'ecs:DeregisterTaskDefinition',
+      ];
+    }
     return new PolicyStatement({
       resources: ['*'],
       actions,
@@ -144,4 +170,53 @@ export class NamespacedPolicy {
       ],
     });
   };
+
+  public static ecr(): PolicyStatement  {
+    return new PolicyStatement({
+      resources: [ Fn.sub('arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/aws-cdk/assets') ],
+      actions: [
+        'ecr:DescribeRepositories',
+        'ecr:DescribeImages',
+        'ecr:InitiateLayerUpload',
+        'ecr:UploadLayerPart',
+        'ecr:CompleteLayerUpload',
+        'ecr:BatchCheckLayerAvailability',
+        'ecr:PutImage',
+      ],
+    });
+  };
+
+  public static autoscale(stackName: string): PolicyStatement  {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:launchConfiguration:*:launchConfigurationName/' + stackName + '*'),
+        Fn.sub('arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/' + stackName + '*'),
+      ],
+      actions: [
+        'autoscaling:CreateAutoScalingGroup',
+        'autoscaling:UpdateAutoScalingGroup',
+        'autoscaling:PutLifecycleHook',
+        'autoscaling:CreateLaunchConfiguration'
+      ],
+    });
+  };
+
+  public static events(stackName: string): PolicyStatement  {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/' + stackName + '*'),
+      ],
+      actions: [
+        'events:PutEvents',
+        'events:DescribeRule',
+        'events:PutRule',
+        'events:DeleteRule',
+        'events:TagResource',
+        'events:UntagResource',
+        'events:PutTargets',
+        'events:RemoveTargets',
+      ],
+    });
+  };
+
 }

@@ -107,7 +107,7 @@ export class ImagesStack extends cdk.Stack {
       resources: [
         cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/marble*'),
       ],
-      actions: ["ssm:GetParameter"],
+      actions: ["ssm:Get*"],
     }))
     taskRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,

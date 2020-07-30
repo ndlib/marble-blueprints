@@ -5,6 +5,7 @@ export enum GlobalActions {
   None,
   Autoscaling,
   Cloudfront,
+  Cloudwatch,
   EC2,
   ECS,
   ECR,
@@ -59,6 +60,13 @@ export class NamespacedPolicy {
         'ecs:DeregisterTaskDefinition',
       ];
     }
+    if(actionOptions.includes(GlobalActions.Cloudwatch)) {
+      actions = [...actions,
+        'cloudformation:ListExports',
+        'logs:CreateLogGroup',
+        'logs:DescribeLogGroups',
+      ];
+    }
     return new PolicyStatement({
       resources: ['*'],
       actions,
@@ -69,6 +77,13 @@ export class NamespacedPolicy {
     return new PolicyStatement({
       resources: [ Fn.sub('arn:aws:iam::${AWS::AccountId}:role/' + stackName + '*') ],
       actions: ['iam:*'],
+    });
+  }
+
+  public static iamInstanceProfile(stackName: string): PolicyStatement  {
+    return new PolicyStatement({
+      resources: [ Fn.sub('arn:aws:iam::${AWS::AccountId}:instance-profile/' + stackName + '*') ],
+      actions: ['iam:CreateInstanceProfile', 'iam:AddRoleToInstanceProfile'],
     });
   }
 
@@ -219,4 +234,27 @@ export class NamespacedPolicy {
     });
   };
 
+  public static sns(stackName: string): PolicyStatement  {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:sns:${AWS::Region}:${AWS::AccountId}:' + stackName + '*'),
+      ],
+      actions: [
+        'sns:CreateTopic',
+        'sns:GetTopicAttributes',
+        'sns:Subscribe'
+      ],
+    });
+  };
+
+  public static logstream(stackName: string): PolicyStatement {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'),
+      ],
+      actions: [
+        'logs:CreateLogStream'
+      ],
+    });
+  }
 }

@@ -8,23 +8,26 @@ import { Topic } from '@aws-cdk/aws-sns';
 import cdk = require('@aws-cdk/core');
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk';
 import { CDKRedDeploy } from '../cdk-red-deploy';
-import { NamespacedPolicy } from '../namespaced-policy';
+import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
 import { Artifact } from '@aws-cdk/aws-codepipeline';
 import { Fn } from '@aws-cdk/core';
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
+  readonly namespace: string;
+  readonly owner: string;
+  readonly contact: string;
+  readonly rbscBucketName: string;
+  readonly processBucketName: string;
+  readonly imageBucketName: string;
+  readonly lambdaCodePath: string;
+  readonly dockerfilePath: string;
   readonly appRepoOwner: string;
   readonly appRepoName: string;
   readonly appSourceBranch: string;
   readonly infraRepoOwner: string;
   readonly infraRepoName: string;
   readonly infraSourceBranch: string;
-  readonly namespace: string;
-  readonly owner: string;
-  readonly contact: string;
-  readonly tokenAudiencePath: string;
-  readonly tokenIssuerPath: string;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
 };
@@ -51,19 +54,29 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: "marble",
           owner: props.owner,
           contact: props.contact,
-          lambdaCodePath: "$CODEBUILD_SRC_DIR_AppCode/s3_event",
-          dockerfilePath: "$CODEBUILD_SRC_DIR_AppCode/",
+          "imageProcessing:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/s3_event",
+          "imageProcessing:dockerfilePath": "$CODEBUILD_SRC_DIR_AppCode/"
         },
       });
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        actions: ['ssm:GetParameters'],
-        resources:[
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.tokenAudiencePath), 
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.tokenIssuerPath),
-        ],
+        actions: ['ssm:Get*'],
+        resources:['*']
       }));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.globals(
+        [
+          GlobalActions.ECR, GlobalActions.EC2, GlobalActions.ECS,
+          GlobalActions.Autoscaling, GlobalActions.Cloudwatch,
+        ]
+      ));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamInstanceProfile(targetStack));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ecr());
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.autoscale(targetStack));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.events(targetStack));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.sns(targetStack));
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.logstream(targetStack));
 
       return cdkDeploy;
     }

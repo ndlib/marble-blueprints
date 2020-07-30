@@ -75,7 +75,7 @@ else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-image')) {
   });
 }
 else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-image-deployment')) {
-  new imageProcessing.ImageDeploymentPipelineStack(app, `${namespace}-image-deployment`, {
+  new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
     oauthTokenPath,
     namespace,
     owner,
@@ -103,7 +103,7 @@ else {
   // new imageProcessing.ImagesStack(app, `${namespace}-image`, {
   //   ...imageProcessingContext
   // });
-  // new imageProcessing.ImageDeploymentPipelineStack(app, `${namespace}-image-deployment`, {
+  // new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
   //   oauthTokenPath,
   //   namespace,
   //   owner,

@@ -48,6 +48,13 @@ const imageProcessingContext = {
   infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
 }
 
+/* 
+This cdk bug prevents us from deploying a single stack in a multistack app.
+To work around this we introduce the 'exclusiveStack' flag.
+This flag allows the user to specify which stack to deploy.
+See user-content readme for deployment example.
+https://github.com/aws/aws-cdk/issues/6743
+*/
 if (String(app.node.tryGetContext('exclusiveStack')).endsWith('image-service-deployment')) {
   new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
     createDns,
@@ -84,7 +91,7 @@ else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-image-deplo
   });
 }
 else {
-  console.log("You must specify a stackname to deploy(cdk ls)\n-c exclusiveStack=<stackname>")
+  console.log("You must specify a stackname to deploy\n-c exclusiveStack=<stackname>")
   // new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
   //   createDns,
   //   domainStackName,

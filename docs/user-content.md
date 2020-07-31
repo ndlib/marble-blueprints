@@ -11,7 +11,7 @@ Deploy a development service stack:
 ```console
 cd deploy/cdk
 yarn
-cdk deploy my-marble-user-content -c namespace=my-marble \
+cdk deploy my-marble-user-content -c namespace=my-marble -c exclusiveStack=marble-user-content \
   -c projectName=marble -c description=[DESCRIPTION] -c contact=[NAME] -c owner=[NAME]
 ```
 
@@ -23,6 +23,7 @@ yarn
 cdk deploy [NAMESPACE]-user-content-deployment \
   -c namespace=[NAMESPACE] \
   -c projectName=marble -c description=[DESCRIPTION] -c contact=[NAME] -c owner=[NAME] \
+  -c exclusiveStack=marble-user-content-deployment
   -c "userContent:infraSourceBranch"="master" \
   -c "userContent:appSourceBranch"="master"
 ```

@@ -59,6 +59,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: "marble",
           owner: props.owner,
           contact: props.contact,
+          exclusiveStack: "marble-user-content",
           "userContent:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/src",
           "userContent:allowedOrigins": props.allowedOrigins,
           "userContent:hostnamePrefix": hostnamePrefix,

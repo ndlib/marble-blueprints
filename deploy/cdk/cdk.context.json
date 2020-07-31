@@ -16,6 +16,9 @@
     "qaRepoName": "iiif-qa",
     "qaSourceBranch": "master"
   },
+  "imageProcessing:prodRbscBucketName": "libnd-smb-rbsc",
+  "imageProcessing:prodProcessBucketName": "marble-manifest-prod-processbucket-kskqchthxshg",
+  "imageProcessing:prodImageBucketName": "marble-data-broker-publicbucket-1kvqtwnvkhra2",
   "imageProcessing:rbscBucketName": "marble-rbsc",
   "imageProcessing:processBucketName": "marble-image",
   "imageProcessing:imageBucketName": "marble-image",

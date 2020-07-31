@@ -1,4 +1,3 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild';
 import codepipeline = require('@aws-cdk/aws-codepipeline');
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions');
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
@@ -7,19 +6,18 @@ import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import { Topic } from '@aws-cdk/aws-sns';
 import cdk = require('@aws-cdk/core');
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk';
-import { CDKRedDeploy } from '../cdk-red-deploy';
+import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
-import { Artifact } from '@aws-cdk/aws-codepipeline';
-import { Fn } from '@aws-cdk/core';
+
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
   readonly namespace: string;
   readonly owner: string;
   readonly contact: string;
-  readonly rbscBucketName: string;
-  readonly processBucketName: string;
-  readonly imageBucketName: string;
+  rbscBucketName: string;
+  processBucketName: string;
+  imageBucketName: string;
   readonly lambdaCodePath: string;
   readonly dockerfilePath: string;
   readonly appRepoOwner: string;
@@ -41,7 +39,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
     const createDeploy = (targetStack: string, namespace: string) => {
-      const cdkDeploy = new CDKRedDeploy(this, `${namespace}-deploy`, {
+      const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
         infraSourceArtifact,
@@ -54,8 +52,12 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: "marble",
           owner: props.owner,
           contact: props.contact,
+          exclusiveStack: "marble-image",
+          "imageProcessing:rbscBucketName": props.rbscBucketName,
+          "imageProcessing:processBucketName": props.processBucketName,
+          "imageProcessing:imageBucketName": props.imageBucketName,
           "imageProcessing:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/s3_event",
-          "imageProcessing:dockerfilePath": "$CODEBUILD_SRC_DIR_AppCode/"
+          "imageProcessing:dockerfilePath": "$CODEBUILD_SRC_DIR_AppCode/",
         },
       });
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
@@ -109,25 +111,27 @@ export class DeploymentPipelineStack extends cdk.Stack {
     // Deploy to Test
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`);
 
-    console.log("UNCOMMENT APPROVAL STEP")
     // Approval
-    // const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
-    // const approvalTopic = new Topic(this, 'ApprovalTopic');
-    // const approvalAction = new ManualApprovalAction({
-    //   actionName: 'Approval',
-    //   additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
-    //   notificationTopic: approvalTopic,
-    //   runOrder: 99, // This should always be the last action in the stage
-    // });
-    // if(props.slackNotifyStackName !== undefined){
-    //   const slackApproval = new SlackApproval(this, 'SlackApproval', {
-    //     approvalTopic,
-    //     notifyStackName: props.slackNotifyStackName,
-    //   });
-    // }
+    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
+    const approvalTopic = new Topic(this, 'ApprovalTopic');
+    const approvalAction = new ManualApprovalAction({
+      actionName: 'Approval',
+      additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
+      notificationTopic: approvalTopic,
+      runOrder: 99, // This should always be the last action in the stage
+    });
+    if(props.slackNotifyStackName !== undefined){
+      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.slackNotifyStackName,
+      });
+    }
 
     // Deploy to Production
-    // const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`);
+    props.imageBucketName = this.node.tryGetContext('imageProcessing:prodImageBucketName');
+    props.rbscBucketName = this.node.tryGetContext('imageProcessing:prodRbscBucketName');
+    props.processBucketName = this.node.tryGetContext('imageProcessing:prodProcessBucketName');
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`);
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
@@ -138,13 +142,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action],
+          actions: [deployTest.action, approvalAction],
           stageName: 'Test',
         },
-        // {
-        //   actions: [deployProd.action],
-        //   stageName: 'Production',
-        // }
+        {
+          actions: [deployProd.action],
+          stageName: 'Production',
+        }
       ],
     });
     if(props.notificationReceivers){

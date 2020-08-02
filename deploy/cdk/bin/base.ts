@@ -4,10 +4,11 @@ import { StackTags } from '@ndlib/ndlib-cdk';
 import 'source-map-support/register';
 import IIIF = require('../lib/iiif-serverless');
 import userContent = require('../lib/user-content');
-import imageProcessing = require('../lib/image-processing')
+import imageProcessing = require('../lib/image-processing');
 
 const app = new App();
 
+const exclusiveStack: string = app.node.tryGetContext('exclusiveStack');
 const createDns : boolean = app.node.tryGetContext('createDns') === 'true' ? true : false;
 const domainStackName = app.node.tryGetContext('domainStackName');
 const oauthTokenPath = app.node.tryGetContext('oauthTokenPath');
@@ -55,7 +56,10 @@ This flag allows the user to specify which stack to deploy.
 See user-content readme for deployment example.
 https://github.com/aws/aws-cdk/issues/6743
 */
-if (String(app.node.tryGetContext('exclusiveStack')).endsWith('image-service-deployment')) {
+if (exclusiveStack === undefined) {
+  console.log("You must specify a stackname to deploy\n-c exclusiveStack=<stackname>")
+}
+else if (exclusiveStack.endsWith('image-service-deployment')) {
   new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
     createDns,
     domainStackName,
@@ -64,10 +68,10 @@ if (String(app.node.tryGetContext('exclusiveStack')).endsWith('image-service-dep
     ...imageServiceContext
   });
 }
-else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-user-content')) {
+else if (exclusiveStack.endsWith('-user-content')) {
   new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
 }
-else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-user-content-deployment')) {
+else if (exclusiveStack.endsWith('-user-content-deployment')) {
   new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
     oauthTokenPath,
     owner,
@@ -76,12 +80,12 @@ else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-user-conten
     ...userContentContext,
   });
 }
-else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-image')) {
+else if (exclusiveStack.endsWith('-image')) {
   new imageProcessing.ImagesStack(app, `${namespace}-image`, {
     ...imageProcessingContext
   });
 }
-else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-image-deployment')) {
+else if (exclusiveStack.endsWith('-image-deployment')) {
   new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
     oauthTokenPath,
     namespace,
@@ -91,32 +95,7 @@ else if (String(app.node.tryGetContext('exclusiveStack')).endsWith('-image-deplo
   });
 }
 else {
-  console.log("You must specify a stackname to deploy\n-c exclusiveStack=<stackname>")
-  // new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
-  //   createDns,
-  //   domainStackName,
-  //   oauthTokenPath,
-  //   namespace,
-  //   ...imageServiceContext
-  // });
-  // new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
-  // new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
-  //   oauthTokenPath,
-  //   owner,
-  //   contact,
-  //   slackNotifyStackName,
-  //   ...userContentContext,
-  // });
-  // new imageProcessing.ImagesStack(app, `${namespace}-image`, {
-  //   ...imageProcessingContext
-  // });
-  // new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
-  //   oauthTokenPath,
-  //   namespace,
-  //   owner,
-  //   contact,
-  //   ...imageProcessingContext,
-  // });
+  console.log(`Unrecognized stack - ${exclusiveStack}`)
 }
 
 app.node.applyAspect(new StackTags());

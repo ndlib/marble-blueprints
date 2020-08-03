@@ -18,6 +18,11 @@ export interface IBaseStackProps extends StackProps {
    * Should this stack create a Route53 Zone? Default is false
    */
   readonly doCreateZone?: boolean;
+
+  /**
+   * If this stack import from an existing Route53 Zone, provide the zone id
+   */
+  readonly useDnsZone?: string;
 }
 
 export class FoundationStack extends Stack {
@@ -56,7 +61,7 @@ export class FoundationStack extends Stack {
    * Do not put secrets/private objects here.
    */
   public readonly publicBucket: IBucket;
-  
+
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props);
     

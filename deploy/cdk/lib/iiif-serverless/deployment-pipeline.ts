@@ -11,6 +11,7 @@ import { Fn } from '@aws-cdk/core';
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
 import { Topic } from '@aws-cdk/aws-sns';
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
+import { FoundationStack } from '../foundation';
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
@@ -26,7 +27,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly imageSourceBucketPath: string;
   readonly namespace: string;
   readonly domainStackName: string;
-  readonly domainCertificateArn: string;
+  readonly foundationStack: FoundationStack;
   readonly hostnamePrefix: string;
   readonly createDns: boolean;
 };
@@ -37,14 +38,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
     const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`;
-    const resolvedDomain = Fn.importValue(`${props.domainStackName}:DomainName`);
+    const resolvedDomain = props.foundationStack.hostedZone.zoneName;
     const testHost = `${props.hostnamePrefix}-test.${resolvedDomain}`;
     const testStackName = `${props.namespace}-image-service-test`;
     const testCDNStackName = `${props.namespace}-image-service-cdn-test`;
     const prodHost = `${props.hostnamePrefix}.${resolvedDomain}`;
     const prodStackName = `${props.namespace}-image-service-prod`;
     const prodCDNStackName = `${props.namespace}-image-service-cdn-prod`;
-    const sourceBucketParam = ssm.StringParameter.fromStringParameterName(this, 'SourceBucket', props.imageSourceBucketPath);
 
     const artifactBucket = new Bucket(this, 'artifactBucket', {
       encryption: BucketEncryption.KMS_MANAGED,
@@ -132,7 +132,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       stackName: testStackName,
       adminPermissions: false,
       parameterOverrides: {
-        SourceBucket: sourceBucketParam.stringValue,
+        SourceBucket: props.foundationStack.publicBucket.bucketName,
         IiifLambdaTimeout: '20'
       },
       capabilities: [
@@ -151,7 +151,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         HostnamePrefix: `${props.hostnamePrefix}-test`,
         DomainStackName: props.domainStackName,
         APIStackName: testStackName,
-        DomainCertificateArn: props.domainCertificateArn,
+        DomainCertificateArn: props.foundationStack.certificate.certificateArn,
         CreateDNSRecord: props.createDns ? 'True' : 'False',
       },
       capabilities: [
@@ -203,7 +203,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       stackName: prodStackName,
       adminPermissions: false,
       parameterOverrides: {
-        SourceBucket: sourceBucketParam.stringValue,
+        SourceBucket: props.foundationStack.publicBucket.bucketName,
         IiifLambdaTimeout: '20'
       },
       capabilities: [
@@ -221,7 +221,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         HostnamePrefix: props.hostnamePrefix,
         DomainStackName: props.domainStackName,
         APIStackName: prodStackName,
-        DomainCertificateArn: props.domainCertificateArn,
+        DomainCertificateArn: props.foundationStack.certificate.certificateArn,
         CreateDNSRecord: props.createDns ? 'True' : 'False',
       },
       capabilities: [
@@ -322,7 +322,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.globals([GlobalActions.Cloudfront, GlobalActions.Route53]));
 
     if(props.createDns){
-      const hostedZone = Fn.importValue(`${props.domainStackName}:Zone`);
+      const hostedZone = props.foundationStack.hostedZone.hostedZoneId;
       deployTestCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
       deployProdCDNAction.addToDeploymentRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
     }

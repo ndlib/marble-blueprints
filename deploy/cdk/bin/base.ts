@@ -9,26 +9,25 @@ import userContent = require('../lib/user-content');
 const app = new App();
 
 const createDns : boolean = app.node.tryGetContext('createDns') === 'true' ? true : false;
-const domainStackName = app.node.tryGetContext('domainStackName');
+const domainName = app.node.tryGetContext('domainName');
 const oauthTokenPath = app.node.tryGetContext('oauthTokenPath');
 const namespace = app.node.tryGetContext('namespace');
 const owner = app.node.tryGetContext('owner');
 const contact = app.node.tryGetContext('contact');
 const slackNotifyStackName = app.node.tryGetContext('slackNotifyStackName'); // Notifier for CD pipeline approvals
 
-
-const baseStack = new FoundationStack(app, `${namespace}-base`, {
-  domainName: 'library.nd.edu',
-  doCreateZone: false,
+const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+  domainName,
+  doCreateZone: createDns,
 });
 
 const imageServiceContext = app.node.tryGetContext('iiifImageService');
 new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
-  baseStack,
   createDns,
-  domainStackName,
   oauthTokenPath,
   namespace,
+  domainStackName: `${namespace}-domain`,
+  foundationStack,
   ...imageServiceContext
 });
 
@@ -45,8 +44,7 @@ const userContentContext = {
   infraSourceBranch: app.node.tryGetContext('userContent:infraSourceBranch'),
   notificationReceivers: app.node.tryGetContext('userContent:deployNotificationReceivers'),
   hostnamePrefix: app.node.tryGetContext('userContent:hostnamePrefix'),
-  baseStack,
-  domainStackName,
+  foundationStack,
   createDns,
   namespace,
 };

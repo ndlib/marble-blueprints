@@ -203,10 +203,7 @@ describe('FoundationStack', () => {
                 "GET"
               ],
               AllowedOrigins: [
-                "*.library.nd.edu",
-                "*.libraries.nd.edu",
-                "*.cloudfront.net",
-                "http://universalviewer.io"
+                "*.test.edu",
               ],
               MaxAge: 3600
             }

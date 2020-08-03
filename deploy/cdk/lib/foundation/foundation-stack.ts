@@ -105,12 +105,7 @@ export class FoundationStack extends Stack {
           allowedMethods: [
             HttpMethods.GET,
           ],
-          allowedOrigins: [
-            "*.library.nd.edu",
-            "*.libraries.nd.edu",
-            "*.cloudfront.net",
-            "http://universalviewer.io"
-          ],
+          allowedOrigins: [ `*.${props.domainName}`],
           maxAge: 3600
         }],
       serverAccessLogsBucket: this.logBucket,

@@ -3,7 +3,6 @@ import dynamodb = require('@aws-cdk/aws-dynamodb');
 import lambda = require('@aws-cdk/aws-lambda');
 import ssm = require('@aws-cdk/aws-ssm');
 import cdk = require('@aws-cdk/core');
-import { Duration } from '@aws-cdk/core';
 import { CnameRecord } from '@aws-cdk/aws-route53';
 import { FoundationStack } from '../foundation';
 
@@ -117,7 +116,7 @@ export class UserContentStack extends cdk.Stack {
         recordName: props.hostnamePrefix,
         domainName: api.domainName!.domainNameAliasDomainName, // cloudfront the api creates
         zone: props.foundationStack.hostedZone,
-        ttl: Duration.minutes(15),
+        ttl: cdk.Duration.minutes(15),
       })
     }
     // user endpoints

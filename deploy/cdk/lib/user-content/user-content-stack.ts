@@ -3,9 +3,8 @@ import dynamodb = require('@aws-cdk/aws-dynamodb');
 import lambda = require('@aws-cdk/aws-lambda');
 import ssm = require('@aws-cdk/aws-ssm');
 import cdk = require('@aws-cdk/core');
-import { Fn, Duration } from '@aws-cdk/core';
-import { Certificate } from '@aws-cdk/aws-certificatemanager';
-import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53';
+import { CnameRecord } from '@aws-cdk/aws-route53';
+import { FoundationStack } from '../foundation';
 import fs = require('fs');
 
 export interface UserContentStackProps extends cdk.StackProps {
@@ -14,7 +13,7 @@ export interface UserContentStackProps extends cdk.StackProps {
   readonly tokenAudiencePath: string
   readonly tokenIssuerPath: string
   readonly hostnamePrefix: string
-  readonly domainStackName: string
+  readonly foundationStack: FoundationStack;
   readonly createDns: boolean
   readonly namespace: string
 };
@@ -101,8 +100,8 @@ export class UserContentStack extends cdk.Stack {
     itemDynamoTable.grantReadWriteData(userContentLambda);
 
     // API Gateway
-    const domainName = `${props.hostnamePrefix}.` + Fn.importValue(`${props.domainStackName}:DomainName`);
-    const domainCert = Certificate.fromCertificateArn(this, 'MarbleCertificate', Fn.importValue(`${props.domainStackName}:ACMCertificateARN`))
+    const domainName = `${props.hostnamePrefix}.` + props.foundationStack.hostedZone.zoneName;
+    const domainCert = props.foundationStack.certificate;
     const api = new apigateway.RestApi(this, 'userContentApi', {
       restApiName: `${props.namespace}-user-content`,
       defaultCorsPreflightOptions: {
@@ -122,11 +121,8 @@ export class UserContentStack extends cdk.Stack {
       new CnameRecord(this, `${id}-Route53CnameRecord`, {
         recordName: props.hostnamePrefix,
         domainName: api.domainName!.domainNameAliasDomainName, // cloudfront the api creates
-        zone: HostedZone.fromHostedZoneAttributes(this, 'ApiDomainHostedZone', {
-          hostedZoneId: Fn.importValue(`${props.domainStackName}:Zone`),
-          zoneName: Fn.importValue(`${props.domainStackName}:DomainName`),
-        }),
-        ttl: Duration.minutes(15),
+        zone: props.foundationStack.hostedZone,
+        ttl: cdk.Duration.minutes(15),
       })
     }
     // user endpoints

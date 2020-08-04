@@ -9,8 +9,7 @@ import cdk = require('@aws-cdk/core');
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk';
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
 import { NamespacedPolicy } from '../namespaced-policy';
-import { Artifact } from '@aws-cdk/aws-codepipeline';
-import { Fn } from '@aws-cdk/core';
+import { FoundationStack } from '../foundation';
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
@@ -28,7 +27,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly slackNotifyStackName?: string;
   readonly allowedOrigins: string;
   readonly notificationReceivers?: string;
-  readonly domainStackName: string;
+  readonly foundationStack: FoundationStack;
   readonly hostnamePrefix: string;
   readonly createDns: boolean;
 };
@@ -62,7 +61,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
           "userContent:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/src",
           "userContent:allowedOrigins": props.allowedOrigins,
           "userContent:hostnamePrefix": hostnamePrefix,
-          "domainStackName": props.domainStackName,
           "createDns": props.createDns ? "true" : "false",
         },
       });
@@ -79,8 +77,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack));
 
       if(props.createDns){
-        const hostedZone = Fn.importValue(`${props.domainStackName}:Zone`);
-        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(hostedZone));
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId));
       }
       return cdkDeploy;
     }
@@ -113,7 +110,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`;
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix);
-    const testHostname = `https://${testHostnamePrefix}.` + Fn.importValue(`${props.domainStackName}:DomainName`);
+    const testHostname = `https://${testHostnamePrefix}.` + props.foundationStack.hostedZone.zoneName;
     const smokeTestsProject = new PipelineProject(this, 'MarbleUserContentSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {
@@ -155,7 +152,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix;
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix);
-    const prodHostname = `https://${prodHostnamePrefix}.` + Fn.importValue(`${props.domainStackName}:DomainName`);
+    const prodHostname = `https://${prodHostnamePrefix}.` + props.foundationStack.hostedZone.zoneName;
     const smokeTestsProdProject = new PipelineProject(this, 'MarbleUserContentProdSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {

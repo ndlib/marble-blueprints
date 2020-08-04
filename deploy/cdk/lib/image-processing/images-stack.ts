@@ -8,6 +8,7 @@ import * as ec2 from '@aws-cdk/aws-ec2';
 import * as lambda from '@aws-cdk/aws-lambda';
 import { S3NotificationToLambdaCustomResource } from './s3ToLambda';
 import fs = require('fs');
+import { FoundationStack } from '../foundation';
 
 export interface ImagesStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string
@@ -15,6 +16,7 @@ export interface ImagesStackProps extends cdk.StackProps {
   readonly rbscBucketName: string
   readonly processBucketName: string
   readonly imageBucketName: string
+  readonly foundationStack: FoundationStack;
 }
 
 export class ImagesStack extends cdk.Stack {
@@ -66,26 +68,7 @@ export class ImagesStack extends cdk.Stack {
     // https://github.com/aws/aws-cdk/issues/2004
     new S3NotificationToLambdaCustomResource(this, id, rbscBucket, imageTracker);
 
-    /* setup environment for EC2 to live and process image file changes.
-        the imports come from the network stack; see readme.md for details */
-    const networkStackName = 'marble-network';
-    const vpcId = cdk.Fn.importValue(`${networkStackName}:VPCID`);
-    const vpc = ec2.Vpc.fromVpcAttributes(this, 'VPC', {
-      vpcId,
-      availabilityZones: [
-        cdk.Fn.select(0, cdk.Fn.getAzs()),
-        cdk.Fn.select(1, cdk.Fn.getAzs()),
-      ],
-      publicSubnetIds: [
-        cdk.Fn.importValue(`${networkStackName}:PublicSubnet1ID`),
-        cdk.Fn.importValue(`${networkStackName}:PublicSubnet2ID`),
-      ],
-      privateSubnetIds: [
-        cdk.Fn.importValue(`${networkStackName}:PrivateSubnet1ID`),
-        cdk.Fn.importValue(`${networkStackName}:PrivateSubnet2ID`),
-      ],
-    });
-    const cluster = new ecs.Cluster(this, 'Cluster', { vpc });
+    const cluster = new ecs.Cluster(this, 'Cluster', { vpc: props.foundationStack.vpc });
     cluster.addCapacity('Ec2Group', {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
       minCapacity: 1,

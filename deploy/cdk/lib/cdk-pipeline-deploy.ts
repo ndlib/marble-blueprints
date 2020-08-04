@@ -84,7 +84,7 @@ export class CDKPipelineDeploy extends Construct {
               'yarn install',
             ],
             'runtime-versions': {
-              nodejs: '10.x',
+              nodejs: '12.x',
             },
           },
           pre_build: {

@@ -7,7 +7,7 @@ import * as ecs from '@aws-cdk/aws-ecs';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as lambda from '@aws-cdk/aws-lambda';
 import { S3NotificationToLambdaCustomResource } from './s3ToLambda';
-
+import fs = require('fs');
 
 export interface ImagesStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string
@@ -20,6 +20,15 @@ export interface ImagesStackProps extends cdk.StackProps {
 export class ImagesStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: ImagesStackProps) {
     super(scope, id, props);
+
+    if(!fs.existsSync(props.lambdaCodePath)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`);
+      return;
+    }
+    if(!fs.existsSync(props.dockerfilePath)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.dockerfilePath}`);
+      return;
+    }
 
     const rbscBucketName = props.rbscBucketName;
     const rbscBucket = s3.Bucket.fromBucketName(this, 'RbscBucket', rbscBucketName);

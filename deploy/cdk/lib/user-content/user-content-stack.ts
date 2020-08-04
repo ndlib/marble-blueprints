@@ -6,6 +6,7 @@ import cdk = require('@aws-cdk/core');
 import { Fn, Duration } from '@aws-cdk/core';
 import { Certificate } from '@aws-cdk/aws-certificatemanager';
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53';
+import fs = require('fs');
 
 export interface UserContentStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string
@@ -21,6 +22,11 @@ export interface UserContentStackProps extends cdk.StackProps {
 export class UserContentStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: UserContentStackProps) {
     super(scope, id, props);
+
+    if(!fs.existsSync(props.lambdaCodePath)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`);
+      return;
+    }
 
     // Dynamo Tables
     const userDynamoTable = new dynamodb.Table(this, 'UsersTable', {

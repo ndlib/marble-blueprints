@@ -52,7 +52,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: "marble",
           owner: props.owner,
           contact: props.contact,
-          exclusiveStack: "marble-image",
           "imageProcessing:rbscBucketName": props.rbscBucketName,
           "imageProcessing:processBucketName": props.processBucketName,
           "imageProcessing:imageBucketName": props.imageBucketName,

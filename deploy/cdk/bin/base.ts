@@ -8,7 +8,6 @@ import imageProcessing = require('../lib/image-processing');
 
 const app = new App();
 
-const exclusiveStack: string = app.node.tryGetContext('exclusiveStack');
 const createDns : boolean = app.node.tryGetContext('createDns') === 'true' ? true : false;
 const domainStackName = app.node.tryGetContext('domainStackName');
 const oauthTokenPath = app.node.tryGetContext('oauthTokenPath');
@@ -48,54 +47,27 @@ const imageProcessingContext = {
   infraRepoName: app.node.tryGetContext('imageProcessing:infraRepoName'),
   infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
 }
-
-/* 
-This cdk bug prevents us from deploying a single stack in a multistack app.
-To work around this we introduce the 'exclusiveStack' flag.
-This flag allows the user to specify which stack to deploy.
-See user-content readme for deployment example.
-https://github.com/aws/aws-cdk/issues/6743
-*/
-if (exclusiveStack === undefined) {
-  console.log("You must specify a stackname to deploy\n-c exclusiveStack=<stackname>")
-}
-else if (exclusiveStack.endsWith('image-service-deployment')) {
-  new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
-    createDns,
-    domainStackName,
-    oauthTokenPath,
-    namespace,
-    ...imageServiceContext
-  });
-}
-else if (exclusiveStack.endsWith('-user-content')) {
-  new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
-}
-else if (exclusiveStack.endsWith('-user-content-deployment')) {
-  new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
+new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
+  createDns,
+  domainStackName,
+  oauthTokenPath,
+  namespace,
+  ...imageServiceContext
+});
+new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
+new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
     oauthTokenPath,
     owner,
     contact,
     slackNotifyStackName,
     ...userContentContext,
-  });
-}
-else if (exclusiveStack.endsWith('-image')) {
-  new imageProcessing.ImagesStack(app, `${namespace}-image`, {
-    ...imageProcessingContext
-  });
-}
-else if (exclusiveStack.endsWith('-image-deployment')) {
-  new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
-    oauthTokenPath,
-    namespace,
-    owner,
-    contact,
-    ...imageProcessingContext,
-  });
-}
-else {
-  console.log(`Unrecognized stack - ${exclusiveStack}`)
-}
-
+});
+new imageProcessing.ImagesStack(app, `${namespace}-image`, {...imageProcessingContext });
+new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
+  oauthTokenPath,
+  namespace,
+  owner,
+  contact,
+  ...imageProcessingContext,
+});
 app.node.applyAspect(new StackTags());

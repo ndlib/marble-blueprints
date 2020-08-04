@@ -23,6 +23,15 @@ const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
 });
 
 const imageServiceContext = app.node.tryGetContext('iiifImageService');
+new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
+  createDns,
+  domainStackName: `${namespace}-domain`,
+  oauthTokenPath,
+  namespace,
+  foundationStack,
+  ...imageServiceContext
+});
+
 const userContentContext = {
   allowedOrigins: app.node.tryGetContext('userContent:allowedOrigins'),
   lambdaCodePath: app.node.tryGetContext('userContent:lambdaCodePath'),
@@ -40,6 +49,15 @@ const userContentContext = {
   createDns,
   namespace,
 };
+new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
+new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
+    oauthTokenPath,
+    owner,
+    contact,
+    slackNotifyStackName,
+    ...userContentContext,
+});
+
 const imageProcessingContext = {
   rbscBucketName: app.node.tryGetContext('imageProcessing:rbscBucketName'),
   processBucketName: app.node.tryGetContext('imageProcessing:processBucketName'),
@@ -52,24 +70,9 @@ const imageProcessingContext = {
   infraRepoOwner: app.node.tryGetContext('imageProcessing:infraRepoOwner'),
   infraRepoName: app.node.tryGetContext('imageProcessing:infraRepoName'),
   infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
-}
-new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
-  createDns,
-  domainStackName: `${namespace}-domain`,
-  oauthTokenPath,
-  namespace,
   foundationStack,
-  ...imageServiceContext
-});
-new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
-new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
-    oauthTokenPath,
-    owner,
-    contact,
-    slackNotifyStackName,
-    ...userContentContext,
-});
-new imageProcessing.ImagesStack(app, `${namespace}-image`, {...imageProcessingContext });
+};
+new imageProcessing.ImagesStack(app, `${namespace}-image`, imageProcessingContext);
 new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
   oauthTokenPath,
   owner,

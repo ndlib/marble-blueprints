@@ -1,8 +1,7 @@
-import { BuildSpec, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild';
+import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild';
 import { Artifact } from '@aws-cdk/aws-codepipeline';
 import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions';
 import { PolicyStatement } from '@aws-cdk/aws-iam';
-import { Runtime } from '@aws-cdk/aws-lambda';
 import { Construct, Fn } from '@aws-cdk/core';
 
 export interface ICDKPipelineDeployProps extends PipelineProjectProps {
@@ -70,6 +69,10 @@ export class CDKPipelineDeploy extends Construct {
       });
     }
     this.project = new PipelineProject(scope, `${id}Project`, {
+      environment: {	
+        buildImage: LinuxBuildImage.STANDARD_4_0,
+        privileged: true,
+      },
       buildSpec: BuildSpec.fromObject({
         artifacts: {
           files: props.outputFiles || []
@@ -80,7 +83,9 @@ export class CDKPipelineDeploy extends Construct {
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
               'yarn install',
             ],
-            'runtime-versions': Runtime.NODEJS_10_X,
+            'runtime-versions': {
+              nodejs: '10.x',
+            },
           },
           pre_build: {
             commands: [
@@ -137,6 +142,9 @@ export class CDKPipelineDeploy extends Construct {
         's3:ListBucket',
         's3:GetObject',
         's3:PutObject',
+        's3:ListBucketVersions',
+        's3:GetBucketLocation',
+        's3:GetBucketPolicy',
       ],
       resources: [ 'arn:aws:s3:::cdktoolkit-stagingbucket-*' ],
     }));

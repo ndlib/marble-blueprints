@@ -5,6 +5,7 @@ import 'source-map-support/register';
 import { FoundationStack } from '../lib/foundation';
 import IIIF = require('../lib/iiif-serverless');
 import userContent = require('../lib/user-content');
+import imageProcessing = require('../lib/image-processing');
 
 const app = new App();
 
@@ -22,15 +23,6 @@ const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
 });
 
 const imageServiceContext = app.node.tryGetContext('iiifImageService');
-new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
-  createDns,
-  oauthTokenPath,
-  namespace,
-  domainStackName: `${namespace}-domain`,
-  foundationStack,
-  ...imageServiceContext
-});
-
 const userContentContext = {
   allowedOrigins: app.node.tryGetContext('userContent:allowedOrigins'),
   lambdaCodePath: app.node.tryGetContext('userContent:lambdaCodePath'),
@@ -48,13 +40,41 @@ const userContentContext = {
   createDns,
   namespace,
 };
+const imageProcessingContext = {
+  rbscBucketName: app.node.tryGetContext('imageProcessing:rbscBucketName'),
+  processBucketName: app.node.tryGetContext('imageProcessing:processBucketName'),
+  imageBucketName: app.node.tryGetContext('imageProcessing:imageBucketName'),
+  lambdaCodePath: app.node.tryGetContext('imageProcessing:lambdaCodePath'),
+  dockerfilePath: app.node.tryGetContext('imageProcessing:dockerfilePath'),
+  appRepoOwner: app.node.tryGetContext('imageProcessing:appRepoOwner'),
+  appRepoName: app.node.tryGetContext('imageProcessing:appRepoName'),
+  appSourceBranch: app.node.tryGetContext('imageProcessing:appSourceBranch'),
+  infraRepoOwner: app.node.tryGetContext('imageProcessing:infraRepoOwner'),
+  infraRepoName: app.node.tryGetContext('imageProcessing:infraRepoName'),
+  infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
+}
+new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
+  createDns,
+  domainStackName: `${namespace}-domain`,
+  oauthTokenPath,
+  namespace,
+  foundationStack,
+  ...imageServiceContext
+});
 new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
 new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
+    oauthTokenPath,
+    owner,
+    contact,
+    slackNotifyStackName,
+    ...userContentContext,
+});
+new imageProcessing.ImagesStack(app, `${namespace}-image`, {...imageProcessingContext });
+new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
   oauthTokenPath,
   owner,
   contact,
-  slackNotifyStackName,
-  ...userContentContext,
+  namespace,
+  ...imageProcessingContext,
 });
-
 app.node.applyAspect(new StackTags());

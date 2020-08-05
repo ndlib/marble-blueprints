@@ -6,6 +6,7 @@ import { FoundationStack } from '../lib/foundation';
 import IIIF = require('../lib/iiif-serverless');
 import userContent = require('../lib/user-content');
 import imageProcessing = require('../lib/image-processing');
+import elasticsearch = require('../lib/elasticsearch');
 
 const app = new App();
 
@@ -80,4 +81,18 @@ new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`
   namespace,
   ...imageProcessingContext,
 });
+const elasticsearchContext = {
+  esDomainName: app.node.tryGetContext('elasticsearch:esDomainName'),
+  namespace,
+  infraRepoOwner: app.node.tryGetContext('elasticsearch:infraRepoOwner'),
+  infraRepoName: app.node.tryGetContext('elasticsearch:infraRepoName'),
+  infraSourceBranch: app.node.tryGetContext('elasticsearch:infraSourceBranch'),
+  foundationStack,
+}
+new elasticsearch.ElasticStack(app, `${namespace}-elastic`, {...elasticsearchContext});
+new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
+  oauthTokenPath,
+  owner,
+  contact,
+  ...elasticsearchContext});
 app.node.applyAspect(new StackTags());

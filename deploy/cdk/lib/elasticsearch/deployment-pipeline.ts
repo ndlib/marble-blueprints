@@ -31,7 +31,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-elastic`;
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string) => {
+    const createDeploy = (targetStack: string, namespace: string, domainName: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -44,11 +44,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: "marble",
           owner: props.owner,
           contact: props.contact,
-          "elasticsearch:esDomainName": props.esDomainName,
+          "elasticsearch:esDomainName": domainName,
         },
       });
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearch(domainName));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack));
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.globals([GlobalActions.Cloudwatch,]));
+      cdkDeploy.project.addToRolePolicy(
+        NamespacedPolicy.globals([GlobalActions.Cloudwatch,GlobalActions.ES]));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.sns(targetStack));
 
@@ -72,25 +74,25 @@ export class DeploymentPipelineStack extends cdk.Stack {
     });
 
     // Deploy to Test
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`);
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `test-${props.esDomainName}`);
 
     // Approval
-    // const approvalTopic = new Topic(this, 'ApprovalTopic');
-    // const approvalAction = new ManualApprovalAction({
-    //   actionName: 'Approval',
-    //   additionalInformation: `A new version of elasticsearch has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
-    //   notificationTopic: approvalTopic,
-    //   runOrder: 99, // This should always be the last action in the stage
-    // });
-    // if(props.slackNotifyStackName !== undefined){
-    //   const slackApproval = new SlackApproval(this, 'SlackApproval', {
-    //     approvalTopic,
-    //     notifyStackName: props.slackNotifyStackName,
-    //   });
-    // }
+    const approvalTopic = new Topic(this, 'ApprovalTopic');
+    const approvalAction = new ManualApprovalAction({
+      actionName: 'Approval',
+      additionalInformation: `A new version of elasticsearch has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
+      notificationTopic: approvalTopic,
+      runOrder: 99, // This should always be the last action in the stage
+    });
+    if(props.slackNotifyStackName !== undefined){
+      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.slackNotifyStackName,
+      });
+    }
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`);
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `prod-${props.esDomainName}`);
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
@@ -101,7 +103,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action],
+          actions: [deployTest.action, approvalAction],
           stageName: 'Test',
         },
         {

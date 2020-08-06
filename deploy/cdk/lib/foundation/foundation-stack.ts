@@ -4,7 +4,7 @@ import { Cluster, ICluster } from "@aws-cdk/aws-ecs";
 import { ILogGroup, LogGroup, RetentionDays } from "@aws-cdk/aws-logs";
 import { HostedZone, IHostedZone } from "@aws-cdk/aws-route53";
 import { Bucket, BucketAccessControl, HttpMethods, IBucket } from "@aws-cdk/aws-s3";
-import { Construct, Duration, RemovalPolicy, Stack, StackProps } from "@aws-cdk/core";
+import { Construct, Duration, RemovalPolicy, Stack, StackProps, Fn, CfnOutput } from "@aws-cdk/core";
 
 
 export interface IBaseStackProps extends StackProps {
@@ -15,14 +15,25 @@ export interface IBaseStackProps extends StackProps {
   readonly domainName: string;
 
   /**
-   * Should this stack create a Route53 Zone? Default is false
+   * If given, it will use the given Route53 Zone for this Vpc/DomainName 
+   * instead of creating one.
+   *
+   * Note: When using this option, this stack will not share the zone properties
+   * via export/import to dependent stacks. Dependent stacks will need to
+   * also be deployed with the same option used when the FoundationStack was
+   * deployed.
    */
-  readonly doCreateZone?: boolean;
+  readonly useExistingDnsZone?: boolean;
 
   /**
-   * If this stack import from an existing Route53 Zone, provide the zone id
+   * If given, it will use the given Vpc instead of creating one.
+   *
+   * Note: When using this option, this stack will not share the vpc properties
+   * via export/import to dependent stacks. Dependent stacks will need to
+   * also be deployed with the same option used when the FoundationStack was
+   * deployed.
    */
-  readonly useDnsZone?: string;
+  readonly useVpcId?: string;
 }
 
 export class FoundationStack extends Stack {
@@ -64,16 +75,23 @@ export class FoundationStack extends Stack {
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props);
-    
-    this.vpc = new Vpc(this, 'VPC');
+
+    if(props.useVpcId) {
+      this.vpc = Vpc.fromLookup(this, 'VPC', { vpcId: props.useVpcId })
+    } else {
+      this.vpc = new Vpc(this, 'VPC', {
+        maxAzs: 2,
+      });
+    }
 
     let certificateValidation = CertificateValidation.fromDns();
-    if (props.doCreateZone) {
+    if (props.useExistingDnsZone) {
+      this.hostedZone = HostedZone.fromLookup(this, 'HostedZone', { domainName: props.domainName });
+    } else {
       this.hostedZone = new HostedZone(this, 'HostedZone', {
         zoneName: props.domainName,
       });
       certificateValidation = CertificateValidation.fromDns(this.hostedZone);
-
     }
 
     this.certificate = new Certificate(this, 'Certificate', {
@@ -81,9 +99,7 @@ export class FoundationStack extends Stack {
       validation: certificateValidation,
     });
 
-    this.cluster = new Cluster(this, 'Cluster', {
-      vpc: this.vpc
-    });
+    this.cluster = new Cluster(this, 'Cluster', { vpc: this.vpc });
 
     this.logBucket = new Bucket(this, 'LogBucket', {
       accessControl: BucketAccessControl.LOG_DELIVERY_WRITE,
@@ -113,6 +129,5 @@ export class FoundationStack extends Stack {
       websiteIndexDocument: 'index.html',
       publicReadAccess: true,
     });
-
   }
 }

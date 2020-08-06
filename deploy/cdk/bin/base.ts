@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { App } from '@aws-cdk/core';
+import { App, ConstructNode } from '@aws-cdk/core';
 import { StackTags } from '@ndlib/ndlib-cdk';
 import 'source-map-support/register';
 import { FoundationStack } from '../lib/foundation';
@@ -9,21 +9,39 @@ import imageProcessing = require('../lib/image-processing');
 
 const app = new App();
 
+const getRquiredContext = (node: ConstructNode, key: string) => {
+  const value = node.tryGetContext(key);
+  if(value === undefined || value === null)
+    throw new Error(`Context key '${key}' is required.`);
+  return value;
+}
+
+// Get context keys that are required by all stacks
+const account = getRquiredContext(app.node, 'account');
+const region = getRquiredContext(app.node, 'region');
+const namespace = getRquiredContext(app.node, 'namespace');
+const owner = getRquiredContext(app.node, 'owner');
+const contact = getRquiredContext(app.node, 'contact');
+
 const createDns : boolean = app.node.tryGetContext('createDns') === 'true' ? true : false;
-const domainName = app.node.tryGetContext('domainName');
 const oauthTokenPath = app.node.tryGetContext('oauthTokenPath');
-const namespace = app.node.tryGetContext('namespace');
-const owner = app.node.tryGetContext('owner');
-const contact = app.node.tryGetContext('contact');
 const slackNotifyStackName = app.node.tryGetContext('slackNotifyStackName'); // Notifier for CD pipeline approvals
 
+const env = { account, region };
+
+const useVpcId = app.node.tryGetContext('useVpcId');
+const domainName = app.node.tryGetContext('domainName');
+const useExistingDnsZone = app.node.tryGetContext('useExistingDnsZone');
 const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+  env,
   domainName,
-  doCreateZone: createDns,
+  useExistingDnsZone,
+  useVpcId,
 });
 
 const imageServiceContext = app.node.tryGetContext('iiifImageService');
 new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
+  env,
   createDns,
   domainStackName: `${namespace}-domain`,
   oauthTokenPath,
@@ -33,6 +51,7 @@ new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
 });
 
 const userContentContext = {
+  env,
   allowedOrigins: app.node.tryGetContext('userContent:allowedOrigins'),
   lambdaCodePath: app.node.tryGetContext('userContent:lambdaCodePath'),
   tokenAudiencePath: app.node.tryGetContext('userContent:tokenAudiencePath'),
@@ -51,14 +70,15 @@ const userContentContext = {
 };
 new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
 new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
-    oauthTokenPath,
-    owner,
-    contact,
-    slackNotifyStackName,
-    ...userContentContext,
+  oauthTokenPath,
+  owner,
+  contact,
+  slackNotifyStackName,
+  ...userContentContext,
 });
 
 const imageProcessingContext = {
+  env,
   rbscBucketName: app.node.tryGetContext('imageProcessing:rbscBucketName'),
   processBucketName: app.node.tryGetContext('imageProcessing:processBucketName'),
   imageBucketName: app.node.tryGetContext('imageProcessing:imageBucketName'),
@@ -72,8 +92,8 @@ const imageProcessingContext = {
   infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
   foundationStack,
 };
-new imageProcessing.ImagesStack(app, `${namespace}-image`, imageProcessingContext);
-new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
+new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, imageProcessingContext);
+new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-processing-deployment`, {
   oauthTokenPath,
   owner,
   contact,

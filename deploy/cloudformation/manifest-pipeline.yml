@@ -1,10 +1,9 @@
 Transform: 'AWS::Serverless-2016-10-31'
 Description: >
   - Creates a series of lambdas and a step function to process manifests.
-  - The lambdas create iiif manifest and pyramid tiffs out of images.
-  - The finished product are copied to a bucket to serve manifests out of and an image server
-    to display the iiif images.
-  - Creates a bucket for to serve manifests out of
+  - The lambdas create iiif manifest.
+  - The finished product are copied to a bucket to serve manifests.
+  - Creates a bucket for to serve manifests
   - Creates a bucket that the step functions use as an in process location.
   - Requires the iiif-service and marble-data-broker pipelines to be built.  Uses ssm keys from those services
 Parameters:
@@ -75,17 +74,6 @@ Parameters:
     MaxLength: 63
     AllowedPattern: ^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)
     ConstraintDescription: Must be a valid hostname prefix value.
-  ContainerCpu:
-    Type: Number
-    Default: 1024
-    Description: How much CPU to give the container. 1024 is 1 CPU
-  ContainerMemory:
-    Type: Number
-    Default: 2048
-    Description: How much memory in megabytes to give the container
-  ContainerImageUrl:
-    Type: String
-    Description: The url of a docker image that will handle image processing
   CreateHarvestRule:
     Type: String
     Default: "False"
@@ -491,93 +479,6 @@ Resources:
           PROCESS_BUCKET: !Ref ProcessBucket
           SENTRY_DSN: !Ref SentryDsn
 
-  # PYRAMID GENERATOR PROCESSING
-  ImageTaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    DependsOn:
-      - ImageTaskRole
-    Properties:
-      Family: !Sub '${AWS::StackName}-Manifest'
-      NetworkMode: awsvpc
-      TaskRoleArn: !GetAtt ImageTaskRole.Arn
-      Cpu: !Ref 'ContainerCpu'
-      Memory: !Ref 'ContainerMemory'
-      RequiresCompatibilities:
-        - FARGATE
-      ExecutionRoleArn:
-        Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
-      ContainerDefinitions:
-        - Name: !Sub '${AWS::StackName}-Manifest'
-          Cpu: !Ref 'ContainerCpu'
-          Memory: !Ref 'ContainerMemory'
-          EntryPoint: ['pyramid.py']
-          Image: !Ref ContainerImageUrl
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group :
-                Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'LogGroup']]
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: !Sub '${AWS::StackName}-ManifestTask'
-
-  ImageTaskRole:
-    Type: AWS::IAM::Role
-    DependsOn:
-      - ProcessBucket
-    Properties:
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          -
-            Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Policies:
-        - PolicyName: ProcessBucketPermissions
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              -
-                Action:
-                  - "s3:GetObject"
-                  - "s3:PutObject"
-                  - "s3:DeleteObject"
-                  - "s3:ListBucket"
-                Effect: "Allow"
-                Resource:
-                  - !GetAtt ProcessBucket.Arn
-                  - Fn::Join:
-                      - ""
-                      -
-                        - !GetAtt ProcessBucket.Arn
-                        - "/*"
-        - PolicyName: RBSCS3ImageBucketPermissions
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              -
-                Action:
-                  - "s3:GetObject"
-                  - "s3:ListBucket"
-                Effect: "Allow"
-                Resource:
-                  - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}"
-                  - !Sub "arn:aws:s3:::${RBSCS3ImageBucketName}/*"
-        - PolicyName: GDriveSsmPermissions
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              -
-                Action:
-                  - "ssm:GetParameter"
-                Effect: "Allow"
-                Resource:
-                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${GoogleKeyPath}/*"
-
   StatesExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -600,34 +501,6 @@ Resources:
                 Action:
                   - "lambda:InvokeFunction"
                 Resource: "*"
-        - PolicyName: FargatePassPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "iam:PassRole"
-                Resource:
-                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-*'
-                  - Fn::ImportValue: !Join [':', [!Ref InfrastructureStackName, 'ContainerTaskExecutionRoleArn']]
-        - PolicyName: FargateTaskPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "ecs:RunTask"
-                  - "ecs:StopTask"
-                  - "ecs:DescribeTasks"
-                Resource:
-                  - !Ref ImageTaskDefinition
-              - Effect: Allow
-                Action:
-                  - "events:PutTargets"
-                  - "events:PutRule"
-                  - "events:DescribeRule"
-                Resource:
-                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForECSTaskRule"
         - PolicyName: GrantAccessToRulePolicy
           PolicyDocument:
             Version: 2012-10-17
@@ -693,52 +566,7 @@ Resources:
                       "Next": "Finalize"
                     }
                   ],
-                  "Next": "ImageProcessingTask"
-                },
-                "ImageProcessingTask": {
-                  "Type": "Task",
-                  "Resource": "arn:${AWS::Partition}:states:::ecs:runTask.sync",
-                  "ResultPath": "$.ecs.ecsresults",
-                  "Parameters": {
-                    "LaunchType": "FARGATE",
-                    "Cluster": "${InfrastructureStackName}-Cluster",
-                    "TaskDefinition": "${ImageTaskDefinition}",
-                    "Overrides": {
-                      "ContainerOverrides": [
-                          {
-                              "Name": "${AWS::StackName}-Manifest",
-                              "Command.$": "$.ecs-args"
-                          }
-                      ]
-                    },
-                    "NetworkConfiguration": {
-                      "AwsvpcConfiguration": {
-                        "Subnets": [
-                          "${publicSubnet1}",
-                          "${publicSubnet2}"
-                        ],
-                        "AssignPublicIp": "ENABLED"
-                      }
-                    }
-                  },
-                  "Next": "ProcessManifest",
-                  "Catch": [
-                    {
-                      "ErrorEquals": [ "Lambda.Unknown" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "Finalize"
-                    },
-                    {
-                      "ErrorEquals": [ "States.TaskFailed" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "Finalize"
-                    },
-                    {
-                      "ErrorEquals": [ "States.ALL" ],
-                      "ResultPath": "$.unexpected",
-                      "Next": "Finalize"
-                    }
-                  ]
+                  "Next": "ProcessManifest"
                 },
                 "ProcessManifest": {
                   "Type": "Task",
@@ -818,8 +646,6 @@ Resources:
             }
           -
             {
-              publicSubnet1: {"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}:PublicSubnet1ID"}},
-              publicSubnet2: {"Fn::ImportValue" : {"Fn::Sub" : "${NetworkStackName}:PublicSubnet2ID"}},
               initManifestLambdaArn: !GetAtt [InitManifestLambdaFunction, Arn],
               processManifestLambdaArn: !GetAtt [ ProcessManifestLambdaFunction, Arn ],
               finalizeLambdaArn: !GetAtt [ FinalizeLambdaFunction, Arn ]

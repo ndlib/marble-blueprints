@@ -120,9 +120,11 @@ export class NamespacedPolicy {
         Fn.sub('arn:aws:apigateway:${AWS::Region}::/domainnames'),
         Fn.sub('arn:aws:apigateway:${AWS::Region}::/domainnames/${domainName}', { domainName }),
         Fn.sub('arn:aws:apigateway:${AWS::Region}::/domainnames/${domainName}/*', { domainName }),
+        Fn.sub('arn:aws:apigateway:${AWS::Region}::/tags/arn%3Aaws%3Aapigateway%3A${AWS::Region}%3A%3A%2Fdomainnames%2F${domainName}', { domainName }),
       ],
       actions: [
         'apigateway:POST',
+        'apigateway:PUT',
         'apigateway:GET',
         'apigateway:DELETE',
       ],

@@ -44,6 +44,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
    */
   readonly additionalContext?: { [key: string]: string };
 
+  readonly contextEnvName: string;
   readonly appBuildCommands?: string[];
   readonly postDeployCommands?: string[];
   readonly outputFiles?: string[];
@@ -98,7 +99,7 @@ export class CDKPipelineDeploy extends Construct {
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`, 
               `npm run cdk deploy -- ${props.targetStack} \
                 --require-approval never --exclusively \
-                -c "namespace=${props.namespace}" ${addtlContext}`
+                -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`
             ]
           },
           post_build: {

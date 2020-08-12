@@ -20,6 +20,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly infraRepoName: string;
   readonly infraSourceBranch: string;
   readonly namespace: string;
+  readonly contextEnvName: string;
   readonly owner: string;
   readonly contact: string;
   readonly tokenAudiencePath: string;
@@ -41,6 +42,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
     const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string) => {
+      const domainName = `${hostnamePrefix}.${props.foundationStack.hostedZone.zoneName}`;
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -53,6 +55,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         ],
         cdkDirectory: 'deploy/cdk',
         namespace: `${namespace}`,
+        contextEnvName: props.contextEnvName,
         additionalContext: {
           description: "User content API",
           projectName: "marble",
@@ -72,6 +75,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         ],
       }));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.api());
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.apiDomain(domainName));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.dynamodb(targetStack));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack));
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack));

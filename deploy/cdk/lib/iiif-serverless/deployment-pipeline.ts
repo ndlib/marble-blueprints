@@ -24,7 +24,6 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly qaRepoOwner: string;
   readonly qaRepoName: string;
   readonly qaSourceBranch: string;
-  readonly imageSourceBucketPath: string;
   readonly namespace: string;
   readonly domainStackName: string;
   readonly foundationStack: FoundationStack;

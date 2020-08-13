@@ -1,10 +1,31 @@
 {
-  "createDns": "true",
-  "domainName": "library.nd.edu",
+  "environments": {
+    "dev": {
+      "account": "333680067100",
+      "region": "us-east-1",
+      "useVpcId": "vpc-797fed1d",
+      "createDns": true,
+      "domainName": "libraries.nd.edu",
+      "useExistingDnsZone": true,
+      "slackNotifyStackName": "slack-cd-approvals-test-notifier"
+    },
+    "prod": {
+      "account": "230391840102",
+      "region": "us-east-1",
+      "useVpcId": "vpc-55c35e30",
+      "createDns": false,
+      "domainName": "library.nd.edu",
+      "useExistingDnsZone": false,
+      "slackNotifyStackName": "slack-approval-bot-marble-notifier"
+    }
+  },
+  "owner": "wse",
+  "contact": "web-and-software-engineering-group@nd.edu",
+  "projectName": "marble",
+  "description": "Infrastructure for Marble project",
   "oauthTokenPath": "/all/github/ndlib-git",
   "namespace": "marble",
   "iiifImageService": {
-    "imageSourceBucketPath": "/all/stacks/marble-data-broker/publicbucket",
     "hostnamePrefix": "image-iiif",
     "appRepoOwner": "ndlib",
     "appRepoName": "serverless-iiif",
@@ -30,7 +51,6 @@
   "imageProcessing:infraRepoOwner": "ndlib",
   "imageProcessing:infraRepoName": "marble-blueprints",
   "imageProcessing:infraSourceBranch": "master",
-
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",
   "userContent:tokenAudiencePath": "/all/stacks/marble-user-content/tokenAudiencePath",
@@ -41,5 +61,109 @@
   "userContent:infraRepoOwner": "ndlib",
   "userContent:infraRepoName": "marble-blueprints",
   "userContent:infraSourceBranch": "master",
-  "userContent:hostnamePrefix": "marble-user-content"
+  "userContent:hostnamePrefix": "marble-user-content",
+  "vpc-provider:account=333680067100:filter.vpc-id=vpc-797fed1d:region=us-east-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-797fed1d",
+    "vpcCidrBlock": "172.22.242.0/23",
+    "availabilityZones": [],
+    "vpnGatewayId": "vgw-0e5db167",
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-fee3a4d3",
+            "cidr": "172.22.242.0/25",
+            "availabilityZone": "us-east-1b",
+            "routeTableId": "rtb-242f6440"
+          },
+          {
+            "subnetId": "subnet-d5adecea",
+            "cidr": "172.22.243.0/25",
+            "availabilityZone": "us-east-1e",
+            "routeTableId": "rtb-242f6440"
+          }
+        ]
+      },
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-d94a0af4",
+            "cidr": "172.22.242.128/25",
+            "availabilityZone": "us-east-1b",
+            "routeTableId": "rtb-a260a9db"
+          },
+          {
+            "subnetId": "subnet-07b7cf3728cf18859",
+            "cidr": "172.22.243.128/25",
+            "availabilityZone": "us-east-1e",
+            "routeTableId": "rtb-a260a9db"
+          }
+        ]
+      }
+    ]
+  },
+  "hosted-zone:account=333680067100:domainName=libraries.nd.edu:region=us-east-1": {
+    "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
+    "Name": "libraries.nd.edu."
+  },
+  "vpc-provider:account=230391840102:filter.vpc-id=vpc-55c35e30:region=us-east-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-55c35e30",
+    "vpcCidrBlock": "172.22.8.0/21",
+    "availabilityZones": [],
+    "vpnGatewayId": "vgw-0a5833365c34c9958",
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-8838e1d1",
+            "cidr": "172.22.12.0/24",
+            "availabilityZone": "us-east-1a",
+            "routeTableId": "rtb-147fe571"
+          },
+          {
+            "subnetId": "subnet-e95aa1c2",
+            "cidr": "172.22.13.0/24",
+            "availabilityZone": "us-east-1c",
+            "routeTableId": "rtb-147fe571"
+          },
+          {
+            "subnetId": "subnet-57c67820",
+            "cidr": "172.22.14.0/24",
+            "availabilityZone": "us-east-1d",
+            "routeTableId": "rtb-147fe571"
+          }
+        ]
+      },
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-d538e18c",
+            "cidr": "172.22.8.0/24",
+            "availabilityZone": "us-east-1a",
+            "routeTableId": "rtb-61eb7104"
+          },
+          {
+            "subnetId": "subnet-ac5aa187",
+            "cidr": "172.22.9.0/24",
+            "availabilityZone": "us-east-1c",
+            "routeTableId": "rtb-61eb7104"
+          },
+          {
+            "subnetId": "subnet-84c977f3",
+            "cidr": "172.22.10.0/24",
+            "availabilityZone": "us-east-1d",
+            "routeTableId": "rtb-61eb7104"
+          }
+        ]
+      }
+    ]
+  }
 }

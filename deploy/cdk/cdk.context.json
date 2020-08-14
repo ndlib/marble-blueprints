@@ -79,11 +79,8 @@
   "manifestPipeline:googleKeyPath": "/all/marble/google",
   "manifestPipeline:museumKeyPath": "/all/marble/museum",
   "manifestPipeline:curateKeyPath": "/all/marble/curate",
-  "manifestPipeline:containerCpu": 1024,
-  "manifestPipeline:containerMemory": 2048,
-  "manifestPipeline:createHarvestRule": false,
   "manifestPipeline:lambdaCodeRootPath": "../../../marble-manifest-pipeline",
-  "manifestPipeline:hostnamePrefix": "presentation-iiif",
+  "manifestPipeline:hostnamePrefix": "testing-presentation-iiif",
 
   "vpc-provider:account=333680067100:filter.vpc-id=vpc-797fed1d:region=us-east-1:returnAsymmetricSubnets=true": {
     "vpcId": "vpc-797fed1d",

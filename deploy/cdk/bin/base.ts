@@ -117,7 +117,6 @@ new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`
   ...elasticsearchProps,
 })
 
-
 const manifestPipelineContext = getContextByNamespace('manifestPipeline')
 
 new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest-${envName}`, {
@@ -126,7 +125,6 @@ new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest-${envName
   foundationStack,
   createDns,
   sentryDsn: app.node.tryGetContext('sentryDsn'),
-  appConfigPath: `/all/${namespace}-manifest-${envName}`,
   rBSCS3ImageBucketName,
   createEventRules,
   ...manifestPipelineContext,

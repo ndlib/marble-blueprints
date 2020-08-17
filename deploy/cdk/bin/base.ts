@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { App } from '@aws-cdk/core';
+import { App, ConstructNode } from '@aws-cdk/core'
 import { StackTags } from '@ndlib/ndlib-cdk';
 import 'source-map-support/register';
 import { FoundationStack } from '../lib/foundation';
@@ -8,78 +8,97 @@ import userContent = require('../lib/user-content');
 import imageProcessing = require('../lib/image-processing');
 import elasticsearch = require('../lib/elasticsearch');
 
-const app = new App();
+const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? "{}")
 
-const createDns : boolean = app.node.tryGetContext('createDns') === 'true' ? true : false;
-const domainName = app.node.tryGetContext('domainName');
-const oauthTokenPath = app.node.tryGetContext('oauthTokenPath');
-const namespace = app.node.tryGetContext('namespace');
-const owner = app.node.tryGetContext('owner');
-const contact = app.node.tryGetContext('contact');
-const slackNotifyStackName = app.node.tryGetContext('slackNotifyStackName'); // Notifier for CD pipeline approvals
+const app = new App()
+
+// Globs all kvp from context of the form "namespace:key": "value"
+// and flattens it to an object of the form "key": "value"
+const getContextByNamespace = (ns: string): any => {
+  const result: any = {}
+  const prefix = `${ns}:`
+  for (const [key, value] of Object.entries(allContext)) {
+    if(key.startsWith(prefix)){
+      const flattenedKey =  key.substr(prefix.length)
+      result[flattenedKey] = value
+    }
+  }
+  return result
+}
+
+const getRequiredContext = (key: string) => {
+  const value = app.node.tryGetContext(key)
+  if(value === undefined || value === null)
+    throw new Error(`Context key '${key}' is required.`)
+  return value
+}
+
+// Get context keys that are required by all stacks
+const owner = getRequiredContext('owner')
+const contact = getRequiredContext('contact')
+const namespace = getRequiredContext('namespace')
+const envName = getRequiredContext('env')
+const contextEnv = getRequiredContext('environments')[envName]
+if(contextEnv === undefined || contextEnv === null)
+  throw new Error(`Context key 'environments.${envName}' is required.`)
+
+// The environment objects defined in our context are a mixture of properties.
+// Need to decompose these into a cdk env object and other required stack props
+const env = { account: contextEnv.account, region: contextEnv.region, name: envName }
+const { useVpcId, domainName, createDns, useExistingDnsZone, slackNotifyStackName } = contextEnv
+
+const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
 
 const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+  env,
   domainName,
-  doCreateZone: createDns,
-});
+  useExistingDnsZone,
+  useVpcId,
+})
 
-const imageServiceContext = app.node.tryGetContext('iiifImageService');
+const imageServiceContext = getRequiredContext('iiifImageService')
 new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
+  env,
   createDns,
   domainStackName: `${namespace}-domain`,
   oauthTokenPath,
   namespace,
   foundationStack,
-  ...imageServiceContext
-});
+  ...imageServiceContext,
+})
 
-const userContentContext = {
-  allowedOrigins: app.node.tryGetContext('userContent:allowedOrigins'),
-  lambdaCodePath: app.node.tryGetContext('userContent:lambdaCodePath'),
-  tokenAudiencePath: app.node.tryGetContext('userContent:tokenAudiencePath'),
-  tokenIssuerPath: app.node.tryGetContext('userContent:tokenIssuerPath'),
-  appRepoOwner: app.node.tryGetContext('userContent:appRepoOwner'),
-  appRepoName: app.node.tryGetContext('userContent:appRepoName'),
-  appSourceBranch: app.node.tryGetContext('userContent:appSourceBranch'),
-  infraRepoOwner: app.node.tryGetContext('userContent:infraRepoOwner'),
-  infraRepoName: app.node.tryGetContext('userContent:infraRepoName'),
-  infraSourceBranch: app.node.tryGetContext('userContent:infraSourceBranch'),
-  notificationReceivers: app.node.tryGetContext('userContent:deployNotificationReceivers'),
-  hostnamePrefix: app.node.tryGetContext('userContent:hostnamePrefix'),
+const userContentContext = getContextByNamespace('userContent')
+const userContentProps = {
+  env,
   foundationStack,
   createDns,
   namespace,
-};
-new userContent.UserContentStack(app, `${namespace}-user-content`, userContentContext);
+  ...userContentContext,
+}
+new userContent.UserContentStack(app, `${namespace}-user-content`, userContentProps)
 new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
-    oauthTokenPath,
-    owner,
-    contact,
-    slackNotifyStackName,
-    ...userContentContext,
-});
+  contextEnvName: envName,
+  oauthTokenPath,
+  owner,
+  contact,
+  slackNotifyStackName,
+  ...userContentProps,
+})
 
-const imageProcessingContext = {
-  rbscBucketName: app.node.tryGetContext('imageProcessing:rbscBucketName'),
-  processBucketName: app.node.tryGetContext('imageProcessing:processBucketName'),
-  imageBucketName: app.node.tryGetContext('imageProcessing:imageBucketName'),
-  lambdaCodePath: app.node.tryGetContext('imageProcessing:lambdaCodePath'),
-  dockerfilePath: app.node.tryGetContext('imageProcessing:dockerfilePath'),
-  appRepoOwner: app.node.tryGetContext('imageProcessing:appRepoOwner'),
-  appRepoName: app.node.tryGetContext('imageProcessing:appRepoName'),
-  appSourceBranch: app.node.tryGetContext('imageProcessing:appSourceBranch'),
-  infraRepoOwner: app.node.tryGetContext('imageProcessing:infraRepoOwner'),
-  infraRepoName: app.node.tryGetContext('imageProcessing:infraRepoName'),
-  infraSourceBranch: app.node.tryGetContext('imageProcessing:infraSourceBranch'),
+const imageProcessingContext = getContextByNamespace('imageProcessing')
+const imageProcessingProps = {
+  env,
   foundationStack,
-};
-new imageProcessing.ImagesStack(app, `${namespace}-image`, imageProcessingContext);
-new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-deployment`, {
+  ...imageProcessingContext,
+}
+new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, imageProcessingProps)
+new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-processing-deployment`, {
+  contextEnvName: envName,
   oauthTokenPath,
   owner,
   contact,
   namespace,
-  ...imageProcessingContext,
+  ...imageProcessingProps,
 });
 const elasticsearchContext = {
   esDomainName: app.node.tryGetContext('elasticsearch:esDomainName'),

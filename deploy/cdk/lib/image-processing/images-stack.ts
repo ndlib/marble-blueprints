@@ -70,7 +70,7 @@ export class ImagesStack extends cdk.Stack {
 
     const cluster = new ecs.Cluster(this, 'Cluster', { vpc: props.foundationStack.vpc })
     cluster.addCapacity('Ec2Group', {
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
+      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       minCapacity: 1,
       maxCapacity: 1,
       desiredCapacity: 1,
@@ -118,6 +118,7 @@ export class ImagesStack extends cdk.Stack {
       memoryLimitMiB: 512,
       logging,
       environment: {
+        LEVEL0: 'enable',
         RBSC_BUCKET: rbscBucketName,
         PROCESS_BUCKET: processBucketName,
         IMAGE_BUCKET: imageBucketName,

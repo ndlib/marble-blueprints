@@ -31,6 +31,7 @@
     "@aws-cdk/aws-codepipeline": "^1.56.0",
     "@aws-cdk/aws-codepipeline-actions": "^1.56.0",
     "@aws-cdk/aws-dynamodb": "^1.56.0",
+    "@aws-cdk/aws-elasticsearch": "^1.56.0",
     "@aws-cdk/aws-ec2": "^1.56.0",
     "@aws-cdk/aws-ecs": "^1.56.0",
     "@aws-cdk/aws-events-targets": "^1.56.0",

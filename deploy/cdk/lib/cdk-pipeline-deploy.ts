@@ -25,7 +25,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   /**
    * Application source artifact.
    */
-  readonly appSourceArtifact: Artifact;
+  readonly appSourceArtifact?: Artifact;
 
   /**
    * Subdirectory of the infrastructure source where the cdk code can be found, without leading /
@@ -69,6 +69,12 @@ export class CDKPipelineDeploy extends Construct {
         addtlContext += ` -c "${val[0]}=${val[1]}"`
       })
     }
+    let appSourceDir: string = "$CODEBUILD_SRC_DIR";
+    let extraInputs: Array<Artifact> = [];
+    if (props.appSourceArtifact !== undefined) {
+      extraInputs.push(props.appSourceArtifact);
+      appSourceDir = `$CODEBUILD_SRC_DIR_${props.appSourceArtifact.artifactName}`;
+    }
     this.project = new PipelineProject(scope, `${id}Project`, {
       environment: {
         buildImage: LinuxBuildImage.STANDARD_4_0,
@@ -90,9 +96,9 @@ export class CDKPipelineDeploy extends Construct {
           },
           pre_build: {
             commands: [
-              `cd $CODEBUILD_SRC_DIR_${props.appSourceArtifact.artifactName}`,
+              `cd ${appSourceDir}`,
               ...(props.appBuildCommands || []),
-            ],
+            ]
           },
           build: {
             commands: [
@@ -153,7 +159,7 @@ export class CDKPipelineDeploy extends Construct {
     this.action = new CodeBuildAction({
       actionName: 'Deploy',
       input: props.infraSourceArtifact,
-      extraInputs: [props.appSourceArtifact],
+      extraInputs: extraInputs,
       project: this.project,
       runOrder: 1,
       outputs: props.outputArtifacts || [],

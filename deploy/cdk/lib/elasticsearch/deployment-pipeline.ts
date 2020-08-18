@@ -80,7 +80,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const approvalTopic = new Topic(this, 'ApprovalTopic');
     const approvalAction = new ManualApprovalAction({
       actionName: 'Approval',
-      additionalInformation: `A new version of elasticsearch has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
+      additionalInformation: `A new version of elasticsearch has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.\n\n*Infrastructure Changes:*\n${infraSourceAction.variables.commitMessage}\n\nFor more details on the changes, see https://github.com/${props.infraRepoOwner}/${props.infraRepoName}/commit/${infraSourceAction.variables.commitId}.`,
+      
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     });

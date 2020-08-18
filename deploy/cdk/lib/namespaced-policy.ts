@@ -74,8 +74,10 @@ export class NamespacedPolicy {
   }
 
   public static iamRole(stackName: string): PolicyStatement  {
+    // CDK truncates stack name for auto-created roles
+    const prefix = stackName.substring(0, 25)
     return new PolicyStatement({
-      resources: [ Fn.sub('arn:aws:iam::${AWS::AccountId}:role/' + stackName + '*') ],
+      resources: [ Fn.sub('arn:aws:iam::${AWS::AccountId}:role/' + prefix + '*') ],
       actions: ['iam:*'],
     })
   }
@@ -88,10 +90,12 @@ export class NamespacedPolicy {
   }
 
   public static lambda(stackName: string): PolicyStatement {
+    // CDK truncates stack name for auto-created functions
+    const prefix = stackName.substring(0, 25)
     return new PolicyStatement({
       resources: [
-        Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:' + stackName + '*'),
-        Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:' + stackName + '*'),
+        Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:' + prefix + '*'),
+        Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:' + prefix + '*'),
       ],
       actions: ['lambda:*'],
     })
@@ -252,10 +256,25 @@ export class NamespacedPolicy {
   public static logstream(stackName: string): PolicyStatement {
     return new PolicyStatement({
       resources: [
-        Fn.sub('arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-*'),
+        Fn.sub('arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/' + stackName + '-*'),
       ],
       actions: [
         'logs:CreateLogStream',
+      ],
+    })
+  }
+
+  public static elasticSearch(domain: string): PolicyStatement {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/' + domain + '*/*'),
+      ],
+      actions: [
+        'es:ESHttpHead',
+        'es:ESHttpPost',
+        'es:ESHttpGet',
+        'es:ESHttpPut',
+        'es:ESHttpDelete',
       ],
     })
   }

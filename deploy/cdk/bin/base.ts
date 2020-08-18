@@ -6,6 +6,7 @@ import { FoundationStack } from '../lib/foundation'
 import IIIF = require('../lib/iiif-serverless')
 import userContent = require('../lib/user-content')
 import imageProcessing = require('../lib/image-processing')
+import staticHost = require('../lib/static-host')
 
 const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? "{}")
 
@@ -27,8 +28,9 @@ const getContextByNamespace = (ns: string): any => {
 
 const getRequiredContext = (key: string) => {
   const value = app.node.tryGetContext(key)
-  if(value === undefined || value === null)
+  if(value === undefined || value === null) {
     throw new Error(`Context key '${key}' is required.`)
+  }
   return value
 }
 
@@ -38,8 +40,9 @@ const contact = getRequiredContext('contact')
 const namespace = getRequiredContext('namespace')
 const envName = getRequiredContext('env')
 const contextEnv = getRequiredContext('environments')[envName]
-if(contextEnv === undefined || contextEnv === null)
+if(contextEnv === undefined || contextEnv === null) {
   throw new Error(`Context key 'environments.${envName}' is required.`)
+}
 
 // The environment objects defined in our context are a mixture of properties.
 // Need to decompose these into a cdk env object and other required stack props
@@ -47,12 +50,34 @@ const env = { account: contextEnv.account, region: contextEnv.region, name: envN
 const { useVpcId, domainName, createDns, useExistingDnsZone, slackNotifyStackName } = contextEnv
 
 const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
+const projectName = getRequiredContext('projectName')
+const description = getRequiredContext('description')
 
-const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+const foundationStack = new FoundationStack(app, `${projectName}-foundation`, {
   env,
   domainName,
   useExistingDnsZone,
   useVpcId,
+})
+
+const staticHostContext = getContextByNamespace('staticHost')
+const staticHostProps = {
+  contextEnvName: envName,
+  env,
+  foundationStack,
+  createDns,
+  namespace,
+  ...staticHostContext,
+}
+new staticHost.StaticHostStack(app, `${namespace}-website`, staticHostProps)
+new staticHost.DeploymentPipelineStack(app, `${namespace}-website-deployment`, {
+  oauthTokenPath,
+  owner,
+  contact,
+  projectName,
+  description,
+  slackNotifyStackName,
+  ...staticHostProps,
 })
 
 const imageServiceContext = getRequiredContext('iiifImageService')

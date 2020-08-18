@@ -47,8 +47,9 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly contextEnvName: string;
   readonly appBuildCommands?: string[];
   readonly postDeployCommands?: string[];
+  readonly outputDirectory?: string;
   readonly outputFiles?: string[];
-  readonly outputArtifacts?: Artifact[];
+  readonly outputArtifact?: Artifact;
 }
 
 /**
@@ -76,6 +77,7 @@ export class CDKPipelineDeploy extends Construct {
       },
       buildSpec: BuildSpec.fromObject({
         artifacts: {
+          'base-directory': props.outputDirectory,
           files: props.outputFiles || [],
         },
         phases: {
@@ -156,7 +158,7 @@ export class CDKPipelineDeploy extends Construct {
       extraInputs: [props.appSourceArtifact],
       project: this.project,
       runOrder: 1,
-      outputs: props.outputArtifacts || [],
+      outputs: (props.outputArtifact ? [props.outputArtifact] : []),
     })
   }
 }

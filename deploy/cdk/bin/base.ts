@@ -100,18 +100,17 @@ new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-processing-
   namespace,
   ...imageProcessingProps,
 });
-const elasticsearchContext = {
-  esDomainName: app.node.tryGetContext('elasticsearch:esDomainName'),
+const elasticsearchContext = getContextByNamespace('elasticsearch')
+const elasticsearchProps = {
   namespace,
-  infraRepoOwner: app.node.tryGetContext('elasticsearch:infraRepoOwner'),
-  infraRepoName: app.node.tryGetContext('elasticsearch:infraRepoName'),
-  infraSourceBranch: app.node.tryGetContext('elasticsearch:infraSourceBranch'),
   foundationStack,
+  ...elasticsearchContext,
 }
-new elasticsearch.ElasticStack(app, `${namespace}-elastic`, {...elasticsearchContext});
+new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps);
 new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
   oauthTokenPath,
   owner,
   contact,
-  ...elasticsearchContext});
+  ...elasticsearchProps
+})
 app.node.applyAspect(new StackTags());

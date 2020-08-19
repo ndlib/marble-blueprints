@@ -13,6 +13,7 @@ import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
   readonly namespace: string;
+  readonly contextEnvName: string;
   readonly owner: string;
   readonly contact: string;
   readonly esDomainName: string;
@@ -39,6 +40,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         appBuildCommands: [],
         cdkDirectory: 'deploy/cdk',
         namespace: `${namespace}`,
+        contextEnvName: props.contextEnvName,
         additionalContext: {
           description: "Elasticsearch cluster",
           projectName: "marble",

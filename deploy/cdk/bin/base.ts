@@ -56,7 +56,13 @@ const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
   useVpcId,
 })
 
-const imageServiceContext = getRequiredContext('iiifImageService')
+const imageServiceContext = getContextByNamespace('iiifImageService')
+new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, {
+  env,
+  foundationStack,
+  createDns,
+  ...imageServiceContext,
+})
 new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
   env,
   createDns,
@@ -108,9 +114,10 @@ const elasticsearchProps = {
 }
 new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps);
 new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
+  contextEnvName: envName,
   oauthTokenPath,
   owner,
   contact,
-  ...elasticsearchProps
+  ...elasticsearchProps,
 })
 app.node.applyAspect(new StackTags());

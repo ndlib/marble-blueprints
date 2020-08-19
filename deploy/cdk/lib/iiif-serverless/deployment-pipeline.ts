@@ -4,10 +4,7 @@ import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
-import ssm = require('@aws-cdk/aws-ssm')
 import cdk = require('@aws-cdk/core')
-import { Runtime } from '@aws-cdk/aws-lambda'
-import { Fn } from '@aws-cdk/core'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { Topic } from '@aws-cdk/aws-sns'
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
@@ -258,7 +255,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     // Pipeline
-    const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
+    new codepipeline.Pipeline(this, 'DeploymentPipeline', {
       artifactBucket,
       stages: [
         {

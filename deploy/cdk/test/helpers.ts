@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { Vpc } from "@aws-cdk/aws-ec2"
 import cxapi = require('@aws-cdk/cx-api')
 import { HostedZone } from "@aws-cdk/aws-route53"
@@ -46,7 +49,6 @@ export const mockVpcFromLookup = (response?: any) => {
   })
 }
 
-
 export const mockHostedZoneFromLookup = (response?: any) => {
   jest.mock('@aws-cdk/aws-route53')
   const mockFromLookup = jest.spyOn(HostedZone, 'fromLookup')
@@ -55,5 +57,15 @@ export const mockHostedZoneFromLookup = (response?: any) => {
       hostedZoneId: 'mockHostedZone-id',
       zoneName: 'mockHostedZone-name',
     }
+  })
+}
+
+export const mockFoundationStack = (response?: any) => {
+  jest.mock('../lib/foundation', () => {
+    return jest.fn().mockImplementation((scope, id, props) => {
+      return response ?? {
+        hostedZone: { zoneName: 'mockZoneName' },
+      }
+    })
   })
 }

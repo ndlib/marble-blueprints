@@ -24,7 +24,7 @@ const manifestPipelineContext = {
   domainName,
   sentryDsn,
   rBSCS3ImageBucketName,
-
+  appConfigPath: "/all/test-marble",
 }
 
 describe('ManifestPipelineStack', () => {
@@ -114,7 +114,7 @@ describe('ManifestPipelineStack', () => {
           Ref: "SSMImageServerHostnameParameter",
         },
         Description: "Image server base url",
-        Name: "/all/MyTestStack/image-server-base-url",
+        Name: `${manifestPipelineContext.appConfigPath}/image-server-base-url`,
       }))
     })
 
@@ -138,7 +138,7 @@ describe('ManifestPipelineStack', () => {
           "Fn::ImportValue": "marble-foundation:ExportsOutputRefPublicBucketA6745C1519F3350E",
         },
         Description: "Image source bucket",
-        Name: "/all/MyTestStack/image-server-bucket",
+        Name: `${manifestPipelineContext.appConfigPath}/image-server-bucket`,
       }))
     })
 
@@ -160,7 +160,7 @@ describe('ManifestPipelineStack', () => {
         Type: "String",
         Value: "presentation-iiif.test.edu",
         Description: "Manifest Server URL",
-        Name: "/all/MyTestStack/manifest-server-base-url",
+        Name: `${manifestPipelineContext.appConfigPath}/manifest-server-base-url`,
       }))
     })
 
@@ -184,7 +184,7 @@ describe('ManifestPipelineStack', () => {
           Ref: "ManifestBucket46C412A5",
         },
         Description: "S3 Bucket to hold Manifests",
-        Name: "/all/MyTestStack/manifest-server-bucket",
+        Name: `${manifestPipelineContext.appConfigPath}/manifest-server-bucket`,
       }))
     })
 
@@ -208,7 +208,7 @@ describe('ManifestPipelineStack', () => {
           Ref: "ProcessBucketE5460FC2",
         },
         Description: "S3 Bucket to accumulate assets during processing",
-        Name: "/all/MyTestStack/process-bucket",
+        Name: `${manifestPipelineContext.appConfigPath}/process-bucket`,
       }))
     })
 
@@ -230,7 +230,7 @@ describe('ManifestPipelineStack', () => {
         Type: "String",
         Value: "libnd-smb-rbsc",
         Description: "Name of the RBSC Image Bucket",
-        Name: "/all/MyTestStack/rbsc-image-bucket",
+        Name: `${ manifestPipelineContext.appConfigPath }/rbsc-image-bucket`,
       }))
     })
   }) /* end of describe SSM Parameters */

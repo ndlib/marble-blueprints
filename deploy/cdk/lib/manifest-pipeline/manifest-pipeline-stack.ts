@@ -2,7 +2,7 @@ import { CloudFrontAllowedMethods, CloudFrontWebDistribution, HttpVersion, Lambd
 import { SfnStateMachine } from "@aws-cdk/aws-events-targets"
 import { CanonicalUserPrincipal, Effect, PolicyStatement } from '@aws-cdk/aws-iam'
 import { Code, Function, Runtime, Version } from "@aws-cdk/aws-lambda"
-import { CnameRecord, HostedZone, IHostedZone } from "@aws-cdk/aws-route53"
+import { CnameRecord } from "@aws-cdk/aws-route53"
 import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { Choice, Condition, Errors, Fail, LogLevel, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
@@ -89,15 +89,10 @@ export interface IBaseStackProps extends StackProps {
   readonly lambdaCodeRootPath: string;
 
   /**
-   * If given, it will use the given Route53 Zone for this Vpc/DomainName 
-   * instead of creating one.
+   * The ssm path to look for the application config from
    */
-  readonly useExistingDnsZone?: boolean;
+  readonly appConfigPath: string;
 
-  /**
-   * If given, it will use the given Vpc instead of creating one.
-   */
-  readonly useVpcId?: string;
 
 }
 
@@ -125,7 +120,6 @@ export class ManifestPipelineStack extends Stack {
     })
   }
 
-  private static hostedZoneToUse: IHostedZone
 
   /**
    * The shared bucket to place all items for and during processing.
@@ -154,7 +148,6 @@ export class ManifestPipelineStack extends Stack {
       return
     }
 
-    const appConfigPath = `/all/${this.stackName}`
 
     // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
@@ -220,51 +213,45 @@ export class ManifestPipelineStack extends Stack {
     // Add parameter store values for later reference by other apps
     new StringParameter(this, 'sSMImageServerBaseUrl', {
       type: ParameterType.STRING,
-      parameterName: `${appConfigPath}/image-server-base-url`,
+      parameterName: `${props.appConfigPath}/image-server-base-url`,
       stringValue: StringParameter.fromStringParameterAttributes(this, 'SSMImageServerHostname', { parameterName: props.imageServerHostname }).stringValue,
       description: 'Image server base url',
     })
 
     new StringParameter(this, 'sSMImageSourceBucket', {
       type: ParameterType.STRING,
-      parameterName: `${appConfigPath}/image-server-bucket`,
+      parameterName: `${props.appConfigPath}/image-server-bucket`,
       stringValue: props.foundationStack.publicBucket.bucketName,
       description: 'Image source bucket',
     })
 
     new StringParameter(this, 'sSMManifestServerBaseUrl', {
       type: ParameterType.STRING,
-      parameterName: `${appConfigPath}/manifest-server-base-url`,
+      parameterName: `${props.appConfigPath}/manifest-server-base-url`,
       stringValue: props.hostnamePrefix + '.' + props.domainName,
       description: 'Manifest Server URL',
     })
 
     new StringParameter(this, 'sSMManifestBucket', {
       type: ParameterType.STRING,
-      parameterName: `${appConfigPath}/manifest-server-bucket`,
+      parameterName: `${props.appConfigPath}/manifest-server-bucket`,
       stringValue: this.manifestBucket.bucketName,
       description: 'S3 Bucket to hold Manifests',
     })
 
     new StringParameter(this, 'sSMProcessBucket', {
       type: ParameterType.STRING,
-      parameterName: `${appConfigPath}/process-bucket`,
+      parameterName: `${props.appConfigPath}/process-bucket`,
       stringValue: this.processBucket.bucketName,
       description: 'S3 Bucket to accumulate assets during processing',
     })
 
     new StringParameter(this, 'sSMRBSCS3ImageBucketName', {
       type: ParameterType.STRING,
-      parameterName: `${appConfigPath}/rbsc-image-bucket`,
+      parameterName: `${props.appConfigPath}/rbsc-image-bucket`,
       stringValue: props.rBSCS3ImageBucketName,
       description: 'Name of the RBSC Image Bucket',
     })
-
-    if (props.useExistingDnsZone) {
-      ManifestPipelineStack.hostedZoneToUse = HostedZone.fromLookup(this, 'HostedZone', { domainName: props.domainName })
-    } else {
-      ManifestPipelineStack.hostedZoneToUse = props.foundationStack.hostedZone
-    }
     
     const sPARedirectionLambda = new Function(this, 'SPARedirectionLambda', {
       code: Code.fromInline(`'use strict';
@@ -337,22 +324,22 @@ export class ManifestPipelineStack extends Stack {
       new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {
         recordName: props.hostnamePrefix,
         domainName: distribution.distributionDomainName,
-        zone: ManifestPipelineStack.hostedZoneToUse,
+        zone: props.foundationStack.hostedZone,
         ttl: Duration.minutes(15),
       })
     }
     
     const initManifestLambda = new Function(this, 'InitManifestLambdaFunction', {
-      code: Code.fromAsset('../../../marble-manifest-pipeline/init/'),
+      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'init/')),
       description: 'Initializes the manifest pipeline step functions',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
-        SSM_KEY_BASE: appConfigPath,
+        SSM_KEY_BASE: props.appConfigPath,
         SENTRY_DSN: props.sentryDsn,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
       ],
       timeout: Duration.seconds(90),
@@ -370,7 +357,7 @@ export class ManifestPipelineStack extends Stack {
         SENTRY_DSN: props.sentryDsn,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
       ],
       timeout: Duration.seconds(900),
@@ -389,7 +376,7 @@ export class ManifestPipelineStack extends Stack {
         PROCESS_BUCKET: this.processBucket.bucketArn,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         new PolicyStatement({
           effect: Effect.ALLOW,
@@ -471,10 +458,10 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         SENTRY_DSN: props.sentryDsn,
-        SSM_KEY_BASE: appConfigPath,
+        SSM_KEY_BASE: props.appConfigPath,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.ssmPolicy(props.googleKeyPath),
         ManifestPipelineStack.ssmPolicy(props.museumKeyPath),
@@ -493,10 +480,10 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         SENTRY_DSN: props.sentryDsn,
-        SSM_KEY_BASE: appConfigPath,
+        SSM_KEY_BASE: props.appConfigPath,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
       ],
@@ -514,10 +501,10 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         SENTRY_DSN: props.sentryDsn,
-        SSM_KEY_BASE: appConfigPath,
+        SSM_KEY_BASE: props.appConfigPath,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.ssmPolicy(props.curateKeyPath),
       ],
@@ -535,10 +522,10 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         SENTRY_DSN: props.sentryDsn,
-        SSM_KEY_BASE: appConfigPath,
+        SSM_KEY_BASE: props.appConfigPath,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
       ],
@@ -556,10 +543,10 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         SENTRY_DSN: props.sentryDsn,
-        SSM_KEY_BASE: appConfigPath,
+        SSM_KEY_BASE: props.appConfigPath,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         new PolicyStatement({
           effect: Effect.ALLOW,
@@ -584,10 +571,10 @@ export class ManifestPipelineStack extends Stack {
       memorySize: 512,
       environment: {
         SENTRY_DSN: props.sentryDsn,
-        SSM_KEY_BASE: appConfigPath,
+        SSM_KEY_BASE: props.appConfigPath,
       },
       initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
       ],

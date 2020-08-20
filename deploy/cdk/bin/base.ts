@@ -111,6 +111,7 @@ const elasticsearchProps = {
 }
 new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps)
 new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
+  contextEnvName: envName,
   oauthTokenPath,
   owner,
   contact,
@@ -118,7 +119,7 @@ new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`
 })
 
 const manifestPipelineContext = getContextByNamespace('manifestPipeline')
-new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest-${envName}`, {
+const manifestPipelineProps = {
   env,
   domainName,
   foundationStack,
@@ -126,7 +127,9 @@ new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest-${envName
   sentryDsn: app.node.tryGetContext('sentryDsn'),
   rBSCS3ImageBucketName,
   createEventRules,
+  appConfigPath: `/all/${namespace}-manifest`,
   ...manifestPipelineContext,
-})
+}  
+new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
 
 app.node.applyAspect(new StackTags())

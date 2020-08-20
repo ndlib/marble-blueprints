@@ -71,16 +71,14 @@
   "userContent:infraSourceBranch": "master",
   "userContent:hostnamePrefix": "marble-user-content",
 
-  "manifestPipeline:imageSourceBucket": "/all/stacks/marble-data-broker/publicbucket",
   "manifestPipeline:imageServerHostname": "/all/stacks/marble-image-service-prod/hostname",
   "manifestPipeline:marbleProcessingKeyPath": "/all/marble-data-processing/prod",
   "manifestPipeline:noReplyEmailAddr": "noreply@nd.edu",
-  "manifestPipeline:cacheSettings": 300,
   "manifestPipeline:googleKeyPath": "/all/marble/google",
   "manifestPipeline:museumKeyPath": "/all/marble/museum",
   "manifestPipeline:curateKeyPath": "/all/marble/curate",
   "manifestPipeline:lambdaCodeRootPath": "../../../marble-manifest-pipeline",
-  "manifestPipeline:hostnamePrefix": "testing-presentation-iiif",
+  "manifestPipeline:hostnamePrefix": "presentation-iiif",
 
   "vpc-provider:account=333680067100:filter.vpc-id=vpc-797fed1d:region=us-east-1:returnAsymmetricSubnets=true": {
     "vpcId": "vpc-797fed1d",

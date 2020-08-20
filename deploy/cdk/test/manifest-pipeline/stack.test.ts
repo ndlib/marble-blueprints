@@ -3,7 +3,6 @@ import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
 import { ManifestPipelineStack } from '../../lib/manifest-pipeline'
 
-// const app = new cdk.App();
 
 const domainName = 'test.edu'
 const namespace = 'marble'
@@ -12,11 +11,9 @@ const rBSCS3ImageBucketName = 'libnd-smb-rbsc'
 
 
 const manifestPipelineContext = {
-  imageSourceBucket: "/all/stacks/marble-data-broker/publicbucket" as 'AWS::SSM::Parameter::Value<String>',
   imageServerHostname: "/all/stacks/marble-image-service/hostname" as 'AWS::SSM::Parameter::Value<String>',
   marbleProcessingKeyPath: "/all/marble-data-processing/prod",
   noReplyEmailAddr: "noreply@nd.edu",
-  cacheSettings: 300,
   googleKeyPath: "/all/marble/google",
   museumKeyPath: "/all/marble/museum",
   curateKeyPath: "/all/marble/curate",
@@ -317,7 +314,6 @@ describe('ManifestPipelineStack', () => {
           ],
         },
       }))
-
     })
 
     test('creates ProcessManifestLambdaFunction', () => {

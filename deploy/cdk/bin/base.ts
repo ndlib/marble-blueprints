@@ -118,7 +118,6 @@ new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`
 })
 
 const manifestPipelineContext = getContextByNamespace('manifestPipeline')
-
 new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest-${envName}`, {
   env,
   domainName,

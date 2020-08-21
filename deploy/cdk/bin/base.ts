@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import { App, ConstructNode } from '@aws-cdk/core'
-import { StackTags } from '@ndlib/ndlib-cdk';
-import 'source-map-support/register';
-import { FoundationStack } from '../lib/foundation';
-import IIIF = require('../lib/iiif-serverless');
-import userContent = require('../lib/user-content');
-import imageProcessing = require('../lib/image-processing');
-import elasticsearch = require('../lib/elasticsearch');
+import { App } from '@aws-cdk/core'
+import { StackTags } from '@ndlib/ndlib-cdk'
+import 'source-map-support/register'
+import { FoundationStack } from '../lib/foundation'
+import IIIF = require('../lib/iiif-serverless')
+import userContent = require('../lib/user-content')
+import imageProcessing = require('../lib/image-processing')
+import elasticsearch = require('../lib/elasticsearch')
 
 const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? "{}")
 
@@ -99,18 +99,20 @@ new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-processing-
   contact,
   namespace,
   ...imageProcessingProps,
-});
+})
 const elasticsearchContext = getContextByNamespace('elasticsearch')
 const elasticsearchProps = {
+  env,
   namespace,
   foundationStack,
   ...elasticsearchContext,
 }
-new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps);
+new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps)
 new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
+  contextEnvName: envName,
   oauthTokenPath,
   owner,
   contact,
-  ...elasticsearchProps
+  ...elasticsearchProps,
 })
-app.node.applyAspect(new StackTags());
+app.node.applyAspect(new StackTags())

@@ -4,7 +4,7 @@ import { Cluster, ICluster } from "@aws-cdk/aws-ecs"
 import { ILogGroup, LogGroup, RetentionDays } from "@aws-cdk/aws-logs"
 import { HostedZone, IHostedZone } from "@aws-cdk/aws-route53"
 import { Bucket, BucketAccessControl, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
-import { Construct, Duration, RemovalPolicy, Stack, StackProps, Fn, CfnOutput } from "@aws-cdk/core"
+import { Construct, Duration, RemovalPolicy, Stack, StackProps } from "@aws-cdk/core"
 
 
 export interface IBaseStackProps extends StackProps {

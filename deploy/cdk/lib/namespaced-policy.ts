@@ -1,5 +1,5 @@
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Fn, Stack } from '@aws-cdk/core'
+import { Fn } from '@aws-cdk/core'
 
 export enum GlobalActions {
   None,
@@ -9,6 +9,7 @@ export enum GlobalActions {
   EC2,
   ECS,
   ECR,
+  ES,
   Route53,
   S3,
 }
@@ -66,6 +67,9 @@ export class NamespacedPolicy {
         'logs:CreateLogGroup',
         'logs:DescribeLogGroups',
       ]
+    }
+    if(actionOptions.includes(GlobalActions.ES)) {
+      actions.push('es:AddTags')
     }
     return new PolicyStatement({
       resources: ['*'],
@@ -264,7 +268,20 @@ export class NamespacedPolicy {
     })
   }
 
-  public static elasticSearch(domain: string): PolicyStatement {
+  public static elasticsearch(domain: string): PolicyStatement {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/' + domain),
+      ],
+      actions: [
+        'es:DescribeElasticsearchDomain',
+        'es:CreateElasticsearchDomain',
+        'es:DeleteElasticsearchDomain',
+      ],
+    })
+  }
+
+  public static elasticsearchInvoke(domain: string): PolicyStatement {
     return new PolicyStatement({
       resources: [
         Fn.sub('arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/' + domain + '*/*'),

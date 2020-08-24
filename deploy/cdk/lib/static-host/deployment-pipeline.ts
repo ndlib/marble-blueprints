@@ -107,7 +107,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.s3(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticSearch(props.elasticSearchDomain))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(props.elasticSearchDomain))
 
       if (props.createDns) {
         cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))

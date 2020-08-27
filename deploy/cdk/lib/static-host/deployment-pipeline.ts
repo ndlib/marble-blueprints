@@ -26,6 +26,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly qaSourceBranch: string
   readonly qaSpecPath: string
   readonly namespace: string
+  readonly instanceName: string
   readonly owner: string
   readonly contact: string
   readonly projectName: string
@@ -44,8 +45,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props)
 
-    const testStackName = `${props.namespace}-test-website`
-    const prodStackName = `${props.namespace}-prod-website`
+    const testStackName = `${props.namespace}-test-${props.instanceName}`
+    const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
     const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact) => {
@@ -148,14 +149,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     // Deploy to Test
-    const testHostnamePrefix = `${props.hostnamePrefix || props.namespace}-test`
+    const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
     const testBuildOutput = new Artifact('TestBuild')
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput)
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', {
       targetStack: testStackName,
       inputBuildArtifact: testBuildOutput,
-      namespace: `${props.namespace}-test`,
     })
 
     const testHostname = `${testHostnamePrefix}.${props.foundationStack.hostedZone.zoneName}`
@@ -199,14 +199,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    const prodHostnamePrefix = props.hostnamePrefix || props.namespace
+    const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
     const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
     const prodBuildOutput = new Artifact('ProdBuild')
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput)
     const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', {
       targetStack: prodStackName,
       inputBuildArtifact: prodBuildOutput,
-      namespace: `${props.namespace}-prod`,
     })
 
     const prodHostname = `${prodHostnamePrefix}.${props.foundationStack.hostedZone.zoneName}`

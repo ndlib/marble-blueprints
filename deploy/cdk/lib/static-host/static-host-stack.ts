@@ -56,7 +56,7 @@ export class StaticHostStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_12_X,
     })
 
-    this.hostname = `${props.hostnamePrefix || props.namespace}.${props.foundationStack.hostedZone.zoneName}`
+    this.hostname = `${props.hostnamePrefix || this.stackName}.${props.foundationStack.hostedZone.zoneName}`
 
     this.bucket = new s3.Bucket(this, 'SiteBucket', {
       serverAccessLogsBucket: props.foundationStack.logBucket,
@@ -124,18 +124,6 @@ export class StaticHostStack extends cdk.Stack {
       parameterName: `/all/stacks/${this.stackName}/site-bucket-name`,
       description: 'Bucket where the stack website deploys to.',
       stringValue: this.bucket.bucketName,
-    })
-
-    new cdk.CfnOutput(this, 'Hostname', {
-      value: props.createDns ? this.hostname : this.cloudfront.distributionDomainName,
-      description: 'The FQDN if one is given, otherwise the cloudfront distribution domain name.',
-      exportName: `${this.stackName}:Hostname`,
-    })
-
-    new cdk.CfnOutput(this, 'BucketName', {
-      value: this.bucket.bucketName,
-      description: 'Name of S3 bucket to hold website content',
-      exportName: `${this.stackName}:BucketName`,
     })
 
     new cdk.CfnOutput(this, 'DistributionDomainName', {

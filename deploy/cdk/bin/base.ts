@@ -54,7 +54,7 @@ const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
 const projectName = getRequiredContext('projectName')
 const description = getRequiredContext('description')
 
-const foundationStack = new FoundationStack(app, `${projectName}-foundation`, {
+const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
   env,
   domainName,
   useExistingDnsZone,
@@ -70,15 +70,22 @@ const staticHostProps = {
   namespace,
   ...staticHostContext,
 }
-new staticHost.StaticHostStack(app, `${namespace}-website`, staticHostProps)
-new staticHost.DeploymentPipelineStack(app, `${namespace}-website-deployment`, {
-  oauthTokenPath,
-  owner,
-  contact,
-  projectName,
-  description,
-  slackNotifyStackName,
-  ...staticHostProps,
+const siteInstances = [
+  'website', // Main marble site
+  'redbox',
+]
+siteInstances.map(instanceName => {
+  new staticHost.StaticHostStack(app, `${namespace}-${instanceName}`, staticHostProps)
+  new staticHost.DeploymentPipelineStack(app, `${namespace}-${instanceName}-deployment`, {
+    oauthTokenPath,
+    owner,
+    contact,
+    projectName,
+    description,
+    slackNotifyStackName,
+    instanceName,
+    ...staticHostProps,
+  })
 })
 
 const imageServiceContext = getRequiredContext('iiifImageService')

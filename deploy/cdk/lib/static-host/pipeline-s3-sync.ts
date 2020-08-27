@@ -21,17 +21,6 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
    * Subdirectory of files to sync. Optional; will sync everything by default.
    */
   readonly subdirectory?: string
-
-  /**
-   * An export that contains the name of the bucket to sync files to.
-   * WARNING: All files in this bucket will be removed before the copy in order to ensure a 1-to-1 sync.
-   */
-  // readonly bucketExportName: string
-
-  /**
-   * Namespace to use for stack names etc
-   */
-  readonly namespace: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -41,7 +30,7 @@ export class PipelineS3Sync extends Construct {
   constructor(scope: Construct, id: string, props: IPipelineS3SyncProps) {
     super(scope, id)
 
-    this.project = new PipelineProject(scope, `${props.namespace}-S3Sync`, {
+    this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
       timeout: Duration.minutes(10),
       environment: {

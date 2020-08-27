@@ -104,13 +104,13 @@ new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-processing-
 const elasticsearchContext = getContextByNamespace('elasticsearch')
 const elasticsearchProps = {
   env,
+  contextEnvName: envName,
   namespace,
   foundationStack,
   ...elasticsearchContext,
 }
 new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps)
 new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
-  contextEnvName: envName,
   oauthTokenPath,
   owner,
   contact,

@@ -1,20 +1,21 @@
-import cdk = require('@aws-cdk/core');
-import { CfnDomain } from '@aws-cdk/aws-elasticsearch';
-import { Aws } from '@aws-cdk/core';
+import cdk = require('@aws-cdk/core')
+import { CfnDomain } from '@aws-cdk/aws-elasticsearch'
+import { Aws } from '@aws-cdk/core'
 
 export interface ElasticStackProps extends cdk.StackProps {
   readonly esDomainName: string
   readonly namespace: string
+  readonly contextEnvName: string
 }
 
 export class ElasticStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: ElasticStackProps) {
-    super(scope, id, props);
-    const anonSearch: string = `arn:aws:es:${Aws.REGION}:${Aws.ACCOUNT_ID}:domain/${props.esDomainName}/*/_search`;
+    super(scope, id, props)
+    const anonSearch: string = `arn:aws:es:${Aws.REGION}:${Aws.ACCOUNT_ID}:domain/${props.esDomainName}/*/_search`
 
     new CfnDomain(this, `${props.namespace}-domain`, {
       elasticsearchVersion: '7.7',
-      elasticsearchClusterConfig: this.configCluster(props.namespace),
+      elasticsearchClusterConfig: this.configCluster(props.contextEnvName),
       ebsOptions: {
         ebsEnabled: true,
         volumeSize: 10,
@@ -30,21 +31,21 @@ export class ElasticStack extends cdk.Stack {
               'es:ESHttpPost',
               'es:ESHttpGet',
             ],
-            Resource: anonSearch
-          }
-        ]
+            Resource: anonSearch,
+          },
+        ],
       },
       domainName: props.esDomainName,
       snapshotOptions: { automatedSnapshotStartHour: 4 },
-    });
+    })
   }
 
-  private configCluster = (namespace: string) => {
+  private configCluster = (environment: string) => {
     let config: any = {
       instanceCount: 1,
       instanceType: 't2.small.elasticsearch',
-    };
-    if (this.isProd(namespace)) {
+    }
+    if (this.isProd(environment)) {
       config.instanceCount = 2
       config.zoneAwarenessEnabled = true
       config.zoneAwarenessConfig = { availabilityZoneCount: 2 }
@@ -52,7 +53,7 @@ export class ElasticStack extends cdk.Stack {
     return config
   }
 
-  private isProd = (namespace: string) => {
-    return namespace.includes('prod');
+  private isProd = (environment: string) => {
+    return environment.includes('prod')
   }
 }

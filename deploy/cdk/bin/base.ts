@@ -101,10 +101,9 @@ new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-processing-
   namespace,
   ...imageProcessingProps,
 })
-
-
 const elasticsearchContext = getContextByNamespace('elasticsearch')
 const elasticsearchProps = {
+  env,
   namespace,
   foundationStack,
   ...elasticsearchContext,
@@ -131,5 +130,4 @@ const manifestPipelineProps = {
   ...manifestPipelineContext,
 }  
 new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
-
 app.node.applyAspect(new StackTags())

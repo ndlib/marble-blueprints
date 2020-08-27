@@ -167,8 +167,19 @@ const manifestPipelineProps = {
   sentryDsn: app.node.tryGetContext('sentryDsn'),
   rBSCS3ImageBucketName,
   createEventRules,
-  appConfigPath: `/all/${namespace}-manifest`,
+  appConfigPath: app.node.tryGetContext('manifestPipeline:appConfigPath') ? app.node.tryGetContext('manifestPipeline:appConfigPath') : `/all/stacks/${namespace}-manifest`,
   ...manifestPipelineContext,
 }
 new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
+new manifestPipeline.DeploymentPipelineStack(app, `${namespace}-manifest-deployment`, {
+  contextEnvName: envName,
+  oauthTokenPath,
+  owner,
+  contact,
+  namespace,
+  ...manifestPipelineContext,
+})
+
 app.node.applyAspect(new StackTags())
+// I see the above method is deprecated.  We should switch to the following instead.
+// Aspects.of(app).add(new StackTags())app.node.applyAspect(new StackTags())

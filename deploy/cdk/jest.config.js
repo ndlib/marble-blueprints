@@ -6,5 +6,6 @@ module.exports = {
     testMatch: [ '**/*.test.ts'],
     "transform": {
       "^.+\\.tsx?$": "ts-jest",
-    },
+  },
+    verbose: true,
   }

@@ -7,6 +7,7 @@ import IIIF = require('../lib/iiif-serverless')
 import userContent = require('../lib/user-content')
 import imageProcessing = require('../lib/image-processing')
 import elasticsearch = require('../lib/elasticsearch')
+import manifestPipeline = require('../lib/manifest-pipeline')
 
 const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? "{}")
 
@@ -45,7 +46,7 @@ if(contextEnv === undefined || contextEnv === null)
 // The environment objects defined in our context are a mixture of properties.
 // Need to decompose these into a cdk env object and other required stack props
 const env = { account: contextEnv.account, region: contextEnv.region, name: envName }
-const { useVpcId, domainName, createDns, useExistingDnsZone, slackNotifyStackName } = contextEnv
+const { useVpcId, domainName, createDns, useExistingDnsZone, slackNotifyStackName, rBSCS3ImageBucketName, createEventRules } = contextEnv
 
 const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
 
@@ -115,4 +116,18 @@ new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`
   contact,
   ...elasticsearchProps,
 })
+
+const manifestPipelineContext = getContextByNamespace('manifestPipeline')
+const manifestPipelineProps = {
+  env,
+  domainName,
+  foundationStack,
+  createDns,
+  sentryDsn: app.node.tryGetContext('sentryDsn'),
+  rBSCS3ImageBucketName,
+  createEventRules,
+  appConfigPath: `/all/${namespace}-manifest`,
+  ...manifestPipelineContext,
+}  
+new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
 app.node.applyAspect(new StackTags())

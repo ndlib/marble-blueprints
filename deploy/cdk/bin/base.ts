@@ -65,12 +65,15 @@ new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, {
   ...imageServiceContext,
 })
 new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
-  env,
+  contextEnvName: envName,
+  owner,
+  contact,
   createDns,
   domainStackName: `${namespace}-domain`,
   oauthTokenPath,
   namespace,
-  foundationStack,
+  domainName,
+  slackNotifyStackName,
   ...imageServiceContext,
 })
 

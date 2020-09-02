@@ -4,7 +4,8 @@ import { Cluster, ICluster } from "@aws-cdk/aws-ecs"
 import { ILogGroup, LogGroup, RetentionDays } from "@aws-cdk/aws-logs"
 import { HostedZone, IHostedZone } from "@aws-cdk/aws-route53"
 import { Bucket, BucketAccessControl, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
-import { Construct, Duration, RemovalPolicy, Stack, StackProps } from "@aws-cdk/core"
+import { Construct, Duration, RemovalPolicy, Stack, StackProps, Fn, CfnOutput } from "@aws-cdk/core"
+import { StringParameter } from "@aws-cdk/aws-ssm"
 
 
 export interface IBaseStackProps extends StackProps {
@@ -73,6 +74,11 @@ export class FoundationStack extends Stack {
    */
   public readonly publicBucket: IBucket
 
+  /**
+   * The path to an SSM parameter where the name of the public bucket will be stored.
+   */
+  public readonly publicBucketParam: string
+
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
@@ -128,6 +134,11 @@ export class FoundationStack extends Stack {
       serverAccessLogsPrefix: 's3/data-broker/',
       websiteIndexDocument: 'index.html',
       publicReadAccess: true,
+    })
+    this.publicBucketParam = `/all/stacks/${this.stackName}/publicBucket`
+    new StringParameter(this, 'PublicBucketParam', {
+      stringValue: this.publicBucket.bucketName,
+      parameterName: this.publicBucketParam,
     })
   }
 }

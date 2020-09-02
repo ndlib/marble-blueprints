@@ -89,7 +89,13 @@ siteInstances.map(instanceName => {
   })
 })
 
-const imageServiceContext = getRequiredContext('iiifImageService')
+const imageServiceContext = getContextByNamespace('iiifImageService')
+new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, {
+  env,
+  foundationStack,
+  createDns,
+  ...imageServiceContext,
+})
 new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
   env,
   createDns,

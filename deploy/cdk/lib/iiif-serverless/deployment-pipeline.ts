@@ -27,7 +27,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly contextEnvName: string;
   readonly owner: string;
   readonly contact: string;
-  readonly domainName: string;
+  readonly testFoundationStack: FoundationStack;
+  readonly prodFoundationStack: FoundationStack;
   readonly hostnamePrefix: string;
   readonly createDns: boolean;
   readonly slackNotifyStackName?: string;
@@ -40,9 +41,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
     const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`
-    const testHost = `${props.hostnamePrefix}-test.${props.domainName}`
+    const testHost = `${props.hostnamePrefix}-test.${props.testFoundationStack.hostedZone.zoneName}`
     const testStackName = `${props.namespace}-test-image-service`
-    const prodHost = `${props.hostnamePrefix}.${props.domainName}`
+    const prodHost = `${props.hostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
     const prodStackName = `${props.namespace}-prod-image-service`
 
     const artifactBucket = new Bucket(this, 'artifactBucket', {
@@ -80,8 +81,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string) => {
-      const fqdn = `${hostnamePrefix}.${props.domainName}`
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, foundationStack: FoundationStack) => {
+      const fqdn = `${hostnamePrefix}.${foundationStack.hostedZone.zoneName}`
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -123,7 +124,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       return cdkDeploy
     }
 
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `${props.hostnamePrefix}-test`)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `${props.hostnamePrefix}-test`, props.testFoundationStack)
 
     const smokeTestsProject = new PipelineProject(this, 'IIIFServerlessSmokeTests', {
       buildSpec: BuildSpec.fromObject({
@@ -168,7 +169,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       })
     }
 
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `${props.hostnamePrefix}`)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `${props.hostnamePrefix}`, props.prodFoundationStack)
 
     const smokeTestsProdProject = new PipelineProject(this, 'IIIFServerlessSmokeTestsProd', {
       buildSpec: BuildSpec.fromObject({

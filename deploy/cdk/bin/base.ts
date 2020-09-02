@@ -177,9 +177,10 @@ new manifestPipeline.DeploymentPipelineStack(app, `${namespace}-manifest-deploym
   owner,
   contact,
   namespace,
+  slackNotifyStackName,
   ...manifestPipelineContext,
 })
 
 app.node.applyAspect(new StackTags())
 // I see the above method is deprecated.  We should switch to the following instead.
-// Aspects.of(app).add(new StackTags())app.node.applyAspect(new StackTags())
+// Aspects.of(app).add(new StackTags())

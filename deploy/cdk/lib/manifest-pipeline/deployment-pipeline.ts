@@ -42,20 +42,21 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-manifest`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string) => {
-      const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-manifest-deploy`, {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string) => {
+      const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
+//        const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-manifest-deploy-${env}`, {
         targetStack,
         dependsOnStacks: [],
         infraSourceArtifact,
         appSourceArtifact,
         appBuildCommands: [
           'echo "Ensure that the codebuild directory is executable"',
-          'chmod - R 755 ./scripts/codebuild/*',
+          'chmod -R 755 ./scripts/codebuild/*',
           `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_${infraSourceArtifact.artifactName}"`,
           './scripts/codebuild/install.sh',
+          'pyenv versions',
           './scripts/codebuild/pre_build.sh',
-          './scripts/codebuild/build.sh',
-          './scripts/codebuild/post_build.sh',
+          'yarn',
         ],
         outputFiles: [
           `**/*`,
@@ -69,12 +70,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
           owner: props.owner,
           contact: props.contact,
           sentryDsn: props.sentryDsn,
-          "manifestPipeline:imageServerHostname": `all/stacks/${imageServiceStackName}/hostname`,
+          "manifestPipeline:imageServerHostname": `/all/stacks/${imageServiceStackName}/hostname`,
           "manifestPipeline:marbleProcessingKeyPath": dataProcessingKeyPath,
           "manifestPipeline:appConfigPath": `/all/stacks/${targetStack}`,
           "manifestPipeline:lambdaCodeRootPath": `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`,
           "manifestPipeline:hostnamePrefix": hostnamePrefix,
           createDns: props.createDns ? "true" : "false", // must pass string parameter values 
+        },
+        additionalRuntimeEnvironments: {
+          python: '3.8',
         },
       })
       //  Allow manifest-pipeline to create any bucket it needs, using its stack name as a base for the name
@@ -103,14 +107,69 @@ export class DeploymentPipelineStack extends cdk.Stack {
       }))
       // Replicating manifest-pipeline-pipeline.yml 269 - 294 - add state machines explicitly
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        actions: ['states:DescribeStateMachine'],
+        actions: ['states:DescribeStateMachine',
+        ],
         resources: [
           cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:' + targetStack + '-*'),
         ],
       }))
+      // Replicating manifest-pipeline-pipeline.yml to implement 178 - 186
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: ['states:CreateStateMachine',
+          'states:DeleteStateMachine',
+          'states:TagResource',
+          'states:UpdateStateMachine',
+        ],
+        resources: [
+          cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'),
+        ],
+      }))
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: ['cloudfront:CreateCloudFrontOriginAccessIdentity',
+          'cloudfront:CreateDistribution',
+          'cloudfront:CreateCloudFrontOriginAccessIdentity',
+          'cloudfront:DeleteDistribution',
+          'cloudfront:DeleteCloudFrontOriginAccessIdentity',
+          'cloudfront:UpdateDistribution',
+          'cloudfront:UpdateCloudFrontOriginAccessIdentity',
+          'cloudfront:TagResource',
+          'cloudfront:GetDistribution',
+          'cloudfront:GetCloudFrontOriginAccessIdentity',
+          'cloudfront:GetCloudFrontOriginAccessIdentityConfig',
+        ],
+        resources: [
+          '*',
+        ],
+      }))
+      // Allow the pipeline to change ACLs on the logging bucket since it deploys a Cloudfront that needs to put logs here
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: [
+          's3:PutBucketAcl',
+          's3:GetBucketAcl',
+        ],
+        resources: [
+          // 'arn:aws:s3:::' + props.foundationStack.logBucket.bucketName,
+          'arn:aws:s3:::' + props.namespace + '-test-foundation-log*',
+          'arn:aws:s3:::' + props.namespace + '-prod-foundation-log*',
+          'arn:aws:s3:::' + props.namespace + '-foundation-log*',
+        ],
+      }))
+      // Allow the pipeline to change ACLs on the logging bucket since the it deploys a Cloudfront that needs to put logs here
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: [
+          'route53:GetHostedZone',
+          'route53:ChangeResourceRecordSets',
+          'route53:GetChange',
+        ],
+        resources: [
+          `arn:aws:route53:::hostedzone/*`,
+          'arn:aws:route53:::change/*',
+        ],
+      }))
 
       if(props.createDns){
-        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId)) // This doesn't work because the foundation stack here is different from foundation stack of deployed test or dev stack.
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet('*'))
       }
       return cdkDeploy
     }
@@ -124,7 +183,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const appSourceArtifact = new codepipeline.Artifact('AppCode')
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
-        branch: props.appSourceBranch,
+      branch: 'change-reference-to-manifest-pipeline.yml', //  props.appSourceBranch,
         oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: appSourceArtifact,
         owner: props.appRepoOwner,
@@ -142,7 +201,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`)
+//    const deployTest = createDeploy(testStackName, `${props.namespace}`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath)
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -161,7 +221,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`)
+//    const deployProd = createDeploy(prodStackName, `${props.namespace}`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

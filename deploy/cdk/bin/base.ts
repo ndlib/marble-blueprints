@@ -2,186 +2,36 @@
 import { App, Aspects } from '@aws-cdk/core'
 import { StackTags } from '@ndlib/ndlib-cdk'
 import 'source-map-support/register'
-import { FoundationStack } from '../lib/foundation'
-import IIIF = require('../lib/iiif-serverless')
-import userContent = require('../lib/user-content')
-import imageProcessing = require('../lib/image-processing')
-import elasticsearch = require('../lib/elasticsearch')
-import staticHost = require('../lib/static-host')
-import manifestPipeline = require('../lib/manifest-pipeline')
-
-const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? "{}")
+import { getRequiredContext } from '../lib/context-helpers'
+import * as services from './services'
+import * as pipelines from './codepipelines'
+import { ContextEnv } from '../lib/context-env'
 
 const app = new App()
 
-// Globs all kvp from context of the form "namespace:key": "value"
-// and flattens it to an object of the form "key": "value"
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getContextByNamespace = (ns: string): any => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: any = {}
-  const prefix = `${ns}:`
-  for (const [key, value] of Object.entries(allContext)) {
-    if(key.startsWith(prefix)){
-      const flattenedKey =  key.substr(prefix.length)
-      result[flattenedKey] = value
+const stackType = getRequiredContext(app.node, 'stackType')
+const namespace = getRequiredContext(app.node, 'namespace')
+const envName = getRequiredContext(app.node, 'env')
+const contextEnv = ContextEnv.fromContext(app.node, envName)
+
+switch(stackType) {
+  case 'service':
+    services.instantiateStacks(app, namespace, contextEnv)
+    break
+  case 'pipeline':
+    {
+      // We need to instantiate all test and prod stacks here, in the same way that the pipelines
+      // will deploy them. This is just so that cdk will be aware of the dependencies and create
+      // the required exports on the foundation stacks. It's a bit heavy handed, and will add a
+      // lot of stacks to the output of 'cdk list -c stackType=pipeline' but I don't know of
+      // a better way to force cdk to create all of the expected exports.
+      const testStacks = services.instantiateStacks(app, `${namespace}-test`, contextEnv)
+      const prodStacks = services.instantiateStacks(app, `${namespace}-prod`, contextEnv)
+      pipelines.instantiateStacks(app, namespace, contextEnv, testStacks, prodStacks)
     }
-  }
-  return result
+    break
+  default:
+    throw new Error(`Context key stackType must be on of 'service' or 'pipeline'. Got ${stackType}.`)
 }
-
-const getRequiredContext = (key: string) => {
-  const value = app.node.tryGetContext(key)
-  if(value === undefined || value === null) {
-    throw new Error(`Context key '${key}' is required.`)
-  }
-  return value
-}
-
-// Get context keys that are required by all stacks
-const owner = getRequiredContext('owner')
-const contact = getRequiredContext('contact')
-const namespace = getRequiredContext('namespace')
-const envName = getRequiredContext('env')
-const contextEnv = getRequiredContext('environments')[envName]
-if(contextEnv === undefined || contextEnv === null) {
-  throw new Error(`Context key 'environments.${envName}' is required.`)
-}
-
-// The environment objects defined in our context are a mixture of properties.
-// Need to decompose these into a cdk env object and other required stack props
-const env = { account: contextEnv.account, region: contextEnv.region, name: envName }
-const { useVpcId, domainName, createDns, useExistingDnsZone, slackNotifyStackName, rBSCS3ImageBucketName } = contextEnv
-
-const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
-const projectName = getRequiredContext('projectName')
-const description = getRequiredContext('description')
-
-const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-  env,
-  domainName,
-  useExistingDnsZone,
-  useVpcId,
-})
-
-const staticHostContext = getContextByNamespace('staticHost')
-const staticHostProps = {
-  contextEnvName: envName,
-  env,
-  foundationStack,
-  createDns,
-  namespace,
-  ...staticHostContext,
-}
-const siteInstances = [
-  'website', // Main marble site
-  'redbox',
-]
-siteInstances.map(instanceName => {
-  new staticHost.StaticHostStack(app, `${namespace}-${instanceName}`, staticHostProps)
-  new staticHost.DeploymentPipelineStack(app, `${namespace}-${instanceName}-deployment`, {
-    oauthTokenPath,
-    owner,
-    contact,
-    projectName,
-    description,
-    slackNotifyStackName,
-    instanceName,
-    ...staticHostProps,
-  })
-})
-
-const imageServiceContext = getContextByNamespace('iiifImageService')
-new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, {
-  env,
-  foundationStack,
-  createDns,
-  ...imageServiceContext,
-})
-new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
-  contextEnvName: envName,
-  owner,
-  contact,
-  createDns,
-  domainStackName: `${namespace}-domain`,
-  oauthTokenPath,
-  namespace,
-  domainName,
-  slackNotifyStackName,
-  ...imageServiceContext,
-})
-
-const userContentContext = getContextByNamespace('userContent')
-const userContentProps = {
-  env,
-  foundationStack,
-  createDns,
-  namespace,
-  ...userContentContext,
-}
-new userContent.UserContentStack(app, `${namespace}-user-content`, userContentProps)
-new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
-  contextEnvName: envName,
-  oauthTokenPath,
-  owner,
-  contact,
-  slackNotifyStackName,
-  ...userContentProps,
-})
-
-const imageProcessingContext = getContextByNamespace('imageProcessing')
-const imageProcessingProps = {
-  env,
-  foundationStack,
-  ...imageProcessingContext,
-}
-new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, imageProcessingProps)
-new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-processing-deployment`, {
-  contextEnvName: envName,
-  oauthTokenPath,
-  owner,
-  contact,
-  namespace,
-  ...imageProcessingProps,
-})
-const elasticsearchContext = getContextByNamespace('elasticsearch')
-const elasticsearchProps = {
-  env,
-  contextEnvName: envName,
-  namespace,
-  foundationStack,
-  ...elasticsearchContext,
-}
-new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps)
-new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
-  oauthTokenPath,
-  owner,
-  contact,
-  ...elasticsearchProps,
-})
-
-const manifestPipelineContext = getContextByNamespace('manifestPipeline')
-const manifestPipelineProps = {
-  env,
-  domainName,
-  foundationStack,
-  createDns,
-  sentryDsn: app.node.tryGetContext('sentryDsn'),
-  rBSCS3ImageBucketName,
-  createEventRules: app.node.tryGetContext('manifestPipeline:createEventRules') === "true" ? true : false,
-  appConfigPath: app.node.tryGetContext('manifestPipeline:appConfigPath') ? app.node.tryGetContext('manifestPipeline:appConfigPath') : `/all/stacks/${namespace}-manifest`,
-  ...manifestPipelineContext,
-}
-
-new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
-new manifestPipeline.DeploymentPipelineStack(app, `${namespace}-manifest-deployment`, {
-  contextEnvName: envName,
-  oauthTokenPath,
-  owner,
-  contact,
-  namespace,
-  slackNotifyStackName,
-  ...manifestPipelineContext,
-})
 
 Aspects.of(app).add(new StackTags())

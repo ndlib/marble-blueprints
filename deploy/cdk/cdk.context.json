@@ -27,6 +27,7 @@
   "description": "Infrastructure for Marble project",
   "oauthTokenPath": "/all/github/ndlib-git",
   "namespace": "marble",
+  "stackType": "service",
   "iiifImageService:serverlessIiifSrcPath": "../../../serverless-iiif",
   "iiifImageService:hostnamePrefix": "image-iiif",
   "iiifImageService:appRepoOwner": "ndlib",

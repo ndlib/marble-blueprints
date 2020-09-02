@@ -47,8 +47,9 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly contextEnvName: string;
   readonly appBuildCommands?: string[];
   readonly postDeployCommands?: string[];
+  readonly outputDirectory?: string;
   readonly outputFiles?: string[];
-  readonly outputArtifacts?: Artifact[];
+  readonly outputArtifact?: Artifact;
 }
 
 /**
@@ -69,11 +70,11 @@ export class CDKPipelineDeploy extends Construct {
         addtlContext += ` -c "${val[0]}=${val[1]}"`
       })
     }
-    let appSourceDir: string = "$CODEBUILD_SRC_DIR";
-    let extraInputs: Array<Artifact> = [];
+    let appSourceDir = "$CODEBUILD_SRC_DIR"
+    const extraInputs: Array<Artifact> = []
     if (props.appSourceArtifact !== undefined) {
-      extraInputs.push(props.appSourceArtifact);
-      appSourceDir = `$CODEBUILD_SRC_DIR_${props.appSourceArtifact.artifactName}`;
+      extraInputs.push(props.appSourceArtifact)
+      appSourceDir = `$CODEBUILD_SRC_DIR_${props.appSourceArtifact.artifactName}`
     }
     this.project = new PipelineProject(scope, `${id}Project`, {
       environment: {
@@ -82,6 +83,7 @@ export class CDKPipelineDeploy extends Construct {
       },
       buildSpec: BuildSpec.fromObject({
         artifacts: {
+          'base-directory': props.outputDirectory,
           files: props.outputFiles || [],
         },
         phases: {
@@ -98,7 +100,7 @@ export class CDKPipelineDeploy extends Construct {
             commands: [
               `cd ${appSourceDir}`,
               ...(props.appBuildCommands || []),
-            ]
+            ],
           },
           build: {
             commands: [
@@ -162,7 +164,7 @@ export class CDKPipelineDeploy extends Construct {
       extraInputs: extraInputs,
       project: this.project,
       runOrder: 1,
-      outputs: props.outputArtifacts || [],
+      outputs: (props.outputArtifact ? [props.outputArtifact] : []),
     })
   }
 }

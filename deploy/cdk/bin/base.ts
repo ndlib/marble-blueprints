@@ -7,6 +7,7 @@ import IIIF = require('../lib/iiif-serverless')
 import userContent = require('../lib/user-content')
 import imageProcessing = require('../lib/image-processing')
 import elasticsearch = require('../lib/elasticsearch')
+import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
 
 const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? "{}")
@@ -29,8 +30,9 @@ const getContextByNamespace = (ns: string): any => {
 
 const getRequiredContext = (key: string) => {
   const value = app.node.tryGetContext(key)
-  if(value === undefined || value === null)
+  if(value === undefined || value === null) {
     throw new Error(`Context key '${key}' is required.`)
+  }
   return value
 }
 
@@ -40,8 +42,9 @@ const contact = getRequiredContext('contact')
 const namespace = getRequiredContext('namespace')
 const envName = getRequiredContext('env')
 const contextEnv = getRequiredContext('environments')[envName]
-if(contextEnv === undefined || contextEnv === null)
+if(contextEnv === undefined || contextEnv === null) {
   throw new Error(`Context key 'environments.${envName}' is required.`)
+}
 
 // The environment objects defined in our context are a mixture of properties.
 // Need to decompose these into a cdk env object and other required stack props
@@ -49,12 +52,41 @@ const env = { account: contextEnv.account, region: contextEnv.region, name: envN
 const { useVpcId, domainName, createDns, useExistingDnsZone, slackNotifyStackName, rBSCS3ImageBucketName, createEventRules } = contextEnv
 
 const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
+const projectName = getRequiredContext('projectName')
+const description = getRequiredContext('description')
 
 const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
   env,
   domainName,
   useExistingDnsZone,
   useVpcId,
+})
+
+const staticHostContext = getContextByNamespace('staticHost')
+const staticHostProps = {
+  contextEnvName: envName,
+  env,
+  foundationStack,
+  createDns,
+  namespace,
+  ...staticHostContext,
+}
+const siteInstances = [
+  'website', // Main marble site
+  'redbox',
+]
+siteInstances.map(instanceName => {
+  new staticHost.StaticHostStack(app, `${namespace}-${instanceName}`, staticHostProps)
+  new staticHost.DeploymentPipelineStack(app, `${namespace}-${instanceName}-deployment`, {
+    oauthTokenPath,
+    owner,
+    contact,
+    projectName,
+    description,
+    slackNotifyStackName,
+    instanceName,
+    ...staticHostProps,
+  })
 })
 
 const imageServiceContext = getContextByNamespace('iiifImageService')
@@ -134,6 +166,6 @@ const manifestPipelineProps = {
   createEventRules,
   appConfigPath: `/all/${namespace}-manifest`,
   ...manifestPipelineContext,
-}  
+}
 new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
 app.node.applyAspect(new StackTags())

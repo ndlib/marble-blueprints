@@ -8,8 +8,7 @@
       "domainName": "libraries.nd.edu",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
-      "rBSCS3ImageBucketName": "rbsc-test-files",
-      "createEventRules": false
+      "rBSCS3ImageBucketName": "rbsc-test-files"
     },
     "prod": {
       "account": "230391840102",
@@ -19,8 +18,7 @@
       "domainName": "library.nd.edu",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
-      "rBSCS3ImageBucketName": "libnd-smb-rbsc",
-      "createEventRules": true
+      "rBSCS3ImageBucketName": "libnd-smb-rbsc"
     }
   },
   "owner": "wse",
@@ -92,7 +90,7 @@
   "manifestPipeline:museumKeyPath": "/all/marble/museum",
   "manifestPipeline:curateKeyPath": "/all/marble/curate",
   "manifestPipeline:lambdaCodeRootPath": "../../../marble-manifest-pipeline",
-  "manifestPipeline:hostnamePrefix": "my-presentation-iiif",
+  "manifestPipeline:hostnamePrefix": "presentation-iiif",
   "manifestPipeline:appRepoOwner": "ndlib",
   "manifestPipeline:appRepoName": "marble-manifest-pipeline",
   "manifestPipeline:appSourceBranch": "master",

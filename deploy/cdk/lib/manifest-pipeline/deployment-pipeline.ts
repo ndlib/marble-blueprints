@@ -8,7 +8,6 @@ import cdk = require('@aws-cdk/core')
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
-import { FoundationStack } from '../foundation'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string; // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
@@ -24,7 +23,6 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly contact: string;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
-  readonly foundationStack: FoundationStack;
   readonly hostnamePrefix: string;
   readonly createDns: boolean;
   readonly sentryDsn: string;
@@ -42,9 +40,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-manifest`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean) => {
       const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
-//        const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-manifest-deploy-${env}`, {
         targetStack,
         dependsOnStacks: [],
         infraSourceArtifact,
@@ -75,7 +72,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           "manifestPipeline:appConfigPath": `/all/stacks/${targetStack}`,
           "manifestPipeline:lambdaCodeRootPath": `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`,
           "manifestPipeline:hostnamePrefix": hostnamePrefix,
-          createDns: props.createDns ? "true" : "false", // must pass string parameter values 
+          "manifestPipeline:createEventRules": createEventRules ? "true" : "false",
         },
         additionalRuntimeEnvironments: {
           python: '3.8',
@@ -105,7 +102,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           cdk.Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*-sentry-layer'),
         ],
       }))
-      // Replicating manifest-pipeline-pipeline.yml 269 - 294 - add state machines explicitly
+      // Allow target stack to describe state machines
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['states:DescribeStateMachine',
         ],
@@ -148,13 +145,12 @@ export class DeploymentPipelineStack extends cdk.Stack {
           's3:GetBucketAcl',
         ],
         resources: [
-          // 'arn:aws:s3:::' + props.foundationStack.logBucket.bucketName,
           'arn:aws:s3:::' + props.namespace + '-test-foundation-log*',
           'arn:aws:s3:::' + props.namespace + '-prod-foundation-log*',
           'arn:aws:s3:::' + props.namespace + '-foundation-log*',
         ],
       }))
-      // Allow the pipeline to change ACLs on the logging bucket since the it deploys a Cloudfront that needs to put logs here
+      // Allow rout53 DNS access
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: [
           'route53:GetHostedZone',
@@ -168,7 +164,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       }))
 
       if(props.createDns){
-        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId)) // This doesn't work because the foundation stack here is different from foundation stack of deployed test or dev stack.
         cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet('*'))
       }
       return cdkDeploy
@@ -183,7 +178,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const appSourceArtifact = new codepipeline.Artifact('AppCode')
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
-      branch: 'change-reference-to-manifest-pipeline.yml', //  props.appSourceBranch,
+        branch: props.appSourceBranch,
         oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: appSourceArtifact,
         owner: props.appRepoOwner,
@@ -201,8 +196,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`)
-//    const deployTest = createDeploy(testStackName, `${props.namespace}`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false)
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -221,8 +215,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`)
-//    const deployProd = createDeploy(prodStackName, `${props.namespace}`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

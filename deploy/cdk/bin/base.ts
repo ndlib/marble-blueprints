@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { App } from '@aws-cdk/core'
+import { App, Aspects } from '@aws-cdk/core'
 import { StackTags } from '@ndlib/ndlib-cdk'
 import 'source-map-support/register'
 import { FoundationStack } from '../lib/foundation'
@@ -16,7 +16,9 @@ const app = new App()
 
 // Globs all kvp from context of the form "namespace:key": "value"
 // and flattens it to an object of the form "key": "value"
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getContextByNamespace = (ns: string): any => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: any = {}
   const prefix = `${ns}:`
   for (const [key, value] of Object.entries(allContext)) {
@@ -49,7 +51,7 @@ if(contextEnv === undefined || contextEnv === null) {
 // The environment objects defined in our context are a mixture of properties.
 // Need to decompose these into a cdk env object and other required stack props
 const env = { account: contextEnv.account, region: contextEnv.region, name: envName }
-const { useVpcId, domainName, createDns, useExistingDnsZone, slackNotifyStackName, rBSCS3ImageBucketName, createEventRules } = contextEnv
+const { useVpcId, domainName, createDns, useExistingDnsZone, slackNotifyStackName, rBSCS3ImageBucketName } = contextEnv
 
 const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
 const projectName = getRequiredContext('projectName')
@@ -166,10 +168,11 @@ const manifestPipelineProps = {
   createDns,
   sentryDsn: app.node.tryGetContext('sentryDsn'),
   rBSCS3ImageBucketName,
-  createEventRules,
+  createEventRules: app.node.tryGetContext('manifestPipeline:createEventRules') === "true" ? true : false,
   appConfigPath: app.node.tryGetContext('manifestPipeline:appConfigPath') ? app.node.tryGetContext('manifestPipeline:appConfigPath') : `/all/stacks/${namespace}-manifest`,
   ...manifestPipelineContext,
 }
+
 new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
 new manifestPipeline.DeploymentPipelineStack(app, `${namespace}-manifest-deployment`, {
   contextEnvName: envName,
@@ -181,6 +184,4 @@ new manifestPipeline.DeploymentPipelineStack(app, `${namespace}-manifest-deploym
   ...manifestPipelineContext,
 })
 
-app.node.applyAspect(new StackTags())
-// I see the above method is deprecated.  We should switch to the following instead.
-// Aspects.of(app).add(new StackTags())
+Aspects.of(app).add(new StackTags())

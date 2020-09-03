@@ -63,6 +63,10 @@ class ApiStack extends NestedStack {
       path: `${props.serverlessIiifSrcPath}/dependencies`,
     })
 
+    if (!fs.existsSync(`${props.serverlessIiifSrcPath}/template.yml`)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/template.yml`)
+      return
+    }
     const iiifTemplate = new CfnInclude(this, "IiifTemplate", {
       template: YAML.parse(fs.readFileSync(`${props.serverlessIiifSrcPath}/template.yml`).toString()),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

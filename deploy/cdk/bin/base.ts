@@ -9,6 +9,7 @@ import imageProcessing = require('../lib/image-processing')
 import elasticsearch = require('../lib/elasticsearch')
 import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
+import monitoring = require('../lib/pipeline-monitoring')
 
 const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? "{}")
 
@@ -157,6 +158,11 @@ new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`
   contact,
   ...elasticsearchProps,
 })
+
+new monitoring.PipelineMonitorStack(app,
+  `${namespace}-monitoring`,
+  { mailingList: getRequiredContext('mailingList'),
+  pipelineName: getRequiredContext('pipelineName') })
 
 const manifestPipelineContext = getContextByNamespace('manifestPipeline')
 const manifestPipelineProps = {

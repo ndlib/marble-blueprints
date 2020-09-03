@@ -8,8 +8,7 @@
       "domainName": "libraries.nd.edu",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
-      "rBSCS3ImageBucketName": "rbsc-test-files",
-      "createEventRules": false
+      "rBSCS3ImageBucketName": "rbsc-test-files"
     },
     "prod": {
       "account": "230391840102",
@@ -19,8 +18,7 @@
       "domainName": "library.nd.edu",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
-      "rBSCS3ImageBucketName": "libnd-smb-rbsc",
-      "createEventRules": true
+      "rBSCS3ImageBucketName": "libnd-smb-rbsc"
     }
   },
   "owner": "wse",
@@ -93,6 +91,17 @@
   "manifestPipeline:curateKeyPath": "/all/marble/curate",
   "manifestPipeline:lambdaCodeRootPath": "../../../marble-manifest-pipeline",
   "manifestPipeline:hostnamePrefix": "presentation-iiif",
+  "manifestPipeline:appRepoOwner": "ndlib",
+  "manifestPipeline:appRepoName": "marble-manifest-pipeline",
+  "manifestPipeline:appSourceBranch": "master",
+  "manifestPipeline:infraRepoOwner": "ndlib",
+  "manifestPipeline:infraRepoName": "marble-blueprints",
+  "manifestPipeline:infraSourceBranch": "master",
+  "manifestPipeline:sentryDsn": "https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199",
+  "manifestPipeline:imageServiceStackName": "marble-image-service-test",
+  "manifestPipeline:prodImageServiceStackName": "marble-image-service-prod",
+  "manifestPipeline:dataProcessingKeyPath": "/all/marble-data-processing/test",
+  "manifestPipeline:prodDataProcessingKeyPath": "/all/marble-data-processing/prod",
 
   "vpc-provider:account=333680067100:filter.vpc-id=vpc-797fed1d:region=us-east-1:returnAsymmetricSubnets=true": {
     "vpcId": "vpc-797fed1d",

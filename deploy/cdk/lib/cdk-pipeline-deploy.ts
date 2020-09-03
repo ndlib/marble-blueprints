@@ -50,6 +50,11 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly outputDirectory?: string;
   readonly outputFiles?: string[];
   readonly outputArtifact?: Artifact;
+
+  /**
+   * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '12.x')  e.g. `python: '3.8'`
+   */
+  readonly additionalRuntimeEnvironments?: { [key: string]: string };
 }
 
 /**
@@ -94,6 +99,7 @@ export class CDKPipelineDeploy extends Construct {
             ],
             'runtime-versions': {
               nodejs: '12.x',
+              ...(props.additionalRuntimeEnvironments || []),
             },
           },
           pre_build: {

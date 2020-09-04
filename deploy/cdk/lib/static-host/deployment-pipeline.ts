@@ -21,9 +21,6 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly infraRepoOwner: string
   readonly infraRepoName: string
   readonly infraSourceBranch: string
-  readonly qaRepoOwner: string
-  readonly qaRepoName: string
-  readonly qaSourceBranch: string
   readonly qaSpecPath: string
   readonly namespace: string
   readonly instanceName: string
@@ -142,15 +139,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,
     })
-    const qaSourceArtifact = new codepipeline.Artifact('QACode')
-    const qaSourceAction = new codepipelineActions.GitHubSourceAction({
-        actionName: 'QACode',
-        branch: props.qaSourceBranch || props.appSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
-        output: qaSourceArtifact,
-        owner: props.qaRepoOwner || props.appRepoOwner,
-        repo: props.qaRepoName || props.appRepoName,
-    })
 
     // Deploy to Test
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
@@ -180,7 +168,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       },
     })
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
-      input: qaSourceArtifact,
+      input: appSourceArtifact,
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
@@ -230,7 +218,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       },
     })
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
-      input: qaSourceArtifact,
+      input: appSourceArtifact,
       project: smokeTestsProdProject,
       actionName: 'SmokeTests',
       runOrder: 98,
@@ -241,7 +229,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       artifactBucket,
       stages: [
         {
-          actions: [appSourceAction, infraSourceAction, qaSourceAction],
+          actions: [appSourceAction, infraSourceAction],
           stageName: 'Source',
         },
         {

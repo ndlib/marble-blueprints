@@ -10,87 +10,82 @@ import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import { getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
+import { Stacks } from '../lib/types'
 
-
-export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv): any => {
-  // The environment objects defined in our context are a mixture of properties.
-  // Need to decompose these into a cdk env object and other required stack props
-  const { env, useVpcId, domainName, createDns, useExistingDnsZone, rBSCS3ImageBucketName } = contextEnv
+export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv): Stacks => {
+  // Construct common props that are required by all service stacks
+  const commonProps = {
+    namespace,
+    env: contextEnv.env,
+    contextEnvName: contextEnv.name,
+    createDns: contextEnv.createDns,
+    domainName: contextEnv.domainName,
+  }
 
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-    env,
-    domainName,
-    useExistingDnsZone,
-    useVpcId,
+    useVpcId: contextEnv.useVpcId,
+    useExistingDnsZone: contextEnv.useExistingDnsZone,
+    ...commonProps,
   })
 
-  // TODO: Change this to use unique context namespaces
-  const staticHostContext = getContextByNamespace('staticHost')
-  const siteInstances = [
-    'website', // Main marble site
-    'redbox',
-  ]
-  const siteStacks = siteInstances.map(instanceName => {
-    new staticHost.StaticHostStack(app, `${namespace}-${instanceName}`, {
-      contextEnvName: contextEnv.name,
-      env,
-      foundationStack,
-      createDns,
-      namespace,
-      ...staticHostContext,
-    })
+  const websiteContext = getContextByNamespace('website')
+  const website = new staticHost.StaticHostStack(app, `${namespace}-website`, {
+    foundationStack,
+    ...commonProps,
+    ...websiteContext,
+  })
+
+  const redboxContext = getContextByNamespace('redbox')
+  const redbox = new staticHost.StaticHostStack(app, `${namespace}-redbox`, {
+    foundationStack,
+    ...commonProps,
+    ...redboxContext,
   })
 
   const imageServiceContext = getContextByNamespace('iiifImageService')
   const iiifServerlessStack = new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, {
-    env,
     foundationStack,
-    createDns,
+    ...commonProps,
     ...imageServiceContext,
   })
 
   const userContentContext = getContextByNamespace('userContent')
   const userContentStack = new userContent.UserContentStack(app, `${namespace}-user-content`, {
-    env,
     foundationStack,
-    createDns,
-    namespace,
+    ...commonProps,
     ...userContentContext,
   })
 
   const imageProcessingContext = getContextByNamespace('imageProcessing')
   const imageProcessingStack = new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, {
-    env,
     foundationStack,
+    ...commonProps,
     ...imageProcessingContext,
   })
 
   const elasticsearchContext = getContextByNamespace('elasticsearch')
   const elasticSearchStack = new elasticsearch.ElasticStack(app, `${namespace}-elastic`, {
-    env,
-    contextEnvName: contextEnv.name,
-    namespace,
     foundationStack,
+    ...commonProps,
     ...elasticsearchContext,
   })
 
 
   const manifestPipelineContext = getContextByNamespace('manifestPipeline')
   const manifestPipelineStack = new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, {
-    env,
-    domainName,
     foundationStack,
-    createDns,
     sentryDsn: app.node.tryGetContext('sentryDsn'),
-    rBSCS3ImageBucketName,
     createEventRules: app.node.tryGetContext('manifestPipeline:createEventRules') === "true" ? true : false,
     appConfigPath: app.node.tryGetContext('manifestPipeline:appConfigPath') ? app.node.tryGetContext('manifestPipeline:appConfigPath') : `/all/stacks/${namespace}-manifest`,
+    rBSCS3ImageBucketName: contextEnv.rBSCS3ImageBucketName,
+    ...commonProps,
     ...manifestPipelineContext,
   })
 
   return {
     foundationStack,
-    siteStacks,
+    website,
+    redbox,
     iiifServerlessStack,
     userContentStack,
     imageProcessingStack,

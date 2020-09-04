@@ -56,7 +56,7 @@ export class FoundationStack extends Stack {
   /**
    * Shared cluster for any ECS tasks/services in this application
    */
-  public readonly cluster: ICluster
+  public readonly cluster: Cluster
 
   /**
    * The shared log bucket to place all logs for components in this application

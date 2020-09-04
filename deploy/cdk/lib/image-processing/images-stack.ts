@@ -68,7 +68,7 @@ export class ImagesStack extends cdk.Stack {
     // https://github.com/aws/aws-cdk/issues/2004
     new S3NotificationToLambdaCustomResource(this, id, rbscBucket, imageTracker)
 
-    const cluster = new ecs.Cluster(this, 'Cluster', { vpc: props.foundationStack.vpc })
+    const cluster: ecs.Cluster = props.foundationStack.cluster
     cluster.addCapacity('Ec2Group', {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       minCapacity: 1,

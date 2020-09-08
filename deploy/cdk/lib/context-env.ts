@@ -10,6 +10,7 @@ export class ContextEnv {
   readonly domainName: string
   readonly useExistingDnsZone: boolean
   readonly slackNotifyStackName: string
+  readonly notificationReceivers: string
   readonly rBSCS3ImageBucketName: string
   readonly createEventRules: boolean
 

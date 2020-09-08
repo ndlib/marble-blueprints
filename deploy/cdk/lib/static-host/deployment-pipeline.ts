@@ -33,7 +33,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly description: string
   readonly slackNotifyStackName?: string
   readonly notificationReceivers?: string
-  readonly foundationStack: FoundationStack
+  readonly testFoundationStack: FoundationStack
+  readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
   readonly buildScriptsDir: string
   readonly buildOutputDir: string
@@ -49,7 +50,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack) => {
       const paramsPath = `/all/static-host/${targetStack}/`
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
@@ -97,7 +98,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
           's3:GetBucketAcl',
           's3:PutBucketAcl',
         ],
-        resources: [props.foundationStack.logBucket.bucketArn],
+        resources: [
+          props.testFoundationStack.logBucket.bucketArn,
+          props.prodFoundationStack.logBucket.bucketArn,
+        ],
       }))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.globals([
         GlobalActions.Cloudfront,
@@ -111,7 +115,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(props.elasticSearchDomain))
 
       if (props.createDns) {
-        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
       }
 
       return cdkDeploy
@@ -152,13 +156,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
     const testBuildOutput = new Artifact('TestBuild')
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack)
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', {
       targetStack: testStackName,
       inputBuildArtifact: testBuildOutput,
     })
 
-    const testHostname = `${testHostnamePrefix}.${props.foundationStack.hostedZone.zoneName}`
+    const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
     const smokeTestsProject = new PipelineProject(this, 'StaticHostSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {
@@ -202,13 +206,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
     const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
     const prodBuildOutput = new Artifact('ProdBuild')
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack)
     const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', {
       targetStack: prodStackName,
       inputBuildArtifact: prodBuildOutput,
     })
 
-    const prodHostname = `${prodHostnamePrefix}.${props.foundationStack.hostedZone.zoneName}`
+    const prodHostname = `${prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
     const smokeTestsProdProject = new PipelineProject(this, 'StaticHostProdSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {

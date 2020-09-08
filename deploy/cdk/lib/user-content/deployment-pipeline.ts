@@ -28,7 +28,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly slackNotifyStackName?: string;
   readonly allowedOrigins: string;
   readonly notificationReceivers?: string;
-  readonly foundationStack: FoundationStack;
+  readonly testFoundationStack: FoundationStack
+  readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string;
   readonly createDns: boolean;
 }
@@ -41,8 +42,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-user-content`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string) => {
-      const domainName = `${hostnamePrefix}.${props.foundationStack.hostedZone.zoneName}`
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, foundationStack: FoundationStack) => {
+      const domainName = `${hostnamePrefix}.${foundationStack.hostedZone.zoneName}`
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -80,8 +81,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
 
-      if(props.createDns){
-        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
+      if (props.createDns) {
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
       }
       return cdkDeploy
     }
@@ -113,8 +114,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix)
-    const testHostname = `https://${testHostnamePrefix}.` + props.foundationStack.hostedZone.zoneName
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.testFoundationStack)
+    const testHostname = `https://${testHostnamePrefix}.` + props.testFoundationStack.hostedZone.zoneName
     const smokeTestsProject = new PipelineProject(this, 'MarbleUserContentSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {
@@ -155,8 +156,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix)
-    const prodHostname = `https://${prodHostnamePrefix}.` + props.foundationStack.hostedZone.zoneName
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodFoundationStack)
+    const prodHostname = `https://${prodHostnamePrefix}.` + props.prodFoundationStack.hostedZone.zoneName
     const smokeTestsProdProject = new PipelineProject(this, 'MarbleUserContentProdSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {

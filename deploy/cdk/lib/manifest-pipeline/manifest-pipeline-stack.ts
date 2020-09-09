@@ -7,7 +7,7 @@ import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { Choice, Condition, Errors, Fail, LogLevel, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
 import * as tasks from '@aws-cdk/aws-stepfunctions-tasks'
-import { Construct, Duration, Fn, Stack, StackProps } from "@aws-cdk/core"
+import { Construct, Duration, Fn, Stack, StackProps, CfnOutput } from "@aws-cdk/core"
 import fs = require('fs')
 import path = require('path')
 import { FoundationStack } from '../foundation'
@@ -143,23 +143,24 @@ export class ManifestPipelineStack extends Stack {
       this.node.addError(`hostnamePrefix does not match legal pattern.`)
     }
 
-    if (!fs.existsSync(props.lambdaCodeRootPath)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodeRootPath}`)
-      return
-    }
-
-
     // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
       comment: Fn.sub('Static assets in ${AWS::StackName}'),
     })
 
-
     // Create buckets needed
-    this.processBucket = new Bucket(this, 'ProcessBucket', {
+    const processBucket = new Bucket(this, 'ProcessBucket', {
       serverAccessLogsBucket: props.foundationStack.logBucket,
       serverAccessLogsPrefix: 's3/data-broker/',
     })
+    // Manually control and force the export of this bucket
+    const processBucketExportName = `${this.stackName}:ProcessBucketArn`
+    new CfnOutput(this, 'ProcessBucketArnOutput', {
+      value: processBucket.bucketArn,
+      exportName: processBucketExportName,
+    })
+    // Construct the import for anything that references this bucket
+    this.processBucket = Bucket.fromBucketArn(this, 'BucketImport', Fn.importValue(processBucketExportName))
 
     this.manifestBucket = new Bucket(this, 'ManifestBucket', {
       cors: [
@@ -242,7 +243,7 @@ export class ManifestPipelineStack extends Stack {
     new StringParameter(this, 'sSMProcessBucket', {
       type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/process-bucket`,
-      stringValue: this.processBucket.bucketName,
+      stringValue: processBucket.bucketName,
       description: 'S3 Bucket to accumulate assets during processing',
     })
 
@@ -329,6 +330,10 @@ export class ManifestPipelineStack extends Stack {
       })
     }
     
+    if (!fs.existsSync(props.lambdaCodeRootPath)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodeRootPath}`)
+      return
+    }
     const initManifestLambda = new Function(this, 'InitManifestLambdaFunction', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'init/')),
       description: 'Initializes the manifest pipeline step functions',
@@ -345,7 +350,7 @@ export class ManifestPipelineStack extends Stack {
       timeout: Duration.seconds(90),
     })
 
-    this.processBucket.grantReadWrite(initManifestLambda)
+    processBucket.grantReadWrite(initManifestLambda)
 
 
     const processManifestLambda = new Function(this, 'ProcessManifestLambdaFunction', {
@@ -363,7 +368,7 @@ export class ManifestPipelineStack extends Stack {
       timeout: Duration.seconds(900),
     })
 
-    this.processBucket.grantReadWrite(processManifestLambda)
+    processBucket.grantReadWrite(processManifestLambda)
 
 
     const finalizeManifestLambda = new Function(this, 'FinalizeManifestLambdaFunction', {
@@ -373,7 +378,7 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         SENTRY_DSN: props.sentryDsn,
-        PROCESS_BUCKET: this.processBucket.bucketArn,
+        PROCESS_BUCKET: processBucket.bucketArn,
       },
       initialPolicy: [
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
@@ -388,7 +393,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     this.manifestBucket.grantReadWrite(finalizeManifestLambda)
-    this.processBucket.grantReadWrite(finalizeManifestLambda)
+    processBucket.grantReadWrite(finalizeManifestLambda)
     props.foundationStack.publicBucket.grantReadWrite(finalizeManifestLambda)
 
     // Create tasks for state machine
@@ -470,7 +475,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     this.manifestBucket.grantReadWrite(museumExportLambda)
-    this.processBucket.grantReadWrite(museumExportLambda)
+    processBucket.grantReadWrite(museumExportLambda)
 
 
     const alephExportLambda = new Function(this, 'AlephExportLambda', {
@@ -491,7 +496,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     this.manifestBucket.grantReadWrite(alephExportLambda)
-    this.processBucket.grantReadWrite(alephExportLambda)
+    processBucket.grantReadWrite(alephExportLambda)
 
 
     const curateExportLambda = new Function(this, 'CurateExportLambda', {
@@ -512,7 +517,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     this.manifestBucket.grantReadWrite(curateExportLambda)
-    this.processBucket.grantReadWrite(curateExportLambda)
+    processBucket.grantReadWrite(curateExportLambda)
 
 
     const archivesSpaceExportLambda = new Function(this, 'ArchivesSpaceExportLambda', {
@@ -533,7 +538,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     this.manifestBucket.grantReadWrite(archivesSpaceExportLambda)
-    this.processBucket.grantReadWrite(archivesSpaceExportLambda)
+    processBucket.grantReadWrite(archivesSpaceExportLambda)
 
 
     const collectionsApiLambda = new Function(this, 'CollectionsApiLambda', {
@@ -561,7 +566,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     this.manifestBucket.grantReadWrite(collectionsApiLambda)
-    this.processBucket.grantReadWrite(collectionsApiLambda)
+    processBucket.grantReadWrite(collectionsApiLambda)
 
     const objectFilesApiLambda = new Function(this, 'ObjectFilesApiLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'object_files_api/')),
@@ -582,7 +587,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     this.manifestBucket.grantReadWrite(objectFilesApiLambda)
-    this.processBucket.grantReadWrite(objectFilesApiLambda)
+    processBucket.grantReadWrite(objectFilesApiLambda)
 
 
     // Create tasks for harvest state machine

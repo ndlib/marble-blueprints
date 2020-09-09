@@ -9,13 +9,13 @@ import cdk = require('@aws-cdk/core')
 import fs = require('fs')
 import { FoundationStack } from '../foundation'
 import { S3NotificationToLambdaCustomResource } from './s3ToLambda'
+import { ManifestPipelineStack } from '../manifest-pipeline'
 
 export interface ImagesStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string;
   readonly dockerfilePath: string;
   readonly rbscBucketName: string;
-  readonly processBucketName: string;
-  readonly imageBucketName: string;
+  readonly manifestPipelineStack: ManifestPipelineStack;
   readonly foundationStack: FoundationStack;
 }
 
@@ -23,21 +23,10 @@ export class ImagesStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: ImagesStackProps) {
     super(scope, id, props)
 
-    if(!fs.existsSync(props.lambdaCodePath)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`)
-      return
-    }
-    if(!fs.existsSync(props.dockerfilePath)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.dockerfilePath}`)
-      return
-    }
-
     const rbscBucketName = props.rbscBucketName
     const rbscBucket = s3.Bucket.fromBucketName(this, 'RbscBucket', rbscBucketName)
-    const processBucketName = props.processBucketName
-    const processBucket = s3.Bucket.fromBucketName(this, 'ProcessBucket', processBucketName)
-    const imageBucketName = props.imageBucketName
-    const imageBucket = s3.Bucket.fromBucketName(this, 'ImageBucket', imageBucketName)
+    const processBucket = props.manifestPipelineStack.processBucket
+    const imageBucket = props.foundationStack.publicBucket
 
     /* get rbsc bucket and attach object listener */
     const changedImgRole = new iam.Role(this, 'S3ImageRole', {
@@ -56,19 +45,23 @@ export class ImagesStack extends cdk.Stack {
     const roleLoggingPolicy = iam.ManagedPolicy.fromAwsManagedPolicyName(awsLambdaLoggingPolicy)
     changedImgRole.addManagedPolicy(roleLoggingPolicy)
 
+    if(!fs.existsSync(props.lambdaCodePath)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`)
+      return
+    }
     const imageTracker = new lambda.Function(this, 'Handler', {
       runtime: lambda.Runtime.PYTHON_3_8,
       code: lambda.Code.fromAsset(props.lambdaCodePath),
       handler: 'generate.handler',
       environment: {
-        PROCESS_BUCKET: processBucketName,
+        PROCESS_BUCKET: processBucket.bucketName,
       },
       role: changedImgRole,
     })
     // https://github.com/aws/aws-cdk/issues/2004
     new S3NotificationToLambdaCustomResource(this, id, rbscBucket, imageTracker)
 
-    const cluster: ecs.Cluster = props.foundationStack.cluster
+    const cluster = props.foundationStack.cluster as ecs.Cluster
     cluster.addCapacity('Ec2Group', {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       minCapacity: 1,
@@ -113,6 +106,11 @@ export class ImagesStack extends cdk.Stack {
 
     const taskDef = new ecs.Ec2TaskDefinition(this, "TaskDefinition", { taskRole })
     const logging = new ecs.AwsLogDriver({ streamPrefix: 'marbleimg' })
+
+    if(!fs.existsSync(props.dockerfilePath)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.dockerfilePath}`)
+      return
+    }
     taskDef.addContainer("AppContainer", {
       image: ecs.ContainerImage.fromAsset(props.dockerfilePath),
       memoryLimitMiB: 512,
@@ -120,8 +118,8 @@ export class ImagesStack extends cdk.Stack {
       environment: {
         LEVEL0: 'enable',
         RBSC_BUCKET: rbscBucketName,
-        PROCESS_BUCKET: processBucketName,
-        IMAGE_BUCKET: imageBucketName,
+        PROCESS_BUCKET: processBucket.bucketName,
+        IMAGE_BUCKET: imageBucket.bucketName,
       },
     })
 

@@ -8,6 +8,8 @@ import cdk = require('@aws-cdk/core')
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
+import { ManifestPipelineStack } from '../manifest-pipeline'
+import { FoundationStack } from '../foundation'
 
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
@@ -16,9 +18,9 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly contextEnvName: string;
   readonly owner: string;
   readonly contact: string;
-  rbscBucketName: string;
-  processBucketName: string;
-  imageBucketName: string;
+  readonly rbscBucketName: string;
+  readonly testFoundationStack: FoundationStack;
+  readonly prodFoundationStack: FoundationStack;
   readonly lambdaCodePath: string;
   readonly dockerfilePath: string;
   readonly appRepoOwner: string;
@@ -35,11 +37,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props)
 
-    const testStackName = `${props.namespace}-test-image`
-    const prodStackName = `${props.namespace}-prod-image`
+    const testStackName = `${props.namespace}-test-image-processing`
+    const prodStackName = `${props.namespace}-prod-image-processing`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string) => {
+    const createDeploy = (targetStack: string, namespace: string, foundationStack: FoundationStack) => {
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -54,9 +56,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: "marble",
           owner: props.owner,
           contact: props.contact,
-          "imageProcessing:rbscBucketName": props.rbscBucketName,
-          "imageProcessing:processBucketName": props.processBucketName,
-          "imageProcessing:imageBucketName": props.imageBucketName,
+          "imageProcessing:imageBucketName": foundationStack.publicBucket.bucketName,
           "imageProcessing:lambdaCodePath": "$CODEBUILD_SRC_DIR_AppCode/s3_event",
           "imageProcessing:dockerfilePath": "$CODEBUILD_SRC_DIR_AppCode/",
         },
@@ -110,7 +110,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     // Deploy to Test
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, props.testFoundationStack)
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -129,10 +129,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    props.imageBucketName = this.node.tryGetContext('imageProcessing:prodImageBucketName')
-    props.rbscBucketName = this.node.tryGetContext('imageProcessing:prodRbscBucketName')
-    props.processBucketName = this.node.tryGetContext('imageProcessing:prodProcessBucketName')
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.prodFoundationStack)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

@@ -77,7 +77,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: props.projectName,
           owner: props.owner,
           contact: props.contact,
-          'staticHost:hostnamePrefix': hostnamePrefix,
+          [`${props.instanceName}:hostnamePrefix`]: hostnamePrefix,
         },
       })
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({

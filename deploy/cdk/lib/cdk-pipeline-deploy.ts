@@ -122,6 +122,7 @@ export class CDKPipelineDeploy extends Construct {
         },
         version: '0.2',
       }),
+      ...props,
     })
 
     // CDK will try to read logs when generating output for failed events

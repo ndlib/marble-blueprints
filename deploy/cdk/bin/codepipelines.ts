@@ -41,6 +41,8 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     const instanceContext = getContextByNamespace(instanceName)
     new staticHost.DeploymentPipelineStack(app, `${namespace}-${instanceName}-deployment`, {
       instanceName,
+      testElasticStack: testStacks.elasticSearchStack,
+      prodElasticStack: prodStacks.elasticSearchStack,
       ...commonProps,
       ...staticHostContext,
       ...instanceContext,

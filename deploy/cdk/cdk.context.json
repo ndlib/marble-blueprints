@@ -57,7 +57,7 @@
   "website:buildOutputDir": "public",
   "website:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "website:qaSpecPath": "tests/postman/collection.json",
-  "website:elasticSearchDomain": "marble",
+  "website:searchIndex": "marble",
 
   "redbox:hostnamePrefix": "redbox",
   "redbox:appRepoOwner": "ndlib",
@@ -67,9 +67,7 @@
   "redbox:buildOutputDir": "public",
   "redbox:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "redbox:qaSpecPath": "tests/postman/collection.json",
-  "redbox:elasticSearchDomain": "marble",
-
-  "elasticsearch:esDomainName": "sites",
+  "redbox:searchIndex": "redbox",
 
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",

@@ -1,19 +1,22 @@
 import cdk = require('@aws-cdk/core')
 import { CfnDomain } from '@aws-cdk/aws-elasticsearch'
 import { Aws } from '@aws-cdk/core'
+import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface ElasticStackProps extends cdk.StackProps {
-  readonly esDomainName: string
   readonly namespace: string
   readonly contextEnvName: string
 }
 
 export class ElasticStack extends cdk.Stack {
+  readonly domainName: string
+
   constructor(scope: cdk.Construct, id: string, props: ElasticStackProps) {
     super(scope, id, props)
-    const anonSearch: string = `arn:aws:es:${Aws.REGION}:${Aws.ACCOUNT_ID}:domain/${props.esDomainName}/*/_search`
+    this.domainName = `${props.namespace}-sites`
+    const anonSearch = `arn:aws:es:${Aws.REGION}:${Aws.ACCOUNT_ID}:domain/${this.domainName}/*/_search`
 
-    new CfnDomain(this, `${props.namespace}-domain`, {
+    const domain = new CfnDomain(this, `${props.namespace}-domain`, {
       elasticsearchVersion: '7.7',
       elasticsearchClusterConfig: this.configCluster(props.contextEnvName),
       ebsOptions: {
@@ -35,13 +38,18 @@ export class ElasticStack extends cdk.Stack {
           },
         ],
       },
-      domainName: props.esDomainName,
+      domainName: this.domainName,
       snapshotOptions: { automatedSnapshotStartHour: 4 },
+    })
+
+    new StringParameter(this, 'DomainEndpointParam', {
+      parameterName: `/all/stacks/${this.stackName}/domain-endpoint`,
+      stringValue: `https://${domain.attrDomainEndpoint}`,
     })
   }
 
   private configCluster = (environment: string) => {
-    let config: any = {
+    const config: any = {
       instanceCount: 1,
       instanceType: 't2.small.elasticsearch',
     }

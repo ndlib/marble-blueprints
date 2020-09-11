@@ -56,13 +56,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...userContentContext,
   })
 
-  const imageProcessingContext = getContextByNamespace('imageProcessing')
-  const imageProcessingStack = new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, {
-    foundationStack,
-    ...commonProps,
-    ...imageProcessingContext,
-  })
-
   const elasticsearchContext = getContextByNamespace('elasticsearch')
   const elasticSearchStack = new elasticsearch.ElasticStack(app, `${namespace}-elastic`, {
     foundationStack,
@@ -80,6 +73,15 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     rBSCS3ImageBucketName: contextEnv.rBSCS3ImageBucketName,
     ...commonProps,
     ...manifestPipelineContext,
+  })
+
+  const imageProcessingContext = getContextByNamespace('imageProcessing')
+  const imageProcessingStack = new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, {
+    foundationStack,
+    rbscBucketName: contextEnv.rBSCS3ImageBucketName,
+    manifestPipelineStack,
+    ...commonProps,
+    ...imageProcessingContext,
   })
 
   return {

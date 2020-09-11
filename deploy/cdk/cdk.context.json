@@ -43,12 +43,6 @@
   "iiifImageService:qaRepoName": "iiif-qa",
   "iiifImageService:qaSourceBranch": "master",
 
-  "imageProcessing:prodRbscBucketName": "libnd-smb-rbsc",
-  "imageProcessing:prodProcessBucketName": "marble-manifest-prod-processbucket-kskqchthxshg",
-  "imageProcessing:prodImageBucketName": "marble-data-broker-publicbucket-1kvqtwnvkhra2",
-  "imageProcessing:rbscBucketName": "marble-rbsc",
-  "imageProcessing:processBucketName": "marble-image",
-  "imageProcessing:imageBucketName": "marble-image",
   "imageProcessing:lambdaCodePath": "../../../marble-images/s3_event",
   "imageProcessing:dockerfilePath": "../../../marble-images/",
   "imageProcessing:appRepoOwner": "ndlib",

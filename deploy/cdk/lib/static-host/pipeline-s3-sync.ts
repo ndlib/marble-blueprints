@@ -64,7 +64,7 @@ export class PipelineS3Sync extends Construct {
           },
           post_build: {
             commands: [
-              `aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID`,
+              `aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"`,
             ],
           },
         },

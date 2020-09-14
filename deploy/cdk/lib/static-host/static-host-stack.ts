@@ -126,6 +126,12 @@ export class StaticHostStack extends cdk.Stack {
       stringValue: this.bucket.bucketName,
     })
 
+    new ssm.StringParameter(this, 'DistributionParameter', {
+      parameterName: `/all/stacks/${this.stackName}/distribution-id`,
+      description: 'ID of the CloudFront distribution.',
+      stringValue: this.cloudfront.distributionId,
+    })
+
     new cdk.CfnOutput(this, 'DistributionDomainName', {
       value: this.cloudfront.domainName,
       description: 'The cloudfront distribution domain name.',

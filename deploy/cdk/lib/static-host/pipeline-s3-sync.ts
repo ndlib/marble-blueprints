@@ -94,6 +94,12 @@ export class PipelineS3Sync extends Construct {
       ],
       resources: [ 'arn:aws:s3:::cdktoolkit-stagingbucket-*' ],
     }))
+    this.project.addToRolePolicy(new PolicyStatement({
+      actions: [
+        'cloudfront:CreateInvalidation',
+      ],
+      resources: ['*'],
+    }))
     // We don't know exactly what the bucket's name will be until runtime, but it starts with the stack's name
     this.project.addToRolePolicy(NamespacedPolicy.s3(props.targetStack))
     this.project.addToRolePolicy(NamespacedPolicy.ssm(props.targetStack))

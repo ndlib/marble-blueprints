@@ -42,6 +42,10 @@ export class PipelineS3Sync extends Construct {
           value: `/all/stacks/${props.targetStack}/site-bucket-name`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
+        DISTRIBUTION_ID: {
+          value: `/all/stacks/${props.targetStack}/distribution-id`,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
       },
       buildSpec: BuildSpec.fromObject({
         phases: {
@@ -56,6 +60,11 @@ export class PipelineS3Sync extends Construct {
               // Copy new build to the site s3 bucket
               `cd ${props.subdirectory || '.'}`,
               `aws s3 cp --recursive . s3://$DEST_BUCKET/ --exclude "sha.txt"`,
+            ],
+          },
+          post_build: {
+            commands: [
+              `aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"`,
             ],
           },
         },
@@ -84,6 +93,12 @@ export class PipelineS3Sync extends Construct {
         's3:GetBucketPolicy',
       ],
       resources: [ 'arn:aws:s3:::cdktoolkit-stagingbucket-*' ],
+    }))
+    this.project.addToRolePolicy(new PolicyStatement({
+      actions: [
+        'cloudfront:CreateInvalidation',
+      ],
+      resources: ['*'],
     }))
     // We don't know exactly what the bucket's name will be until runtime, but it starts with the stack's name
     this.project.addToRolePolicy(NamespacedPolicy.s3(props.targetStack))

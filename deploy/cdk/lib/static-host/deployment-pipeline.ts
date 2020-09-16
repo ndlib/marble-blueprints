@@ -39,7 +39,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean
   readonly testElasticStack: ElasticStack
   readonly prodElasticStack: ElasticStack
-  readonly searchIndex: string
+  readonly searchIndex?: string
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -83,7 +83,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
           [`${props.instanceName}:hostnamePrefix`]: hostnamePrefix,
         },
-        environmentVariables: {
+        environmentVariables: props.searchIndex === undefined ? {} : {
           SEARCH_URL: {
             value: esEndpointParamPath,
             type: BuildEnvironmentVariableType.PARAMETER_STORE,

@@ -67,7 +67,6 @@
   "redbox:buildOutputDir": "public",
   "redbox:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "redbox:qaSpecPath": "tests/postman/collection.json",
-  "redbox:searchIndex": "redbox",
 
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",

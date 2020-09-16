@@ -1,4 +1,4 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
+import { BuildEnvironmentVariableType, BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
@@ -11,6 +11,7 @@ import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { PipelineS3Sync } from './pipeline-s3-sync'
+import { ElasticStack } from '../elasticsearch'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly contextEnvName: string
@@ -35,8 +36,10 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly hostnamePrefix: string
   readonly buildScriptsDir: string
   readonly buildOutputDir: string
-  readonly elasticSearchDomain: string
   readonly createDns: boolean
+  readonly testElasticStack: ElasticStack
+  readonly prodElasticStack: ElasticStack
+  readonly searchIndex?: string
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -47,8 +50,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack) => {
       const paramsPath = `/all/static-host/${targetStack}/`
+      const esEndpointParamPath = `/all/stacks/${elasticStack.stackName}/domain-endpoint`
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -79,6 +83,16 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
           [`${props.instanceName}:hostnamePrefix`]: hostnamePrefix,
         },
+        environmentVariables: props.searchIndex === undefined ? {} : {
+          SEARCH_URL: {
+            value: esEndpointParamPath,
+            type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          },
+          SEARCH_INDEX: {
+            value: props.searchIndex,
+            type: BuildEnvironmentVariableType.PLAINTEXT,
+          },
+        },
       })
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: [
@@ -88,6 +102,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         ],
         resources:[
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramsPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + esEndpointParamPath),
         ],
       }))
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
@@ -109,7 +124,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.s3(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(props.elasticSearchDomain))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(elasticStack.domainName))
 
       if (props.createDns) {
         cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
@@ -144,7 +159,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
     const testBuildOutput = new Artifact('TestBuild')
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', {
       targetStack: testStackName,
       inputBuildArtifact: testBuildOutput,
@@ -194,7 +209,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
     const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
     const prodBuildOutput = new Artifact('ProdBuild')
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack)
     const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', {
       targetStack: prodStackName,
       inputBuildArtifact: prodBuildOutput,

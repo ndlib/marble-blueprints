@@ -271,7 +271,7 @@ export class NamespacedPolicy {
   public static elasticsearch(domain: string): PolicyStatement {
     return new PolicyStatement({
       resources: [
-        Fn.sub('arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/' + domain),
+        Fn.sub('arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/' + domain + '*'),
       ],
       actions: [
         'es:DescribeElasticsearchDomain',

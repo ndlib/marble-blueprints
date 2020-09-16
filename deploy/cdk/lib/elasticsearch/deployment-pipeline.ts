@@ -31,7 +31,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-elastic`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, domainName: string) => {
+    const createDeploy = (targetStack: string, namespace: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -45,10 +45,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
           projectName: "marble",
           owner: props.owner,
           contact: props.contact,
-          "elasticsearch:esDomainName": domainName,
         },
       })
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearch(domainName))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearch(namespace))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(
         NamespacedPolicy.globals([GlobalActions.Cloudwatch,GlobalActions.ES]))
@@ -75,7 +74,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     // Deploy to Test
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `test-${props.esDomainName}`)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`)
 
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
@@ -94,7 +93,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `prod-${props.esDomainName}`)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

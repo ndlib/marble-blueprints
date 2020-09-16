@@ -6,14 +6,15 @@ import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
-import { ArtifactBucket, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
+import { PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
-import { FoundationStack } from '../foundation'
+import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+  readonly pipelineFoundationStack: PipelineFoundationStack
   readonly contextEnvName: string
   readonly oauthTokenPath: string
   readonly appRepoOwner: string
@@ -133,8 +134,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       return cdkDeploy
     }
 
-    const artifactBucket = new ArtifactBucket(this, 'ArtifactBucket', {})
-
     // Source Actions
     const appSourceArtifact = new codepipeline.Artifact('AppCode')
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
@@ -241,7 +240,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
-      artifactBucket,
+      artifactBucket: props.pipelineFoundationStack.artifactBucket,
       stages: [
         {
           actions: [appSourceAction, infraSourceAction],

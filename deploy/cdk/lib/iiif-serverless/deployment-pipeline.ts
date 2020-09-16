@@ -2,17 +2,17 @@ import { BuildEnvironmentVariableType, BuildSpec, PipelineProject, LinuxBuildIma
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { Topic } from '@aws-cdk/aws-sns'
-import { ManualApprovalAction, S3DeployAction, CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
-import { FoundationStack } from '../foundation'
+import { ManualApprovalAction, CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
+import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { Fn } from '@aws-cdk/core'
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+  readonly pipelineFoundationStack: PipelineFoundationStack
   readonly oauthTokenPath: string;
   readonly appRepoOwner: string;
   readonly appRepoName: string;
@@ -45,11 +45,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testStackName = `${props.namespace}-test-image-service`
     const prodHost = `${props.hostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
     const prodStackName = `${props.namespace}-prod-image-service`
-
-    const artifactBucket = new Bucket(this, 'artifactBucket', {
-      encryption: BucketEncryption.KMS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    })
 
     // Source Actions
     const appSourceArtifact = new codepipeline.Artifact('AppCode')
@@ -246,7 +241,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
-      artifactBucket,
+      artifactBucket: props.pipelineFoundationStack.artifactBucket,
       stages: [
         {
           actions: [appSourceAction, qaSourceAction, infraSourceAction],

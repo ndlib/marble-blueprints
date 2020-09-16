@@ -3,15 +3,15 @@ import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
-import { FoundationStack } from '../foundation'
+import { FoundationStack, PipelineFoundationStack } from '../foundation'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+  readonly pipelineFoundationStack: PipelineFoundationStack
   readonly oauthTokenPath: string;
   readonly appRepoOwner: string;
   readonly appRepoName: string;
@@ -86,11 +86,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       }
       return cdkDeploy
     }
-
-    const artifactBucket = new Bucket(this, 'artifactBucket', {
-      encryption: BucketEncryption.KMS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    })
 
     // Source Actions
     const appSourceArtifact = new codepipeline.Artifact('AppCode')
@@ -182,7 +177,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
-      artifactBucket,
+      artifactBucket: props.pipelineFoundationStack.artifactBucket,
       stages: [
         {
           actions: [appSourceAction, infraSourceAction],

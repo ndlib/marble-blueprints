@@ -10,11 +10,17 @@ import manifestPipeline = require('../lib/manifest-pipeline')
 import { getRequiredContext, getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
+import { PipelineFoundationStack } from '../lib/foundation'
 
 export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv, testStacks: Stacks, prodStacks: Stacks): void => {
+  const pipelineFoundationStack = new PipelineFoundationStack(app, `${namespace}-deployment-foundation`, {
+    env: contextEnv.env,
+  })
+
   // Construct common props that are required by all pipeline stacks
   const commonProps = {
     namespace,
+    pipelineFoundationStack,
     testFoundationStack: testStacks.foundationStack,
     prodFoundationStack: prodStacks.foundationStack,
     env: contextEnv.env,

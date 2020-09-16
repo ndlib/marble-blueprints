@@ -1,6 +1,7 @@
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
+import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
+import { ManualApprovalAction, CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
@@ -53,7 +54,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
           `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_${infraSourceArtifact.artifactName}"`,
           './scripts/codebuild/install.sh',
           'pyenv versions',
-          './scripts/codebuild/pre_build.sh',
           'yarn',
         ],
         outputFiles: [
@@ -189,6 +189,40 @@ export class DeploymentPipelineStack extends cdk.Stack {
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,
     })
+    
+    const appUnitTestsProject = new PipelineProject(this, 'AppUnitTests', {
+      environment: {
+        buildImage: LinuxBuildImage.STANDARD_4_0,
+      },
+      buildSpec: BuildSpec.fromObject({
+        phases: {
+          install: {
+            'runtime-versions': {
+              python: '3.8',
+            },
+            commands: [
+              'pyenv versions',
+              'pip install -r dev-requirements.txt',
+              'chmod -R 755 ./scripts/codebuild/*',
+              './scripts/codebuild/install.sh',
+            ],
+          },
+          build: {
+            commands: [
+              // pre_build is the script for UT for this app
+              './scripts/codebuild/pre_build.sh',
+            ],
+          },
+        },
+        version: '0.2',
+      }),
+    })
+    const appUnitTestsAction = new CodeBuildAction({
+      actionName: 'Application',
+      input: appSourceArtifact,
+      project: appUnitTestsProject,
+      runOrder: 1,
+    })
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
@@ -220,6 +254,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
         {
           actions: [appSourceAction, infraSourceAction],
           stageName: 'Source',
+        },
+        {
+          actions: [appUnitTestsAction],
+          stageName: 'UnitTest',
         },
         {
           actions: [deployTest.action, approvalAction],

@@ -28,7 +28,7 @@
   "projectName": "marble",
   "description": "Infrastructure for Marble project",
   "oauthTokenPath": "/all/github/ndlib-git",
-  "namespace": "marble",
+  "namespace": "marbleb",
   "stackType": "service",
   "infraRepoOwner": "ndlib",
   "infraRepoName": "marble-blueprints",

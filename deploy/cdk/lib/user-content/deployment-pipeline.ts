@@ -1,4 +1,4 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
+import { BuildEnvironmentVariableType, BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
@@ -80,6 +80,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.dynamodb(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
 
       if (props.createDns) {
         cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
@@ -111,12 +112,37 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.testFoundationStack)
     const testHostname = `https://${testHostnamePrefix}.` + props.testFoundationStack.hostedZone.zoneName
+    const addDataProject = new PipelineProject(this, 'MarbleUserContentAddTestData', {
+      buildSpec: BuildSpec.fromObject({
+        phases: {
+          build: {
+            commands: [
+              'echo Populating tables with test data',
+              `aws dynamodb put-item --region us-east-1 --table-name $COLLECTIONS_TABLE \
+                 --item '{ "userName": { "S": "tester" }, "uuid": { "S": "test-collection" }}'`,
+              `aws dynamodb put-item --region us-east-1 --table-name $ITEMS_TABLE \
+                 --item '{"collection":{"S":"test-collection"},"title":{"S":"Test Item"},"uuid":{"S":"test-item"}}'`,
+              `aws dynamodb put-item --region us-east-1 --table-name $USERS_TABLE \
+                 --item '{"userName":{"S":"tester"},"uuid":{"S":"tester"}}'`,
+            ],
+          },
+        },
+        version: '0.2',
+      }),
+    })
+    addDataProject.addToRolePolicy(new PolicyStatement({
+      actions: [ 'dynamodb:PutItem' ],
+      resources: [ `arn:aws:dynamodb:${this.region}:${this.account}:table/${props.namespace}-*` ],
+    }))
+    addDataProject.addToRolePolicy(NamespacedPolicy.ssm(testStackName))
+    addDataProject.addToRolePolicy(NamespacedPolicy.ssm(prodStackName))
+
     const smokeTestsProject = new PipelineProject(this, 'MarbleUserContentSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {
           build: {
             commands: [
-              `newman run tests/postman/collection.json --folder Smoke --env-var api=${testHostname}`,
+              'newman run tests/postman/collection.json --folder Smoke --env-var api=$TARGET_HOSTNAME',
             ],
           },
         },
@@ -126,11 +152,34 @@ export class DeploymentPipelineStack extends cdk.Stack {
         buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
       },
     })
+    const addTestDataAction = new codepipelineActions.CodeBuildAction({
+      input: appSourceArtifact,
+      project: addDataProject,
+      actionName: 'AddData',
+      runOrder: 97,
+      environmentVariables: {
+        ITEMS_TABLE: {
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `/all/stacks/${testStackName}/items-tablename`,
+        },
+        COLLECTIONS_TABLE: {
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `/all/stacks/${testStackName}/collections-tablename`,
+        },
+        USERS_TABLE: {
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `/all/stacks/${testStackName}/users-tablename`,
+        },
+      },
+    })
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
       input: appSourceArtifact,
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
+      environmentVariables: {
+        TARGET_HOSTNAME: { value: testHostname },
+      },
     })
 
     // Approval
@@ -153,26 +202,34 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodHostnamePrefix = props.hostnamePrefix
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodFoundationStack)
     const prodHostname = `https://${prodHostnamePrefix}.` + props.prodFoundationStack.hostedZone.zoneName
-    const smokeTestsProdProject = new PipelineProject(this, 'MarbleUserContentProdSmokeTests', {
-      buildSpec: BuildSpec.fromObject({
-        phases: {
-          build: {
-            commands: [
-              `newman run tests/postman/collection.json --folder Smoke --env-var api=${prodHostname}`,
-            ],
-          },
+    const addProdDataAction = new codepipelineActions.CodeBuildAction({
+      input: appSourceArtifact,
+      project: addDataProject,
+      actionName: 'AddData',
+      runOrder: 97,
+      environmentVariables: {
+        ITEMS_TABLE: {
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `/all/stacks/${prodStackName}/items-tablename`,
         },
-        version: '0.2',
-      }),
-      environment: {
-        buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
+        COLLECTIONS_TABLE: {
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `/all/stacks/${prodStackName}/collections-tablename`,
+        },
+        USERS_TABLE: {
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `/all/stacks/${prodStackName}/users-tablename`,
+        },
       },
     })
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
       input: appSourceArtifact,
-      project: smokeTestsProdProject,
+      project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
+      environmentVariables: {
+        TARGET_HOSTNAME: { value: prodHostname },
+      },
     })
 
     // Pipeline
@@ -184,11 +241,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, smokeTestsAction, approvalAction],
+          actions: [deployTest.action, addTestDataAction, smokeTestsAction, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action, smokeTestsProdAction],
+          actions: [deployProd.action, addProdDataAction, smokeTestsProdAction],
           stageName: 'Production',
         },
       ],

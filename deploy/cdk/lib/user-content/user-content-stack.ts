@@ -6,6 +6,7 @@ import ssm = require('@aws-cdk/aws-ssm')
 import cdk = require('@aws-cdk/core')
 import fs = require('fs')
 import { FoundationStack } from '../foundation'
+import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface UserContentStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string;
@@ -152,5 +153,18 @@ export class UserContentStack extends cdk.Stack {
     itemId.addMethod('GET', userContentIntegration)
     itemId.addMethod('PATCH', userContentIntegration)
     itemId.addMethod('DELETE', userContentIntegration)
+
+    new StringParameter(this, 'UsersTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/users-tablename`,
+      stringValue: userDynamoTable.tableName,
+    })
+    new StringParameter(this, 'CollectionsTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/collections-tablename`,
+      stringValue: collectionDynamoTable.tableName,
+    })
+    new StringParameter(this, 'ItemsTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/items-tablename`,
+      stringValue: itemDynamoTable.tableName,
+    })
   }
 }

@@ -351,8 +351,9 @@ export class ManifestPipelineStack extends Stack {
     })
 
     processBucket.grantReadWrite(initManifestLambda)
+    this.manifestBucket.grantReadWrite(initManifestLambda)
 
-
+    
     const processManifestLambda = new Function(this, 'ProcessManifestLambdaFunction', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'process_manifest/')),
       description: 'Creates iiif Manifests',
@@ -369,6 +370,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     processBucket.grantReadWrite(processManifestLambda)
+    this.manifestBucket.grantReadWrite(processManifestLambda)
 
 
     const finalizeManifestLambda = new Function(this, 'FinalizeManifestLambdaFunction', {
@@ -396,6 +398,7 @@ export class ManifestPipelineStack extends Stack {
     processBucket.grantReadWrite(finalizeManifestLambda)
     props.foundationStack.publicBucket.grantReadWrite(finalizeManifestLambda)
 
+    
     // Create tasks for state machine
     const initManifestTask = new tasks.LambdaInvoke(this, 'InitManifestTask', {
       lambdaFunction: initManifestLambda,

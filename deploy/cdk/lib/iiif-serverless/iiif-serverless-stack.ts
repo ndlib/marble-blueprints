@@ -42,10 +42,12 @@ export interface IIiifApiStackProps extends NestedStackProps {
  * the API entirely in this cdk app without using the template from nulib
  */
 class ApiStack extends NestedStack {
-  readonly apiId: string
+  readonly apiName: string
 
   constructor(scope: Construct, id: string, props: IIiifApiStackProps) {
     super(scope, id, props)
+
+    this.apiName = `${this.stackName}:ApiName`
 
     if(!fs.existsSync(`${props.serverlessIiifSrcPath}/src`)) {
       this.node.addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/src`)
@@ -85,6 +87,14 @@ class ApiStack extends NestedStack {
     
     // Cdk makes the name too long to create the LayerName. Just remove this prop and let cloudformation do it
     delete iiifTemplate.template.Resources.Dependencies.Properties.LayerName
+
+    iiifTemplate.template.Outputs.ApiName = {
+      Description: 'API Gateway ID',
+      Value: Fn.ref('IiifApi'),
+      Export: {
+        Name: `${this.stackName}:ApiName`,
+      },
+    }
   }
 }
 
@@ -99,8 +109,6 @@ export interface IIiifDomainStackProps extends NestedStackProps {
  * Adds a custom domain to the Api, with or without a dns entry
  */
 class DomainStack extends NestedStack {
-  readonly apiId: string
-
   constructor(scope: Construct, id: string, props: IIiifDomainStackProps) {
     super(scope, id, props)
     const restApi = Fn.importValue(`${props.apiStack.stackName}:ApiId`)

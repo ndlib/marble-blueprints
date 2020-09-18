@@ -20,8 +20,12 @@ export interface UserContentStackProps extends cdk.StackProps {
 }
 
 export class UserContentStack extends cdk.Stack {
+  readonly apiName: string
+
   constructor(scope: cdk.Construct, id: string, props: UserContentStackProps) {
     super(scope, id, props)
+
+    this.apiName = `${props.namespace}-user-content`
 
     if(!fs.existsSync(props.lambdaCodePath)) {
       this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`)
@@ -104,7 +108,7 @@ export class UserContentStack extends cdk.Stack {
     const domainName = `${props.hostnamePrefix}.` + props.foundationStack.hostedZone.zoneName
     const domainCert = props.foundationStack.certificate
     const api = new apigateway.RestApi(this, 'userContentApi', {
-      restApiName: `${props.namespace}-user-content`,
+      restApiName: this.apiName,
       defaultCorsPreflightOptions: {
         allowOrigins: [props.allowedOrigins],
         allowCredentials: false,

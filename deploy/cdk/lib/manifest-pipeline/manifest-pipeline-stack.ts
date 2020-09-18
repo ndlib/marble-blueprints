@@ -131,6 +131,10 @@ export class ManifestPipelineStack extends Stack {
    */
   public readonly manifestBucket: IBucket
 
+  /**
+   * The distribution for the manifests
+   */
+  public readonly distribution: CloudFrontWebDistribution
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
@@ -282,7 +286,7 @@ export class ManifestPipelineStack extends Stack {
 
     // Create a CloudFront Distribution for the manifest bucket
     const fqdn = `${props.hostnamePrefix}.${props.domainName}`
-    const distribution = new CloudFrontWebDistribution(this, 'CloudFrontWebDistribution', {
+    this.distribution = new CloudFrontWebDistribution(this, 'CloudFrontWebDistribution', {
       originConfigs: [{
         s3OriginSource: {
           s3BucketSource: this.manifestBucket,
@@ -324,7 +328,7 @@ export class ManifestPipelineStack extends Stack {
     if (props.createDns) {
       new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {
         recordName: props.hostnamePrefix,
-        domainName: distribution.distributionDomainName,
+        domainName: this.distribution.distributionDomainName,
         zone: props.foundationStack.hostedZone,
         ttl: Duration.minutes(15),
       })

@@ -1,3 +1,0 @@
--e .
-flake8 ~= 3.7
-coverage ~= 4.5

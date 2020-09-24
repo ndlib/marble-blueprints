@@ -5,7 +5,7 @@ import { PolicyStatement } from '@aws-cdk/aws-iam'
 import cdk = require('@aws-cdk/core')
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { Topic } from '@aws-cdk/aws-sns'
-import { ManualApprovalAction, CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
+import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { Fn } from '@aws-cdk/core'
@@ -31,6 +31,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly prodFoundationStack: FoundationStack;
   readonly hostnamePrefix: string;
   readonly createDns: boolean;
+  readonly createGithubWebhooks: boolean;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
 }
@@ -55,6 +56,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
+        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
     const qaSourceArtifact = new codepipeline.Artifact('QACode')
     const qaSourceAction = new codepipelineActions.GitHubSourceAction({
@@ -64,6 +66,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: qaSourceArtifact,
         owner: props.qaRepoOwner,
         repo: props.qaRepoName,
+        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
     const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
@@ -73,6 +76,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,
+        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline

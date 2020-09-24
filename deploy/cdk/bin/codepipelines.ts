@@ -28,6 +28,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     createDns: contextEnv.createDns,
     slackNotifyStackName: contextEnv.slackNotifyStackName,
     notificationReceivers: contextEnv.notificationReceivers,
+    createGithubWebhooks: contextEnv.createGithubWebhooks,
     owner: getRequiredContext(app.node, 'owner'),
     contact: getRequiredContext(app.node, 'contact'),
     oauthTokenPath: getRequiredContext(app.node, 'oauthTokenPath'),

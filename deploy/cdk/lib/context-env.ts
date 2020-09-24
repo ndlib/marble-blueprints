@@ -1,6 +1,6 @@
-import { Environment } from "@aws-cdk/cx-api";
-import { ConstructNode } from "@aws-cdk/core";
-import { getRequiredContext } from "./context-helpers";
+import { Environment } from "@aws-cdk/cx-api"
+import { ConstructNode } from "@aws-cdk/core"
+import { getRequiredContext } from "./context-helpers"
 
 export class ContextEnv {
   readonly name: string
@@ -12,7 +12,7 @@ export class ContextEnv {
   readonly slackNotifyStackName: string
   readonly notificationReceivers: string
   readonly rBSCS3ImageBucketName: string
-  readonly createEventRules: boolean
+  readonly createGithubWebhooks: boolean
 
   static fromContext = (node: ConstructNode, name: string): ContextEnv => {
     const contextEnv = getRequiredContext(node, 'environments')[name]

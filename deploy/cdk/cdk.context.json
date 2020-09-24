@@ -8,7 +8,8 @@
       "domainName": "libraries.nd.edu",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
-      "rBSCS3ImageBucketName": "rbsc-test-files"
+      "rBSCS3ImageBucketName": "rbsc-test-files",
+      "createGithubWebhooks": false
     },
     "prod": {
       "account": "230391840102",
@@ -19,7 +20,8 @@
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
       "notificationReceivers": "hl-mellon-deployment-approvers-list@nd.edu",
-      "rBSCS3ImageBucketName": "libnd-smb-rbsc"
+      "rBSCS3ImageBucketName": "libnd-smb-rbsc",
+      "createGithubWebhooks": true
     }
   },
 

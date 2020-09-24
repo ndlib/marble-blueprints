@@ -1,7 +1,7 @@
 import { BuildEnvironmentVariableType, BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
+import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
@@ -19,6 +19,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly infraRepoOwner: string;
   readonly infraRepoName: string;
   readonly infraSourceBranch: string;
+  readonly createGithubWebhooks: boolean;
   readonly namespace: string;
   readonly contextEnvName: string;
   readonly owner: string;
@@ -97,6 +98,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
+        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
     const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
@@ -106,6 +108,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,
+        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
 
     // Deploy to Test

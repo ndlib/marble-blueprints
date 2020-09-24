@@ -1,6 +1,6 @@
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
+import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
@@ -19,6 +19,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly infraRepoOwner: string;
   readonly infraRepoName: string;
   readonly infraSourceBranch: string;
+  readonly createGithubWebhooks: boolean;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
 }
@@ -66,6 +67,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,
+        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
 
     // Deploy to Test

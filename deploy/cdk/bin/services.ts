@@ -11,6 +11,7 @@ import manifestPipeline = require('../lib/manifest-pipeline')
 import { getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
+import { ServiceLevelsStack } from '../lib/service-levels/service-levels-stack'
 
 export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv): Stacks => {
   // Construct common props that are required by all service stacks
@@ -84,7 +85,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...imageProcessingContext,
   })
 
-  return {
+  const services = {
     foundationStack,
     website,
     redbox,
@@ -94,4 +95,105 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     elasticSearchStack,
     manifestPipelineStack,
   }
+
+  const slos = [
+    {
+      title: "Unified Website CDN",
+      type: "CloudfrontAvailability",
+      distributionId: website.cloudfront.distributionId,
+      sloThreshold: 0.99999,
+    },
+    {
+      title: "Unified Website CDN",
+      type: "CloudfrontLatency",
+      distributionId: website.cloudfront.distributionId,
+      sloThreshold: 0.95,
+      latencyThreshold: 1000,
+    },
+    {
+      title: "IIIF Image Service API",
+      type: "ApiAvailability",
+      apiName: iiifServerlessStack.apiStack.apiName,
+      sloThreshold: 0.97,
+    },
+    {
+      title: "IIIF Image Service API",
+      type: "ApiLatency",
+      apiName: iiifServerlessStack.apiStack.apiName,
+      sloThreshold: 0.9,
+      latencyThreshold: 4000,
+    },
+    {
+      title: "IIIF Image Service API",
+      type: "ApiLatency",
+      apiName: iiifServerlessStack.apiStack.apiName,
+      sloThreshold: 0.95,
+      latencyThreshold: 5000,
+    },
+    {
+      title: "IIIF Manifest CDN",
+      type: "CloudfrontAvailability",
+      distributionId: manifestPipelineStack.distribution.distributionId,
+      sloThreshold: 0.999,
+    },
+    {
+      title: "IIIF Manifest CDN",
+      type: "CloudfrontLatency",
+      distributionId: manifestPipelineStack.distribution.distributionId,
+      sloThreshold: 0.95,
+      latencyThreshold: 750,
+    },
+    {
+      title: "User Content API",
+      type: "ApiAvailability",
+      apiName: userContentStack.apiName,
+      sloThreshold: 0.97,
+    },
+    {
+      title: "User Content API",
+      type: "ApiLatency",
+      apiName: userContentStack.apiName,
+      sloThreshold: 0.95,
+      latencyThreshold: 500,
+    },
+    {
+      title: "User Content API",
+      type: "ApiLatency",
+      apiName: userContentStack .apiName,
+      sloThreshold: 0.99,
+      latencyThreshold: 2000,
+    },
+    {
+      title: "Search API",
+      type: "ElasticSearchAvailability",
+      accountId: contextEnv.env.account,
+      domainName: elasticSearchStack.domainName,
+      sloThreshold: 0.99,
+    },
+    {
+      title: "Search API",
+      type: "ElasticSearchLatency",
+      accountId: contextEnv.env.account,
+      domainName: elasticSearchStack.domainName,
+      sloThreshold: 0.95,
+      latencyThreshold: 200,
+    },
+    {
+      title: "Search API",
+      type: "ElasticSearchLatency",
+      accountId: contextEnv.env.account,
+      domainName: elasticSearchStack.domainName,
+      sloThreshold: 0.99,
+      latencyThreshold: 1000,
+    },
+  ]
+
+  const sloContext = getContextByNamespace('slos')
+  new ServiceLevelsStack(app, `${namespace}-service-levels`, {
+    slos,
+    emailSubscriber: contextEnv.alarmsEmail,
+    ...sloContext,
+    ...commonProps,
+  })
+  return services
 }

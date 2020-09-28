@@ -96,6 +96,11 @@
   "manifestPipeline:dataProcessingKeyPath": "/all/marble-data-processing/test",
   "manifestPipeline:prodDataProcessingKeyPath": "/all/marble-data-processing/prod",
 
+  "slos:emailSubscriber": "hesburgh-libraries-duty-office-list@nd.edu",
+  "slos:sloDocLink": "https://docs.google.com/document/d/1AZGtz4es6fPMPzgkJuDOL0RDULFpy97emeKMPFYxyCA/edit",
+  "slos:runbookLink": "https://github.com/ndlib/TechnologistsPlaybook/tree/master/run-books",
+  "slos:debugDashboardLink": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=Marble",
+
   "vpc-provider:account=333680067100:filter.vpc-id=vpc-797fed1d:region=us-east-1:returnAsymmetricSubnets=true": {
     "vpcId": "vpc-797fed1d",
     "vpcCidrBlock": "172.22.242.0/23",

@@ -1,6 +1,6 @@
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
+import { BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
 import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
@@ -96,6 +96,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.events(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.logstream(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.dynamodb(targetStack))
       // Allow additional lambda layers
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['lambda:*'],

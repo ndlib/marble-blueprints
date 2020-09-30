@@ -7,11 +7,12 @@ import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { Choice, Condition, Errors, Fail, LogLevel, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
 import * as tasks from '@aws-cdk/aws-stepfunctions-tasks'
-import { Construct, Duration, Fn, Stack, StackProps, CfnOutput } from "@aws-cdk/core"
+import { Construct, Duration, Fn, Stack, StackProps, CfnOutput, Annotations } from "@aws-cdk/core"
 import fs = require('fs')
 import path = require('path')
 import { FoundationStack } from '../foundation'
 import { Rule, Schedule } from "@aws-cdk/aws-events"
+import dynamodb = require('@aws-cdk/aws-dynamodb')
 
 export interface IBaseStackProps extends StackProps {
 
@@ -140,12 +141,29 @@ export class ManifestPipelineStack extends Stack {
     super(scope, id, props)
 
     if (props.hostnamePrefix.length > 63) {
-      this.node.addError(`Max length of hostnamePrefix is 63.  "${props.hostnamePrefix}" is too long.}`)
+      Annotations.of(this).addError(`Max length of hostnamePrefix is 63.  "${props.hostnamePrefix}" is too long.}`)
     }
     
     if (!RegExp('^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)').test(props.hostnamePrefix)) {
-      this.node.addError(`hostnamePrefix does not match legal pattern.`)
+      Annotations.of(this).addError(`hostnamePrefix does not match legal pattern.`)
     }
+
+    // Create Dynamo Tables
+    const filesDynamoTable = new dynamodb.Table(this, 'files', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
+
+    const standardJsonDynamoTable = new dynamodb.Table(this, 'standardJson', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
 
     // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
@@ -335,7 +353,7 @@ export class ManifestPipelineStack extends Stack {
     }
     
     if (!fs.existsSync(props.lambdaCodeRootPath)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodeRootPath}`)
+      Annotations.of(this).addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodeRootPath}`)
       return
     }
     const initManifestLambda = new Function(this, 'InitManifestLambdaFunction', {
@@ -469,6 +487,10 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
+        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_PRIMARY_KEY: 'id',
+        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
+        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -477,12 +499,20 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.ssmPolicy(props.googleKeyPath),
         ManifestPipelineStack.ssmPolicy(props.museumKeyPath),
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ["ses:SendEmail"],
+          resources: ["*"],
+        }),
       ],
       timeout: Duration.seconds(900),
     })
 
+    // Grants
     this.manifestBucket.grantReadWrite(museumExportLambda)
     processBucket.grantReadWrite(museumExportLambda)
+    filesDynamoTable.grantReadWriteData(museumExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
 
 
     const alephExportLambda = new Function(this, 'AlephExportLambda', {
@@ -491,6 +521,10 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
+        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_PRIMARY_KEY: 'id',
+        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
+        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -498,12 +532,20 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ["ses:SendEmail"],
+          resources: ["*"],
+        }),
       ],
       timeout: Duration.seconds(900),
     })
 
+    // Grants
     this.manifestBucket.grantReadWrite(alephExportLambda)
     processBucket.grantReadWrite(alephExportLambda)
+    filesDynamoTable.grantReadWriteData(museumExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
 
 
     const curateExportLambda = new Function(this, 'CurateExportLambda', {
@@ -512,6 +554,10 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
+        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_PRIMARY_KEY: 'id',
+        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
+        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -519,12 +565,20 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.ssmPolicy(props.curateKeyPath),
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ["ses:SendEmail"],
+          resources: ["*"],
+        }),
       ],
       timeout: Duration.seconds(900),
     })
 
+    // Grants
     this.manifestBucket.grantReadWrite(curateExportLambda)
     processBucket.grantReadWrite(curateExportLambda)
+    filesDynamoTable.grantReadWriteData(museumExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
 
 
     const archivesSpaceExportLambda = new Function(this, 'ArchivesSpaceExportLambda', {
@@ -533,6 +587,10 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
+        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_PRIMARY_KEY: 'id',
+        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
+        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -540,12 +598,20 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ["ses:SendEmail"],
+          resources: ["*"],
+        }),
       ],
       timeout: Duration.seconds(900),
     })
 
+    // Grants
     this.manifestBucket.grantReadWrite(archivesSpaceExportLambda)
     processBucket.grantReadWrite(archivesSpaceExportLambda)
+    filesDynamoTable.grantReadWriteData(museumExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
 
 
     const collectionsApiLambda = new Function(this, 'CollectionsApiLambda', {
@@ -554,6 +620,10 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
+        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_PRIMARY_KEY: 'id',
+        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
+        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -572,8 +642,11 @@ export class ManifestPipelineStack extends Stack {
       timeout: Duration.seconds(900),
     })
 
+    // Grants
     this.manifestBucket.grantReadWrite(collectionsApiLambda)
     processBucket.grantReadWrite(collectionsApiLambda)
+    filesDynamoTable.grantReadWriteData(museumExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
 
     const objectFilesApiLambda = new Function(this, 'ObjectFilesApiLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'object_files_api/')),
@@ -582,6 +655,10 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       memorySize: 512,
       environment: {
+        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_PRIMARY_KEY: 'id',
+        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
+        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -593,8 +670,11 @@ export class ManifestPipelineStack extends Stack {
       timeout: Duration.seconds(900),
     })
 
+    // Grants
     this.manifestBucket.grantReadWrite(objectFilesApiLambda)
     processBucket.grantReadWrite(objectFilesApiLambda)
+    filesDynamoTable.grantReadWriteData(museumExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
 
 
     // Create tasks for harvest state machine
@@ -690,6 +770,16 @@ export class ManifestPipelineStack extends Stack {
         level: LogLevel.ALL,
         includeExecutionData: true,
       },
+    })
+
+    new StringParameter(this, 'StandardJsonTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/standard-json-tablename`,
+      stringValue: standardJsonDynamoTable.tableName,
+    })
+
+    new StringParameter(this, 'ObjectFilesTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/files-tablename`,
+      stringValue: filesDynamoTable.tableName,
     })
 
 

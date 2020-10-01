@@ -43,11 +43,13 @@ export interface IIiifApiStackProps extends NestedStackProps {
  */
 class ApiStack extends NestedStack {
   readonly apiName: string
+  readonly apiId: string
 
   constructor(scope: Construct, id: string, props: IIiifApiStackProps) {
     super(scope, id, props)
 
-    this.apiName = `${this.stackName}:ApiName`
+    this.apiName = `${this.stackName}-api`
+    this.apiId = Fn.importValue(`${this.stackName}:ApiId`)
 
     if(!fs.existsSync(`${props.serverlessIiifSrcPath}/src`)) {
       this.node.addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/src`)
@@ -87,14 +89,6 @@ class ApiStack extends NestedStack {
     
     // Cdk makes the name too long to create the LayerName. Just remove this prop and let cloudformation do it
     delete iiifTemplate.template.Resources.Dependencies.Properties.LayerName
-
-    iiifTemplate.template.Outputs.ApiName = {
-      Description: 'API Gateway ID',
-      Value: Fn.ref('IiifApi'),
-      Export: {
-        Name: `${this.stackName}:ApiName`,
-      },
-    }
   }
 }
 

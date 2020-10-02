@@ -21,7 +21,7 @@ export class S3NotificationToLambdaCustomResource extends Construct {
                     NotificationConfiguration: {
                         LambdaFunctionConfigurations: [
                             {
-                                Events: ['s3:ObjectCreated:Put', 's3:ObjectCreated:Post'],
+                                Events: ['s3:ObjectCreated:Put', 's3:ObjectCreated:Post', 's3:ObjectCreated:CompleteMultipartUpload'],
                                 LambdaFunctionArn: lambda.functionArn,
                                 Filter: {
                                     Key: {
@@ -30,7 +30,7 @@ export class S3NotificationToLambdaCustomResource extends Construct {
                                 },
                             },
                             {
-                                Events: ['s3:ObjectCreated:Put', 's3:ObjectCreated:Post'],
+                                Events: ['s3:ObjectCreated:Put', 's3:ObjectCreated:Post', 's3:ObjectCreated:CompleteMultipartUpload'],
                                 LambdaFunctionArn: lambda.functionArn,
                                 Filter: {
                                     Key: {

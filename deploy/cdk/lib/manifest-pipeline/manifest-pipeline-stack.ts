@@ -155,6 +155,7 @@ export class ManifestPipelineStack extends Stack {
         name: 'id',
         type: dynamodb.AttributeType.STRING,
       },
+      pointInTimeRecovery: true,
     })
 
     const standardJsonDynamoTable = new dynamodb.Table(this, 'standardJson', {
@@ -163,6 +164,16 @@ export class ManifestPipelineStack extends Stack {
         name: 'id',
         type: dynamodb.AttributeType.STRING,
       },
+      pointInTimeRecovery: true,
+    })
+
+    const dataExtensionsDynamoTable = new dynamodb.Table(this, 'dataExtensions', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.STRING,
+      },
+      pointInTimeRecovery: true,
     })
 
     // Create Origin Access Id
@@ -544,8 +555,8 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(alephExportLambda)
     processBucket.grantReadWrite(alephExportLambda)
-    filesDynamoTable.grantReadWriteData(museumExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
+    filesDynamoTable.grantReadWriteData(alephExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(alephExportLambda)
 
 
     const curateExportLambda = new Function(this, 'CurateExportLambda', {
@@ -577,8 +588,8 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(curateExportLambda)
     processBucket.grantReadWrite(curateExportLambda)
-    filesDynamoTable.grantReadWriteData(museumExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
+    filesDynamoTable.grantReadWriteData(curateExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(curateExportLambda)
 
 
     const archivesSpaceExportLambda = new Function(this, 'ArchivesSpaceExportLambda', {
@@ -610,8 +621,8 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(archivesSpaceExportLambda)
     processBucket.grantReadWrite(archivesSpaceExportLambda)
-    filesDynamoTable.grantReadWriteData(museumExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
+    filesDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
+    standardJsonDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
 
 
     const collectionsApiLambda = new Function(this, 'CollectionsApiLambda', {
@@ -645,8 +656,9 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(collectionsApiLambda)
     processBucket.grantReadWrite(collectionsApiLambda)
-    filesDynamoTable.grantReadWriteData(museumExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
+    filesDynamoTable.grantReadWriteData(collectionsApiLambda)
+    standardJsonDynamoTable.grantReadWriteData(collectionsApiLambda)
+    dataExtensionsDynamoTable.grantReadWriteData(collectionsApiLambda)
 
     const objectFilesApiLambda = new Function(this, 'ObjectFilesApiLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'object_files_api/')),
@@ -673,9 +685,9 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(objectFilesApiLambda)
     processBucket.grantReadWrite(objectFilesApiLambda)
-    filesDynamoTable.grantReadWriteData(museumExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
-
+    filesDynamoTable.grantReadWriteData(objectFilesApiLambda)
+    standardJsonDynamoTable.grantReadWriteData(objectFilesApiLambda)
+    dataExtensionsDynamoTable.grantReadWriteData(objectFilesApiLambda)
 
     // Create tasks for harvest state machine
     const archivesSpaceExportTask = new tasks.LambdaInvoke(this, 'ArchivesSpaceExportTask', {

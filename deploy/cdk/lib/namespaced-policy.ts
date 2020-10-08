@@ -192,6 +192,8 @@ export class NamespacedPolicy {
         'dynamodb:TagResource',
         'dynamodb:UntagResource',
         'dynamodb:ListTagsOfResource',
+        'dynamodb:DescribeContinuousBackups',
+        'dynamodb:UpdateContinuousBackups',
       ],
     })
   }

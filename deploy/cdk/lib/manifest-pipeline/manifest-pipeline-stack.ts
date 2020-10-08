@@ -156,6 +156,7 @@ export class ManifestPipelineStack extends Stack {
         type: dynamodb.AttributeType.STRING,
       },
       pointInTimeRecovery: true,
+      timeToLiveAttribute: 'expireTime',
     })
 
     const standardJsonDynamoTable = new dynamodb.Table(this, 'standardJson', {
@@ -165,6 +166,7 @@ export class ManifestPipelineStack extends Stack {
         type: dynamodb.AttributeType.STRING,
       },
       pointInTimeRecovery: true,
+      timeToLiveAttribute: 'expireTime',
     })
 
     const dataExtensionsDynamoTable = new dynamodb.Table(this, 'dataExtensions', {
@@ -792,6 +794,11 @@ export class ManifestPipelineStack extends Stack {
     new StringParameter(this, 'ObjectFilesTableNameParam', {
       parameterName: `/all/stacks/${this.stackName}/files-tablename`,
       stringValue: filesDynamoTable.tableName,
+    })
+
+    new StringParameter(this, 'dataExtensionsTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/data-extensions-tablename`,
+      stringValue: dataExtensionsDynamoTable.tableName,
     })
 
 

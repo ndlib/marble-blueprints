@@ -541,7 +541,7 @@ describe('ManifestPipelineStack', () => {
           "Fn::Join": [
             "",
             [
-              "{\"StartAt\":\"InitManifestTask\",\"States\":{\"InitManifestTask\":{\"Next\":\"ProcessManifestTask\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "{\"StartAt\":\"InitManifestTask\",\"States\":{\"InitManifestTask\":{\"Next\":\"ProcessManifestTask\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -552,7 +552,7 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"ProcessManifestTask\":{\"Next\":\"RestartProcessManifestChoice\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "\",\"Payload.$\":\"$\"}},\"ProcessManifestTask\":{\"Next\":\"RestartProcessManifestChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -563,7 +563,7 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"RestartProcessManifestChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.process_manifest_complete\",\"BooleanEquals\":false,\"Next\":\"ProcessManifestTask\"},{\"Variable\":\"$.process_manifest_complete\",\"BooleanEquals\":true,\"Next\":\"FinalizeManifestTask\"}],\"Default\":\"FinalizeManifestTask\"},\"FinalizeManifestTask\":{\"Next\":\"restartFinalizeManifestChoice\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "\",\"Payload.$\":\"$\"}},\"RestartProcessManifestChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.process_manifest_complete\",\"BooleanEquals\":false,\"Next\":\"ProcessManifestTask\"},{\"Variable\":\"$.process_manifest_complete\",\"BooleanEquals\":true,\"Next\":\"FinalizeManifestTask\"}],\"Default\":\"FinalizeManifestTask\"},\"FinalizeManifestTask\":{\"Next\":\"restartFinalizeManifestChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -596,11 +596,11 @@ describe('ManifestPipelineStack', () => {
 
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::StepFunctions::StateMachine', {
-        DefinitionString: {
+        "DefinitionString": {
           "Fn::Join": [
             "",
             [
-              "{\"StartAt\":\"ArchivesSpaceExportTask\",\"States\":{\"ArchivesSpaceExportTask\":{\"Next\":\"ArchivesSpaceLoopChoice\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "{\"StartAt\":\"ArchivesSpaceExportTask\",\"States\":{\"ArchivesSpaceExportTask\":{\"Next\":\"ArchivesSpaceLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -611,7 +611,7 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"ArchivesSpaceLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.archivesSpaceHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"ArchivesSpaceExportTask\"},{\"Variable\":\"$.archivesSpaceHarvestComplete\",\"BooleanEquals\":true,\"Next\":\"MuseumExportTask\"}],\"Default\":\"MuseumExportTask\"},\"MuseumExportTask\":{\"Next\":\"MuseumLoopChoice\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"AlephExportTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"AlephExportTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"AlephExportTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "\",\"Payload.$\":\"$\"}},\"ArchivesSpaceLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.archivesSpaceHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"ArchivesSpaceExportTask\"},{\"Variable\":\"$.archivesSpaceHarvestComplete\",\"BooleanEquals\":true,\"Next\":\"MuseumExportTask\"}],\"Default\":\"MuseumExportTask\"},\"MuseumExportTask\":{\"Next\":\"MuseumLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"AlephExportTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"AlephExportTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"AlephExportTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -622,7 +622,7 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"MuseumLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.museumHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"MuseumExportTask\"},{\"Variable\":\"$.museumHarvestComplete\",\"BooleanEquals\":true,\"Next\":\"AlephExportTask\"}],\"Default\":\"AlephExportTask\"},\"AlephExportTask\":{\"Next\":\"CurateExportTask\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CurateExportTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CurateExportTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CurateExportTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "\",\"Payload.$\":\"$\"}},\"MuseumLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.museumHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"MuseumExportTask\"},{\"Variable\":\"$.museumHarvestComplete\",\"BooleanEquals\":true,\"Next\":\"AlephExportTask\"}],\"Default\":\"AlephExportTask\"},\"AlephExportTask\":{\"Next\":\"AlephLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CurateExportTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CurateExportTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CurateExportTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -633,7 +633,7 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"CurateExportTask\":{\"Next\":\"CurateLoopChoice\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsApiTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsApiTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsApiTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "\",\"Payload.$\":\"$\"}},\"AlephLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.alephHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"AlephExportTask\"},{\"Variable\":\"$.alephHarvestComplete\",\"BooleanEquals\":true,\"Next\":\"CurateExportTask\"}],\"Default\":\"CurateExportTask\"},\"CurateExportTask\":{\"Next\":\"CurateLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsApiTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsApiTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsApiTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -644,7 +644,7 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"CurateLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.curateHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"CurateExportTask\"},{\"Variable\":\"$.curateHarvestComplete\",\"BooleanEquals\":true,\"Next\":\"CollectionsApiTask\"}],\"Default\":\"CollectionsApiTask\"},\"CollectionsApiTask\":{\"Next\":\"ObjectFilesApiTask\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ObjectFilesApiTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ObjectFilesApiTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ObjectFilesApiTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "\",\"Payload.$\":\"$\"}},\"CurateLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.curateHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"CurateExportTask\"},{\"Variable\":\"$.curateHarvestComplete\",\"BooleanEquals\":true,\"Next\":\"CollectionsApiTask\"}],\"Default\":\"CollectionsApiTask\"},\"CollectionsApiTask\":{\"Next\":\"CollectionsApiLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ObjectFilesApiTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ObjectFilesApiTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ObjectFilesApiTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -655,7 +655,7 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"ObjectFilesApiTask\":{\"Next\":\"HarvestSucceed\",\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"HarvestFail\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"HarvestFail\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"HarvestFail\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "\",\"Payload.$\":\"$\"}},\"CollectionsApiLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.collectionsApiComplete\",\"BooleanEquals\":false,\"Next\":\"CollectionsApiTask\"},{\"Variable\":\"$.collectionsApiComplete\",\"BooleanEquals\":true,\"Next\":\"ObjectFilesApiTask\"}],\"Default\":\"ObjectFilesApiTask\"},\"ObjectFilesApiTask\":{\"Next\":\"objectFilesApiLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"HarvestFail\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"HarvestFail\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"HarvestFail\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -666,11 +666,10 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"HarvestSucceed\":{\"Type\":\"Succeed\"},\"HarvestFail\":{\"Type\":\"Fail\"}}}",
+              "\",\"Payload.$\":\"$\"}},\"objectFilesApiLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.alephHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"ObjectFilesApiTask\"},{\"Variable\":\"$.alephHarvestComplete\",\"BooleanEquals\":true,\"Next\":\"HarvestSucceed\"}],\"Default\":\"HarvestSucceed\"},\"HarvestSucceed\":{\"Type\":\"Succeed\"},\"HarvestFail\":{\"Type\":\"Fail\"}}}",
             ],
           ],
         },
-
       }))
     })
 

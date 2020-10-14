@@ -158,6 +158,13 @@ export class ManifestPipelineStack extends Stack {
       pointInTimeRecovery: true,
       timeToLiveAttribute: 'expireTime',
     })
+    filesDynamoTable.addGlobalSecondaryIndex({
+      indexName: 'fileId',
+      partitionKey: {
+        name: 'fileId',
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
 
     const standardJsonDynamoTable = new dynamodb.Table(this, 'standardJson', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -167,6 +174,13 @@ export class ManifestPipelineStack extends Stack {
       },
       pointInTimeRecovery: true,
       timeToLiveAttribute: 'expireTime',
+    })
+    standardJsonDynamoTable.addGlobalSecondaryIndex({
+      indexName: 'parentId',
+      partitionKey: {
+        name: 'parentId',
+        type: dynamodb.AttributeType.STRING,
+      },
     })
 
     const dataExtensionsDynamoTable = new dynamodb.Table(this, 'dataExtensions', {
@@ -740,11 +754,32 @@ export class ManifestPipelineStack extends Stack {
       .otherwise(alephExportTask)
     )
 
+    const alephLoopChoice = (new Choice(this, 'AlephLoopChoice', {
+    })
+      .when(Condition.booleanEquals('$.alephHarvestComplete', false), alephExportTask)
+      .when(Condition.booleanEquals('$.alephHarvestComplete', true), curateExportTask)
+      .otherwise(curateExportTask)
+    )
+
     const curateLoopChoice = (new Choice(this, 'CurateLoopChoice', {
     })
       .when(Condition.booleanEquals('$.curateHarvestComplete', false), curateExportTask)
       .when(Condition.booleanEquals('$.curateHarvestComplete', true), collectionsApiTask)
       .otherwise(collectionsApiTask)
+    )
+
+    const collectionsApiLoopChoice = (new Choice(this, 'CollectionsApiLoopChoice', {
+    })
+      .when(Condition.booleanEquals('$.collectionsApiComplete', false), collectionsApiTask)
+      .when(Condition.booleanEquals('$.collectionsApiComplete', true), objectFilesApiTask)
+      .otherwise(objectFilesApiTask)
+    )
+
+    const objectFilesApiLoopChoice = (new Choice(this, 'objectFilesApiLoopChoice', {
+    })
+      .when(Condition.booleanEquals('$.alephHarvestComplete', false), objectFilesApiTask)
+      .when(Condition.booleanEquals('$.alephHarvestComplete', true), harvestSuccessState)
+      .otherwise(harvestSuccessState)
     )
 
     archivesSpaceExportTask.addCatch(museumExportTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
@@ -760,7 +795,7 @@ export class ManifestPipelineStack extends Stack {
     alephExportTask.addCatch(curateExportTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
       .addCatch(curateExportTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
       .addCatch(curateExportTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(curateExportTask)
+      .next(alephLoopChoice)
     
     curateExportTask.addCatch(collectionsApiTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
       .addCatch(collectionsApiTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
@@ -770,12 +805,12 @@ export class ManifestPipelineStack extends Stack {
     collectionsApiTask.addCatch(objectFilesApiTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
       .addCatch(objectFilesApiTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
       .addCatch(objectFilesApiTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(objectFilesApiTask)
+      .next(collectionsApiLoopChoice)
     
     objectFilesApiTask.addCatch(harvestFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
       .addCatch(harvestFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
       .addCatch(harvestFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(harvestSuccessState)
+      .next(objectFilesApiLoopChoice)
 
     const harvestStateMachine = new StateMachine(this, 'HarvestStateMachine', {
       definition: archivesSpaceExportTask,

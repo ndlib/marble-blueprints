@@ -1,10 +1,10 @@
 import { Certificate, CertificateValidation, ICertificate } from "@aws-cdk/aws-certificatemanager"
 import { IVpc, Vpc } from "@aws-cdk/aws-ec2"
-import { Cluster, ICluster } from "@aws-cdk/aws-ecs"
+import { Cluster } from "@aws-cdk/aws-ecs"
 import { ILogGroup, LogGroup, RetentionDays } from "@aws-cdk/aws-logs"
 import { HostedZone, IHostedZone } from "@aws-cdk/aws-route53"
 import { Bucket, BucketAccessControl, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
-import { Construct, Duration, RemovalPolicy, Stack, StackProps, Fn, CfnOutput } from "@aws-cdk/core"
+import { Construct, Duration, RemovalPolicy, Stack, StackProps, CfnOutput } from "@aws-cdk/core"
 import { StringParameter } from "@aws-cdk/aws-ssm"
 
 
@@ -112,6 +112,11 @@ export class FoundationStack extends Stack {
       versioned: true,
       removalPolicy: RemovalPolicy.DESTROY,
       lifecycleRules: [{ enabled: true, expiration: Duration.days(365 * 10), noncurrentVersionExpiration: Duration.days(1) }],
+    })
+
+    new CfnOutput(this, 'ExportsOutputFnGetAttLogBucketCC3B17E8DomainName1D649D3C', {
+      exportName: `${this.stackName}:ExportsOutputFnGetAttLogBucketCC3B17E8DomainName1D649D3C`,
+      value: this.logBucket.bucketDomainName,
     })
 
     this.logGroup = new LogGroup(this, 'SharedLogGroup', {

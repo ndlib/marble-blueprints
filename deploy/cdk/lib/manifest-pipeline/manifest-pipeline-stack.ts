@@ -5,7 +5,7 @@ import { Code, Function, Runtime, Version } from "@aws-cdk/aws-lambda"
 import { CnameRecord } from "@aws-cdk/aws-route53"
 import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
-import { Choice, Condition, Errors, Fail, LogLevel, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
+import { Choice, Condition, Errors, Fail, LogLevel, Parallel, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
 import * as tasks from '@aws-cdk/aws-stepfunctions-tasks'
 import { Construct, Duration, Fn, Stack, StackProps, CfnOutput, Annotations } from "@aws-cdk/core"
 import fs = require('fs')
@@ -94,6 +94,16 @@ export interface IBaseStackProps extends StackProps {
    */
   readonly appConfigPath: string;
 
+  /**
+   * The time to live for records in the metadata dynamodb table
+   */
+  readonly metadataTimeToLiveDays: string;
+
+  /**
+   * The time to live for records in the files dynamodb table
+   */
+  readonly filesTimeToLiveDays: string;
+
 
 }
 
@@ -137,6 +147,25 @@ export class ManifestPipelineStack extends Stack {
    */
   public readonly distribution: CloudFrontWebDistribution
 
+  /**
+   * 
+   * The dynamodb table for metadata harvested from source systems
+   */
+  public readonly metadataDynamoTable: dynamodb.Table
+
+  /**
+   * 
+   * The dynamodb table to hold metadata augmented by users outside of source systems
+   */
+  public readonly metadataAugmentationDynamoTable: dynamodb.Table
+
+  /**
+   * 
+   * The dynamodb table to hold file information
+   */
+  public readonly filesDynamoTable: dynamodb.Table
+
+  
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
@@ -149,7 +178,7 @@ export class ManifestPipelineStack extends Stack {
     }
 
     // Create Dynamo Tables
-    const filesDynamoTable = new dynamodb.Table(this, 'files', {
+    this.filesDynamoTable = new dynamodb.Table(this, 'files', {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: {
         name: 'id',
@@ -158,12 +187,25 @@ export class ManifestPipelineStack extends Stack {
       pointInTimeRecovery: true,
       timeToLiveAttribute: 'expireTime',
     })
-    filesDynamoTable.addGlobalSecondaryIndex({
+    this.filesDynamoTable.addGlobalSecondaryIndex({
       indexName: 'fileId',
       partitionKey: {
         name: 'fileId',
         type: dynamodb.AttributeType.STRING,
       },
+    })
+    this.filesDynamoTable.addGlobalSecondaryIndex({
+      indexName: 'objectFileGroupId',
+      partitionKey: {
+        name: 'objectFileGroupId',
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
+    new StringParameter(this, 'FilesTTLDaysParam', {
+      type: ParameterType.STRING,
+      parameterName: `/all/stacks/${this.stackName}/files-time-to-live-days`,
+      stringValue: props.filesTimeToLiveDays,
+      description: 'Time To live for files dynamodb records',
     })
 
     const standardJsonDynamoTable = new dynamodb.Table(this, 'standardJson', {
@@ -191,6 +233,49 @@ export class ManifestPipelineStack extends Stack {
       },
       pointInTimeRecovery: true,
     })
+
+    this.metadataDynamoTable = new dynamodb.Table(this, 'metadata', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.STRING,
+      },
+      pointInTimeRecovery: true,
+      timeToLiveAttribute: 'expireTime',
+    })
+    this.metadataDynamoTable.addGlobalSecondaryIndex({
+      indexName: 'parentId',
+      partitionKey: {
+        name: 'parentId',
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
+    new StringParameter(this, 'MetadataTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/metadata-tablename`,
+      stringValue: this.metadataDynamoTable.tableName,
+    })
+    new StringParameter(this, 'MetadataTTLDaysParam', {
+      type: ParameterType.STRING,
+      parameterName: `/all/stacks/${this.stackName}/metadata-time-to-live-days`,
+      stringValue: props.metadataTimeToLiveDays,
+      description: 'Time To live for metadata dynamodb records',
+    })
+
+
+
+    this.metadataAugmentationDynamoTable = new dynamodb.Table(this, 'metadataAugmentation', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.STRING,
+      },
+      pointInTimeRecovery: true,
+    })
+    new StringParameter(this, 'MetadataAugmentationTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/metadata-augmentation-tablename`,
+      stringValue: this.metadataAugmentationDynamoTable.tableName,
+    })
+
 
     // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
@@ -514,10 +599,12 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
-        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
         STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
         STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
+        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
+        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -538,8 +625,9 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(museumExportLambda)
     processBucket.grantReadWrite(museumExportLambda)
-    filesDynamoTable.grantReadWriteData(museumExportLambda)
+    this.filesDynamoTable.grantReadWriteData(museumExportLambda)
     standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
+    this.metadataDynamoTable.grantReadWriteData(museumExportLambda)
 
 
     const alephExportLambda = new Function(this, 'AlephExportLambda', {
@@ -548,10 +636,12 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
-        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
         STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
         STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
+        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
+        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -571,8 +661,9 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(alephExportLambda)
     processBucket.grantReadWrite(alephExportLambda)
-    filesDynamoTable.grantReadWriteData(alephExportLambda)
+    this.filesDynamoTable.grantReadWriteData(alephExportLambda)
     standardJsonDynamoTable.grantReadWriteData(alephExportLambda)
+    this.metadataDynamoTable.grantReadWriteData(alephExportLambda)
 
 
     const curateExportLambda = new Function(this, 'CurateExportLambda', {
@@ -581,10 +672,12 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
-        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
         STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
         STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
+        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
+        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -604,9 +697,10 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(curateExportLambda)
     processBucket.grantReadWrite(curateExportLambda)
-    filesDynamoTable.grantReadWriteData(curateExportLambda)
+    this.filesDynamoTable.grantReadWriteData(curateExportLambda)
     standardJsonDynamoTable.grantReadWriteData(curateExportLambda)
-
+    this.metadataDynamoTable.grantReadWriteData(curateExportLambda)
+    
 
     const archivesSpaceExportLambda = new Function(this, 'ArchivesSpaceExportLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'archivesspace_export/')),
@@ -614,10 +708,12 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
-        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
         STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
         STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
+        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
+        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -637,8 +733,9 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(archivesSpaceExportLambda)
     processBucket.grantReadWrite(archivesSpaceExportLambda)
-    filesDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
+    this.filesDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
     standardJsonDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
+    this.metadataDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
 
 
     const collectionsApiLambda = new Function(this, 'CollectionsApiLambda', {
@@ -647,10 +744,12 @@ export class ManifestPipelineStack extends Stack {
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
       environment: {
-        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
         STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
         STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
+        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
+        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -672,9 +771,12 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(collectionsApiLambda)
     processBucket.grantReadWrite(collectionsApiLambda)
-    filesDynamoTable.grantReadWriteData(collectionsApiLambda)
+    this.filesDynamoTable.grantReadWriteData(collectionsApiLambda)
     standardJsonDynamoTable.grantReadWriteData(collectionsApiLambda)
     dataExtensionsDynamoTable.grantReadWriteData(collectionsApiLambda)
+    this.metadataDynamoTable.grantReadWriteData(collectionsApiLambda)
+    this.metadataAugmentationDynamoTable.grantReadWriteData(collectionsApiLambda)
+
 
     const objectFilesApiLambda = new Function(this, 'ObjectFilesApiLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'object_files_api/')),
@@ -683,10 +785,12 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       memorySize: 512,
       environment: {
-        FILES_TABLE_NAME: filesDynamoTable.tableName,
+        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
         STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
         STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
+        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
+        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -701,119 +805,135 @@ export class ManifestPipelineStack extends Stack {
     // Grants
     this.manifestBucket.grantReadWrite(objectFilesApiLambda)
     processBucket.grantReadWrite(objectFilesApiLambda)
-    filesDynamoTable.grantReadWriteData(objectFilesApiLambda)
+    this.filesDynamoTable.grantReadWriteData(objectFilesApiLambda)
     standardJsonDynamoTable.grantReadWriteData(objectFilesApiLambda)
     dataExtensionsDynamoTable.grantReadWriteData(objectFilesApiLambda)
+    this.metadataDynamoTable.grantReadWriteData(objectFilesApiLambda)
+    this.metadataAugmentationDynamoTable.grantReadWriteData(objectFilesApiLambda)
+
 
     // Create tasks for harvest state machine
-    const archivesSpaceExportTask = new tasks.LambdaInvoke(this, 'ArchivesSpaceExportTask', {
-      lambdaFunction: archivesSpaceExportLambda,
-      outputPath: '$.Payload', /* GOTCHA:  Lambda output is in $.Payload.  Use this to save to the root to chain to subsequent steps. */
-    })
-
-    
-    const museumExportTask = new tasks.LambdaInvoke(this, 'MuseumExportTask', {
-      lambdaFunction: museumExportLambda,
-      outputPath: '$.Payload',
-    })
-
+    // Aleph
     const alephExportTask = new tasks.LambdaInvoke(this, 'AlephExportTask', {
       lambdaFunction: alephExportLambda,
       outputPath: '$.Payload',
     })
-
-    const curateExportTask = new tasks.LambdaInvoke(this, 'CurateExportTask', {
-      lambdaFunction: curateExportLambda,
-      outputPath: '$.Payload',
+    const alephLoopChoice = (new Choice(this, 'AlephLoopChoice', {
     })
+      .when(Condition.booleanEquals('$.alephHarvestComplete', false), alephExportTask)
+      .otherwise(new Succeed(this, 'AlephSucceed'))
+    )
+    const alephExportFailureState = new Fail(this, "AlephExportFail")
+    alephExportTask
+      .addCatch(alephExportFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+      .addCatch(alephExportFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+      .addCatch(alephExportFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+      .next(alephLoopChoice)
 
+    // ArchivesSpace
+    const archivesSpaceExportTask = new tasks.LambdaInvoke(this, 'ArchivesSpaceExportTask', {
+      lambdaFunction: archivesSpaceExportLambda,
+      outputPath: '$.Payload', /* GOTCHA:  Lambda output is in $.Payload.  Use this to save to the root to chain to subsequent steps. */
+    })
+    const archivesSpaceLoopChoice = (new Choice(this, 'ArchivesSpaceLoopChoice', {
+    })
+      .when(Condition.booleanEquals('$.archivesSpaceHarvestComplete', false), archivesSpaceExportTask)
+      .otherwise(new Succeed(this, 'ArhcivesSpaceSucceed'))
+    )
+    const archivesSpaceExportFailureState = new Fail(this, "ArchivesSpaceExportFail")
+    archivesSpaceExportTask
+      .addCatch(archivesSpaceExportFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+      .addCatch(archivesSpaceExportFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+      .addCatch(archivesSpaceExportFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+      .next(archivesSpaceLoopChoice)
+
+    // CollectionsApi
     const collectionsApiTask = new tasks.LambdaInvoke(this, 'CollectionsApiTask', {
       lambdaFunction: collectionsApiLambda,
       outputPath: '$.Payload',
     })
+    const collectionsApiLoopChoice = (new Choice(this, 'CollectionsApiLoopChoice', {
+    })
+      .when(Condition.booleanEquals('$.collectionsApiComplete', false), collectionsApiTask)
+      .otherwise(new Succeed(this, 'CollectionsApiSucceed'))
+    )
+    const collectionsFailureState = new Fail(this, "CollectionsFail")
+    collectionsApiTask
+      .addCatch(collectionsFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+      .addCatch(collectionsFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+      .addCatch(collectionsFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+      .next(collectionsApiLoopChoice)
 
+    // Curate
+    const curateExportTask = new tasks.LambdaInvoke(this, 'CurateExportTask', {
+      lambdaFunction: curateExportLambda,
+      outputPath: '$.Payload',
+    })
+    const curateLoopChoice = (new Choice(this, 'CurateLoopChoice', {
+    })
+      .when(Condition.booleanEquals('$.curateHarvestComplete', false), curateExportTask)
+      .otherwise(new Succeed(this, 'CurateSucceed'))
+    )
+    const curateExportFailureState = new Fail(this, "CurateExportFail")
+    curateExportTask
+      .addCatch(curateExportFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+      .addCatch(curateExportFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+      .addCatch(curateExportFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+      .next(curateLoopChoice)
+
+
+    // Museum
+    const museumExportTask = new tasks.LambdaInvoke(this, 'MuseumExportTask', {
+      lambdaFunction: museumExportLambda,
+      outputPath: '$.Payload',
+    })
+    const museumLoopChoice = (new Choice(this, 'MuseumLoopChoice', {
+    })
+      .when(Condition.booleanEquals('$.museumHarvestComplete', false), museumExportTask)
+      .otherwise(new Succeed(this, 'MuseumSucceed'))
+    )
+    const museumExportFailureState = new Fail(this, "MuseumExportFail")
+    museumExportTask
+      .addCatch(museumExportFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+      .addCatch(museumExportFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+      .addCatch(museumExportFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+      .next(museumLoopChoice)
+
+    // ObjectFilesApi
     const objectFilesApiTask = new tasks.LambdaInvoke(this, 'ObjectFilesApiTask', {
       lambdaFunction: objectFilesApiLambda,
       outputPath: '$.Payload',
     })
-
-    const harvestSuccessState = new Succeed(this, 'HarvestSucceed')
-    const harvestFailureState = new Fail(this, "HarvestFail")
-
-    const archivesSpaceLoopChoice = (new Choice(this, 'ArchivesSpaceLoopChoice', {
-    })
-      .when(Condition.booleanEquals('$.archivesSpaceHarvestComplete', false), archivesSpaceExportTask)
-      .when(Condition.booleanEquals('$.archivesSpaceHarvestComplete', true), museumExportTask)
-      .otherwise(museumExportTask)
-    )
-
-    const museumLoopChoice = (new Choice(this, 'MuseumLoopChoice', {
-    })
-      .when(Condition.booleanEquals('$.museumHarvestComplete', false), museumExportTask)
-      .when(Condition.booleanEquals('$.museumHarvestComplete', true), alephExportTask)
-      .otherwise(alephExportTask)
-    )
-
-    const alephLoopChoice = (new Choice(this, 'AlephLoopChoice', {
-    })
-      .when(Condition.booleanEquals('$.alephHarvestComplete', false), alephExportTask)
-      .when(Condition.booleanEquals('$.alephHarvestComplete', true), curateExportTask)
-      .otherwise(curateExportTask)
-    )
-
-    const curateLoopChoice = (new Choice(this, 'CurateLoopChoice', {
-    })
-      .when(Condition.booleanEquals('$.curateHarvestComplete', false), curateExportTask)
-      .when(Condition.booleanEquals('$.curateHarvestComplete', true), collectionsApiTask)
-      .otherwise(collectionsApiTask)
-    )
-
-    const collectionsApiLoopChoice = (new Choice(this, 'CollectionsApiLoopChoice', {
-    })
-      .when(Condition.booleanEquals('$.collectionsApiComplete', false), collectionsApiTask)
-      .when(Condition.booleanEquals('$.collectionsApiComplete', true), objectFilesApiTask)
-      .otherwise(objectFilesApiTask)
-    )
-
     const objectFilesApiLoopChoice = (new Choice(this, 'objectFilesApiLoopChoice', {
     })
-      .when(Condition.booleanEquals('$.alephHarvestComplete', false), objectFilesApiTask)
-      .when(Condition.booleanEquals('$.alephHarvestComplete', true), harvestSuccessState)
-      .otherwise(harvestSuccessState)
+      .when(Condition.booleanEquals('$.objectFilesApiComplete', false), objectFilesApiTask)
+      .otherwise(new Succeed(this, 'ObjectFilesSucceed'))
     )
-
-    archivesSpaceExportTask.addCatch(museumExportTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(museumExportTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(museumExportTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(archivesSpaceLoopChoice)
-    
-    museumExportTask.addCatch(alephExportTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(alephExportTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(alephExportTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(museumLoopChoice)
-    
-    alephExportTask.addCatch(curateExportTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(curateExportTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(curateExportTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(alephLoopChoice)
-    
-    curateExportTask.addCatch(collectionsApiTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(collectionsApiTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(collectionsApiTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(curateLoopChoice)
-    
-    collectionsApiTask.addCatch(objectFilesApiTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(objectFilesApiTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(objectFilesApiTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(collectionsApiLoopChoice)
-    
-    objectFilesApiTask.addCatch(harvestFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(harvestFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(harvestFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+    const objectFilesApiFailureState = new Fail(this, "ObjectFilesApiFail")
+    objectFilesApiTask
+      .addCatch(objectFilesApiFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+      .addCatch(objectFilesApiFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+      .addCatch(objectFilesApiFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
       .next(objectFilesApiLoopChoice)
 
+    // Define parallel exectution
+    const parallelSteps = new Parallel(this, 'ParallelSteps')
+    // // branches to be executed in parallel
+    parallelSteps.branch(alephExportTask)
+    parallelSteps.branch(archivesSpaceExportTask)
+    parallelSteps.branch(curateExportTask)
+    parallelSteps.branch(museumExportTask)
+    parallelSteps.branch(objectFilesApiTask)
+    // Catch errors
+    parallelSteps.addCatch(collectionsApiTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+    parallelSteps.addCatch(collectionsApiTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+    parallelSteps.addCatch(collectionsApiTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+    // Continue after all previous steps have completed
+    parallelSteps.next(collectionsApiTask)
+
+
     const harvestStateMachine = new StateMachine(this, 'HarvestStateMachine', {
-      definition: archivesSpaceExportTask,
+      definition: parallelSteps,
       logs: {
         destination: props.foundationStack.logGroup,
         level: LogLevel.ALL,
@@ -828,7 +948,7 @@ export class ManifestPipelineStack extends Stack {
 
     new StringParameter(this, 'ObjectFilesTableNameParam', {
       parameterName: `/all/stacks/${this.stackName}/files-tablename`,
-      stringValue: filesDynamoTable.tableName,
+      stringValue: this.filesDynamoTable.tableName,
     })
 
     new StringParameter(this, 'dataExtensionsTableNameParam', {

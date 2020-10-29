@@ -8,6 +8,7 @@ import imageProcessing = require('../lib/image-processing')
 import elasticsearch = require('../lib/elasticsearch')
 import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
+import maintainMetadata = require('../lib/maintain-metadata')
 import { getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
@@ -85,6 +86,14 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...imageProcessingContext,
   })
 
+  const maintainMetadataContext = getContextByNamespace('maintainMetadata')
+  const maintainMetadataStack = new maintainMetadata.MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
+    foundationStack,
+    manifestPipelineStack,
+    ...commonProps,
+    ...maintainMetadataContext,
+  })
+
   const services = {
     foundationStack,
     website,
@@ -94,6 +103,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     imageProcessingStack,
     elasticSearchStack,
     manifestPipelineStack,
+    maintainMetadataStack,
   }
 
   const slos = [

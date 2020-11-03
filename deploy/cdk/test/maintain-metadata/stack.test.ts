@@ -144,36 +144,6 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
-    test('creates SSMGraphqlApiKey', () => {
-      const app = new cdk.App()
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // WHEN
-      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
-        foundationStack,
-        manifestPipelineStack,
-        ...maintainMetadataContext,
-      })
-
-      // THEN
-      expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
-        Type: "String",
-        Value: {
-          "Fn::GetAtt": [
-            "ApiDefaultApiKeyF991C37B",
-            "ApiKey",
-          ],
-        },
-        Description: "AppSync GraphQL API key",
-        Name: "/all/stacks/MyTestStack/graphql-api-key",
-      }))
-    })
   }) /* end of describe SSM Parameters */
 
 

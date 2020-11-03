@@ -1,4 +1,4 @@
-import { Construct, Duration, Expiration, Stack, StackProps, CfnOutput } from "@aws-cdk/core"
+import { Construct, Duration, Expiration, Stack, StackProps, CfnOutput, SecretValue } from "@aws-cdk/core"
 import { AuthorizationType, CfnResolver, FieldLogLevel, GraphqlApi, Resolver, Schema } from '@aws-cdk/aws-appsync'
 import { DynamoDbDataSource, MappingTemplate } from '@aws-cdk/aws-appsync'
 // import { Table } from '@aws-cdk/aws-dynamodb'
@@ -26,11 +26,6 @@ export class MaintainMetadataStack extends Stack {
    */
   public readonly maintainMetadataApiUrl: string
 
-  /**
-   * The API Key for the Graphql API
-   */
-  public readonly maintainMetadataApiKey: string
-
   constructor(scope: Construct, id: string, props: IMaintainMetadataStackProps) {
     super(scope, id, props)
 
@@ -47,13 +42,13 @@ export class MaintainMetadataStack extends Stack {
             expires: Expiration.after(Duration.days(365)),
           },
         },
+        additionalAuthorizationModes: [{ authorizationType: AuthorizationType.IAM }],
       },
       xrayEnabled: true,
       logConfig: { fieldLogLevel: FieldLogLevel.ERROR },
     })
 
     this.maintainMetadataApiUrl = api.graphqlUrl
-    this.maintainMetadataApiKey = api.apiKey || ''
 
     // Save values to Parameter Store (SSM) for later reference
     new StringParameter(this, 'SSMGraphqlApiUrl', {
@@ -63,15 +58,6 @@ export class MaintainMetadataStack extends Stack {
       description: 'AppSync GraphQL base url',
     })
     
-    // TODO: change parameterName to /all/*s*tacks/ below (currently, stackName is AppSyncPlayground)
-    new StringParameter(this, 'SSMGraphqlApiKey', {
-      type: ParameterType.STRING,
-      parameterName: `/all/stacks/${this.stackName}/graphql-api-key`,
-      stringValue: api.apiKey || '',
-      description: 'AppSync GraphQL API key',
-    })
-
-
     // print out the AppSync GraphQL endpoint to the terminal
     new CfnOutput(this, `${this.stackName}:ApiUrl`, {
       value: api.graphqlUrl,

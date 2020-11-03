@@ -272,36 +272,7 @@ export class ManifestPipelineStack extends Stack {
       stringValue: this.metadataAugmentationDynamoTable.tableName,
     })
 
-    // I am now getting an error saying a subsequent step is relying on this, so I'll explicitly add it to get past the deploy error.
-    new CfnOutput(this, 'ExportsOutputFnGetAttmetadataAugmentation396BB939ArnA911991F', {
-      exportName: `${this.stackName}:ExportsOutputFnGetAttmetadataAugmentation396BB939ArnA911991F`,
-      value: this.metadataAugmentationDynamoTable.tableArn,
-    })
-    new CfnOutput(this, 'ExportsOutputRefmetadataAugmentation396BB9390B9E3B7A', {
-      exportName: `${this.stackName}:ExportsOutputRefmetadataAugmentation396BB9390B9E3B7A`,
-      value: this.metadataAugmentationDynamoTable.tableName,
-    })
-
-    new CfnOutput(this, 'ExportsOutputFnGetAttmetadataC23E5226Arn5CACAFC0', {
-      exportName: `${this.stackName}:ExportsOutputFnGetAttmetadataC23E5226Arn5CACAFC0`,
-      value: this.metadataDynamoTable.tableArn,
-    })
-    new CfnOutput(this, 'ExportsOutputRefmetadataC23E5226A9C1CCD2', {
-      exportName: `${this.stackName}:ExportsOutputRefmetadataC23E5226A9C1CCD2`,
-      value: this.metadataDynamoTable.tableName,
-    })
-  
-
-    new CfnOutput(this, 'ExportsOutputFnGetAttfiles6F97A25DArn20FAC0C5', {
-      exportName: `${this.stackName}:ExportsOutputFnGetAttfiles6F97A25DArn20FAC0C5`,
-      value: this.filesDynamoTable.tableArn,
-    })
-    new CfnOutput(this, 'ExportsOutputReffiles6F97A25D444CB665', {
-      exportName: `${this.stackName}:ExportsOutputReffiles6F97A25D444CB665`,
-      value: this.filesDynamoTable.tableName,
-    })
-
-    // Create Origin Access Id
+     // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
       comment: Fn.sub('Static assets in ${AWS::StackName}'),
     })

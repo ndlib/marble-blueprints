@@ -5,7 +5,7 @@ import { Code, Function, Runtime, Version } from "@aws-cdk/aws-lambda"
 import { CnameRecord } from "@aws-cdk/aws-route53"
 import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
-import { Choice, Condition, Errors, Fail, LogLevel, Parallel, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
+import { Choice, Condition, Errors, Fail, JsonPath, LogLevel, Parallel, Pass, Result, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
 import * as tasks from '@aws-cdk/aws-stepfunctions-tasks'
 import { Construct, Duration, Fn, Stack, StackProps, CfnOutput, Annotations } from "@aws-cdk/core"
 import fs = require('fs')
@@ -201,37 +201,22 @@ export class ManifestPipelineStack extends Stack {
         type: dynamodb.AttributeType.STRING,
       },
     })
+    this.filesDynamoTable.addGlobalSecondaryIndex({
+      indexName: 'objectFileGroupIdIndex',
+      partitionKey: {
+        name: 'objectFileGroupId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'sequence',
+        type: dynamodb.AttributeType.NUMBER,
+      },
+    })
     new StringParameter(this, 'FilesTTLDaysParam', {
       type: ParameterType.STRING,
       parameterName: `/all/stacks/${this.stackName}/files-time-to-live-days`,
       stringValue: props.filesTimeToLiveDays,
       description: 'Time To live for files dynamodb records',
-    })
-
-    const standardJsonDynamoTable = new dynamodb.Table(this, 'standardJson', {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      pointInTimeRecovery: true,
-      timeToLiveAttribute: 'expireTime',
-    })
-    standardJsonDynamoTable.addGlobalSecondaryIndex({
-      indexName: 'parentId',
-      partitionKey: {
-        name: 'parentId',
-        type: dynamodb.AttributeType.STRING,
-      },
-    })
-
-    const dataExtensionsDynamoTable = new dynamodb.Table(this, 'dataExtensions', {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      pointInTimeRecovery: true,
     })
 
     this.metadataDynamoTable = new dynamodb.Table(this, 'metadata', {
@@ -248,6 +233,17 @@ export class ManifestPipelineStack extends Stack {
       partitionKey: {
         name: 'parentId',
         type: dynamodb.AttributeType.STRING,
+      },
+    })
+    this.metadataDynamoTable.addGlobalSecondaryIndex({
+      indexName: 'parentIdIndex',
+      partitionKey: {
+        name: 'parentId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'sequence',
+        type: dynamodb.AttributeType.NUMBER,
       },
     })
     new StringParameter(this, 'MetadataTableNameParam', {
@@ -276,6 +272,34 @@ export class ManifestPipelineStack extends Stack {
       stringValue: this.metadataAugmentationDynamoTable.tableName,
     })
 
+    // I am now getting an error saying a subsequent step is relying on this, so I'll explicitly add it to get past the deploy error.
+    new CfnOutput(this, 'ExportsOutputFnGetAttmetadataAugmentation396BB939ArnA911991F', {
+      exportName: `${this.stackName}:ExportsOutputFnGetAttmetadataAugmentation396BB939ArnA911991F`,
+      value: this.metadataAugmentationDynamoTable.tableArn,
+    })
+    new CfnOutput(this, 'ExportsOutputRefmetadataAugmentation396BB9390B9E3B7A', {
+      exportName: `${this.stackName}:ExportsOutputRefmetadataAugmentation396BB9390B9E3B7A`,
+      value: this.metadataAugmentationDynamoTable.tableName,
+    })
+
+    new CfnOutput(this, 'ExportsOutputFnGetAttmetadataC23E5226Arn5CACAFC0', {
+      exportName: `${this.stackName}:ExportsOutputFnGetAttmetadataC23E5226Arn5CACAFC0`,
+      value: this.metadataDynamoTable.tableArn,
+    })
+    new CfnOutput(this, 'ExportsOutputRefmetadataC23E5226A9C1CCD2', {
+      exportName: `${this.stackName}:ExportsOutputRefmetadataC23E5226A9C1CCD2`,
+      value: this.metadataDynamoTable.tableName,
+    })
+  
+
+    new CfnOutput(this, 'ExportsOutputFnGetAttfiles6F97A25DArn20FAC0C5', {
+      exportName: `${this.stackName}:ExportsOutputFnGetAttfiles6F97A25DArn20FAC0C5`,
+      value: this.filesDynamoTable.tableArn,
+    })
+    new CfnOutput(this, 'ExportsOutputReffiles6F97A25D444CB665', {
+      exportName: `${this.stackName}:ExportsOutputReffiles6F97A25D444CB665`,
+      value: this.filesDynamoTable.tableName,
+    })
 
     // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
@@ -601,8 +625,6 @@ export class ManifestPipelineStack extends Stack {
       environment: {
         FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
-        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
-        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
         METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
@@ -626,7 +648,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(museumExportLambda)
     processBucket.grantReadWrite(museumExportLambda)
     this.filesDynamoTable.grantReadWriteData(museumExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(museumExportLambda)
     this.metadataDynamoTable.grantReadWriteData(museumExportLambda)
 
 
@@ -638,8 +659,6 @@ export class ManifestPipelineStack extends Stack {
       environment: {
         FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
-        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
-        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
         METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
@@ -662,7 +681,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(alephExportLambda)
     processBucket.grantReadWrite(alephExportLambda)
     this.filesDynamoTable.grantReadWriteData(alephExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(alephExportLambda)
     this.metadataDynamoTable.grantReadWriteData(alephExportLambda)
 
 
@@ -674,8 +692,6 @@ export class ManifestPipelineStack extends Stack {
       environment: {
         FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
-        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
-        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
         METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
@@ -698,7 +714,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(curateExportLambda)
     processBucket.grantReadWrite(curateExportLambda)
     this.filesDynamoTable.grantReadWriteData(curateExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(curateExportLambda)
     this.metadataDynamoTable.grantReadWriteData(curateExportLambda)
     
 
@@ -710,8 +725,6 @@ export class ManifestPipelineStack extends Stack {
       environment: {
         FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
-        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
-        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
         METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
@@ -734,7 +747,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(archivesSpaceExportLambda)
     processBucket.grantReadWrite(archivesSpaceExportLambda)
     this.filesDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
-    standardJsonDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
     this.metadataDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
 
 
@@ -746,8 +758,6 @@ export class ManifestPipelineStack extends Stack {
       environment: {
         FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
-        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
-        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
         METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
@@ -772,8 +782,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(collectionsApiLambda)
     processBucket.grantReadWrite(collectionsApiLambda)
     this.filesDynamoTable.grantReadWriteData(collectionsApiLambda)
-    standardJsonDynamoTable.grantReadWriteData(collectionsApiLambda)
-    dataExtensionsDynamoTable.grantReadWriteData(collectionsApiLambda)
     this.metadataDynamoTable.grantReadWriteData(collectionsApiLambda)
     this.metadataAugmentationDynamoTable.grantReadWriteData(collectionsApiLambda)
 
@@ -787,8 +795,6 @@ export class ManifestPipelineStack extends Stack {
       environment: {
         FILES_TABLE_NAME: this.filesDynamoTable.tableName,
         FILES_TABLE_PRIMARY_KEY: 'id',
-        STANDARD_JSON_TABLE_NAME: standardJsonDynamoTable.tableName,
-        STANDARD_JSON_TABLE_PRIMARY_KEY: 'id',
         METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
         METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
@@ -806,8 +812,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(objectFilesApiLambda)
     processBucket.grantReadWrite(objectFilesApiLambda)
     this.filesDynamoTable.grantReadWriteData(objectFilesApiLambda)
-    standardJsonDynamoTable.grantReadWriteData(objectFilesApiLambda)
-    dataExtensionsDynamoTable.grantReadWriteData(objectFilesApiLambda)
     this.metadataDynamoTable.grantReadWriteData(objectFilesApiLambda)
     this.metadataAugmentationDynamoTable.grantReadWriteData(objectFilesApiLambda)
 
@@ -916,6 +920,12 @@ export class ManifestPipelineStack extends Stack {
       .addCatch(objectFilesApiFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
       .next(objectFilesApiLoopChoice)
 
+    const passDictEventTask = new Pass(this, "PassDictEventTask", {
+      comment: 'Added to discard list event created by execution of parallel branches and pass along a dict event for subsequent steps.',
+      inputPath: JsonPath.DISCARD,
+      result: Result.fromObject({ passTaskComplete: true }),
+    })
+
     // Define parallel exectution
     const parallelSteps = new Parallel(this, 'ParallelSteps')
     // // branches to be executed in parallel
@@ -925,11 +935,12 @@ export class ManifestPipelineStack extends Stack {
     parallelSteps.branch(museumExportTask)
     parallelSteps.branch(objectFilesApiTask)
     // Catch errors
-    parallelSteps.addCatch(collectionsApiTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-    parallelSteps.addCatch(collectionsApiTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-    parallelSteps.addCatch(collectionsApiTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+    parallelSteps.addCatch(passDictEventTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+    parallelSteps.addCatch(passDictEventTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+    parallelSteps.addCatch(passDictEventTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
     // Continue after all previous steps have completed
-    parallelSteps.next(collectionsApiTask)
+    parallelSteps.next(passDictEventTask)
+      .next(collectionsApiTask)
 
 
     const harvestStateMachine = new StateMachine(this, 'HarvestStateMachine', {
@@ -941,21 +952,10 @@ export class ManifestPipelineStack extends Stack {
       },
     })
 
-    new StringParameter(this, 'StandardJsonTableNameParam', {
-      parameterName: `/all/stacks/${this.stackName}/standard-json-tablename`,
-      stringValue: standardJsonDynamoTable.tableName,
-    })
-
     new StringParameter(this, 'ObjectFilesTableNameParam', {
       parameterName: `/all/stacks/${this.stackName}/files-tablename`,
       stringValue: this.filesDynamoTable.tableName,
     })
-
-    new StringParameter(this, 'dataExtensionsTableNameParam', {
-      parameterName: `/all/stacks/${this.stackName}/data-extensions-tablename`,
-      stringValue: dataExtensionsDynamoTable.tableName,
-    })
-
 
     if (props.createEventRules) {
       new Rule(this, 'StartStdJsonHarvestRule', {

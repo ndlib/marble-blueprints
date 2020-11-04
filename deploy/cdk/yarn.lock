@@ -52,6 +52,19 @@
     "@aws-cdk/core" "1.71.0"
     constructs "^3.2.0"
 
+"@aws-cdk/aws-appsync@^1.71.0":
+  version "1.71.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-appsync/-/aws-appsync-1.71.0.tgz#8e617b113c533afdc1729a9da68aabca2ecf0829"
+  integrity sha512-fszOAdsbxDVU6QGkF9TgnD96zW2SYikB5fxSlT+gtpEXIRtI+dnTelF/4Bpt8GE+MiNLEELBYb3+vkaQzBSoSA==
+  dependencies:
+    "@aws-cdk/aws-cognito" "1.71.0"
+    "@aws-cdk/aws-dynamodb" "1.71.0"
+    "@aws-cdk/aws-iam" "1.71.0"
+    "@aws-cdk/aws-lambda" "1.71.0"
+    "@aws-cdk/aws-s3-assets" "1.71.0"
+    "@aws-cdk/core" "1.71.0"
+    constructs "^3.2.0"
+
 "@aws-cdk/aws-autoscaling-common@1.71.0":
   version "1.71.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-autoscaling-common/-/aws-autoscaling-common-1.71.0.tgz#de168427e199668488d63c1a515d5a2520ab1b1a"
@@ -1338,9 +1351,9 @@
   integrity sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==
 
 "@types/babel__core@^7.0.0", "@types/babel__core@^7.1.7":
-  version "7.1.11"
-  resolved "https://registry.yarnpkg.com/@types/babel__core/-/babel__core-7.1.11.tgz#7fae4660a009a4031e293f25b213f142d823b3c4"
-  integrity sha512-E5nSOzrjnvhURYnbOR2dClTqcyhPbPvtEwLHf7JJADKedPbcZsoJVfP+I2vBNfBjz4bnZIuhL/tNmRi5nJ7Jlw==
+  version "7.1.12"
+  resolved "https://registry.yarnpkg.com/@types/babel__core/-/babel__core-7.1.12.tgz#4d8e9e51eb265552a7e4f1ff2219ab6133bdfb2d"
+  integrity sha512-wMTHiiTiBAAPebqaPiPDLFA4LYPKr6Ph0Xq/6rq1Ur3v66HXyG+clfR9CNETkD7MQS8ZHvpQOtA53DLws5WAEQ==
   dependencies:
     "@babel/parser" "^7.1.0"
     "@babel/types" "^7.0.0"
@@ -2176,10 +2189,10 @@ concat-map@0.0.1:
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
   integrity sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=
 
-constructs@^3.2.0, constructs@^3.2.9:
-  version "3.2.9"
-  resolved "https://registry.yarnpkg.com/constructs/-/constructs-3.2.9.tgz#9b545a0aa878ab0baa11cd37c209afef0a8a275a"
-  integrity sha512-InVXFVOIZPvHywYdEuM9NFaNEGReb/QgrMMlHsIFkd+8g+MApBKzu8FFFWl8syRdi9eXINOCmKSL+rtTAXEWeA==
+constructs@^3.2.0, constructs@^3.2.10:
+  version "3.2.10"
+  resolved "https://registry.yarnpkg.com/constructs/-/constructs-3.2.10.tgz#77770fcc8c910d4c020aff164cf01b2e07324971"
+  integrity sha512-e4wYpn1zbPyY06c0/+G43qXtLlArgpuOeaq0uNy/u945ApUO0W+O+RS+UMcQe6YsA4RG375RxYZgS1d6mVglWg==
 
 convert-source-map@^1.4.0, convert-source-map@^1.6.0, convert-source-map@^1.7.0:
   version "1.7.0"
@@ -2865,9 +2878,9 @@ fs.realpath@^1.0.0:
   integrity sha1-FQStJSMVjKpA20onh8sBQRmU6k8=
 
 fsevents@^2.1.2:
-  version "2.1.3"
-  resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.1.3.tgz#fb738703ae8d2f9fe900c33836ddebee8b97f23e"
-  integrity sha512-Auw9a4AxqWpa9GUfj370BMPzzyncfBABW8Mab7BGWBYDj4Isgq+cDKtx0i6u9jcX9pQDnswsaaOTgTmA5pEjuQ==
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.2.0.tgz#4150396a427ecb5baa747725b70270a72b17bc17"
+  integrity sha512-pKnaUh2TNvk+/egJdBw1h46LwyLx8BzEq+MGCf/RMCVfEHHsGOCWG00dqk91kUPPArIIwMBg9T/virxwzP03cA==
 
 ftp@^0.3.10:
   version "0.3.10"

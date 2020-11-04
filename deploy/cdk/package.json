@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@aws-cdk/aws-apigateway": "^1.71.0",
+    "@aws-cdk/aws-appsync": "^1.71.0",
     "@aws-cdk/aws-cloudfront-origins": "^1.71.0",
     "@aws-cdk/aws-codepipeline": "^1.71.0",
     "@aws-cdk/aws-codepipeline-actions": "^1.71.0",
@@ -47,7 +48,7 @@
     "@aws-cdk/custom-resources": "^1.71.0",
     "@ndlib/ndlib-cdk": "^1.5.0",
     "@types/source-map-support": "^0.5.2",
-    "constructs": "^3.2.9",
+    "constructs": "^3.2.10",
     "source-map-support": "^0.5.16"
   }
 }

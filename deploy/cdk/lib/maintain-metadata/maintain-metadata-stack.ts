@@ -1,14 +1,13 @@
-import { Construct, Duration, Expiration, Stack, StackProps, CfnOutput, SecretValue } from "@aws-cdk/core"
-import { AuthorizationType, CfnResolver, FieldLogLevel, GraphqlApi, Resolver, Schema } from '@aws-cdk/aws-appsync'
+import { Construct, Duration, Expiration, Stack, StackProps, CfnOutput } from "@aws-cdk/core"
+import { AuthorizationType, FieldLogLevel, GraphqlApi, Resolver, Schema } from '@aws-cdk/aws-appsync'
 import { DynamoDbDataSource, MappingTemplate } from '@aws-cdk/aws-appsync'
-// import { Table } from '@aws-cdk/aws-dynamodb'
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { FoundationStack } from '../foundation'
 import { ManifestPipelineStack } from '../manifest-pipeline'
 import path = require('path')
 
 
-export interface IMaintainMetadataStackProps extends StackProps {
+export interface IBaseStackProps extends StackProps {
   /**
    * The name of the foundation stack upon which this stack is dependent
    */
@@ -26,7 +25,7 @@ export class MaintainMetadataStack extends Stack {
    */
   public readonly maintainMetadataApiUrl: string
 
-  constructor(scope: Construct, id: string, props: IMaintainMetadataStackProps) {
+  constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
     // Define construct contents here
@@ -87,40 +86,33 @@ export class MaintainMetadataStack extends Stack {
       readOnlyAccess: false,
     })
 
-    /* Note: At this point (CDK 1.70.0), the Resolver method is experimental, and is pretty limiting.  
-      It allows passing an argument, but not reference to another source field.
-      It also doesn't allow query expressions.  
-      As a result, I'm forced to use CfnResolver.
-    */
-    new CfnResolver(this, 'MergedMetadataItemDefaultFileResolver', {
-      apiId: api.apiId,
+
+    new Resolver(this, 'MergedMetadataItemDefaultFileResolver', {
+      api: api,
       typeName: 'MergedMetadataItem',
       fieldName: 'defaultFile',
-      dataSourceName: filesDynamoDataSource.name,
-      requestMappingTemplate: `{
+      dataSource: filesDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
           "version": "2017-02-28",
           "operation": "GetItem",
           "key": {
               "id": $util.dynamodb.toDynamoDBJson($ctx.source.defaultFilePath),
           }
-      }`,
-      responseMappingTemplate: `$util.toJson($ctx.result)`,
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    // Note:  nextToken and limits aren't available in the experimental constructs yet, so we have to use cfn constructs.
-    new CfnResolver(this, 'MergedMetadataItemFilesResolver', {
-      apiId: api.apiId,
+    new Resolver(this, 'MergedMetadataItemFilesResolver', {
+      api: api,
       typeName: 'MergedMetadataItem',
       fieldName: 'files',
-      dataSourceName: filesDynamoDataSource.name,
-      // Note:  removed from requestMappingTemplate below:
-      //        "index": "fileId",
-      requestMappingTemplate: `{
+      dataSource: filesDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
         "version": "2017-02-28",
         "operation": "Query",
-        "index": "fileId",
+        "index": "objectFileGroupIdIndex",
         "query": {
-          "expression": "fileId = :objectFileGroupId",
+          "expression": "objectFileGroupId = :objectFileGroupId",
           "expressionValues": {
             ":objectFileGroupId": {
               "S": "$context.source.objectFileGroupId"
@@ -129,23 +121,22 @@ export class MaintainMetadataStack extends Stack {
         },
         "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
         "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
-      }`,
-      responseMappingTemplate: `{
+      }`),
+      responseMappingTemplate: MappingTemplate.fromString(`{
         "items": $util.toJson($context.result.items),
         "nextToken": $util.toJson($context.result.nextToken)
-      }`,
+      }`),
     })
 
-    // Note:  nextToken and limits aren't available in the experimental constructs yet, so we have to use cfn constructs.
-    new CfnResolver(this, 'MergedMetadataItemItemsResolver', {
-      apiId: api.apiId,
+    new Resolver(this, 'MergedMetadataItemItemsResolver', {
+      api: api,
       typeName: 'MergedMetadataItem',
       fieldName: 'items',
-      dataSourceName: metadataDynamoDataSource.name,
-      requestMappingTemplate: `{
+      dataSource: metadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
         "version": "2017-02-28",
         "operation": "Query",
-        "index": "parentId",
+        "index": "parentIdIndex",
         "query": {
           "expression": "parentId = :id",
           "expressionValues": {
@@ -156,35 +147,36 @@ export class MaintainMetadataStack extends Stack {
         },
         "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
         "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
-      }`,
-      responseMappingTemplate: `{
+      }`),
+      responseMappingTemplate: MappingTemplate.fromString(`{
         "items": $util.toJson($context.result.items),
         "nextToken": $util.toJson($context.result.nextToken)
-      }`,
+      }`),
     })
 
-    new CfnResolver(this, 'MergedMetadataItemMetadataAugmentationResolver', {
-      apiId: api.apiId,
+    new Resolver(this, 'MergedMetadataItemMetadataAugmentationResolver', {
+      api: api,
       typeName: 'MergedMetadataItem',
       fieldName: 'metadataAugmentation',
-      dataSourceName: metadataAugmentationDynamoDataSource.name,
-      requestMappingTemplate: `{
+      dataSource: metadataAugmentationDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
           "version": "2017-02-28",
           "operation": "GetItem",
           "key": {
               "id": $util.dynamodb.toDynamoDBJson($ctx.source.id),
           }
-      }`,
-      responseMappingTemplate: `$util.toJson($ctx.result)`,
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
+
 
     // Mutation resolvers
-    new CfnResolver(this, 'MutationcreateMetadataAugmentationResolver', {
-      apiId: api.apiId,
+    new Resolver(this, 'MutationcreateMetadataAugmentationResolver', {
+      api: api,
       typeName: 'Mutation',
       fieldName: 'createMetadataAugmentation',
-      dataSourceName: metadataAugmentationDynamoDataSource.name,
-      requestMappingTemplate: `{
+      dataSource: metadataAugmentationDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
           "version" : "2017-02-28",
           "operation" : "PutItem",
           "key" : {
@@ -192,16 +184,16 @@ export class MaintainMetadataStack extends Stack {
               "id": $util.dynamodb.toDynamoDBJson($ctx.args.input.id),
           },
           "attributeValues" : $util.dynamodb.toMapValuesJson($ctx.args.input)
-      }`,
-      responseMappingTemplate: `$util.toJson($context.result)`,
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    new CfnResolver(this, 'MutationupdateMetadataAugmentationResolver', {
-      apiId: api.apiId,
+    new Resolver(this, 'MutationupdateMetadataAugmentationResolver', {
+      api: api,
       typeName: 'Mutation',
       fieldName: 'updateMetadataAugmentation',
-      dataSourceName: metadataAugmentationDynamoDataSource.name,
-      requestMappingTemplate: `{
+      dataSource: metadataAugmentationDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
           "version" : "2017-02-28",
           "operation" : "PutItem",
           "key" : {
@@ -209,11 +201,10 @@ export class MaintainMetadataStack extends Stack {
               "id": $util.dynamodb.toDynamoDBJson($ctx.args.input.id),
           },
           "attributeValues" : $util.dynamodb.toMapValuesJson($ctx.args.input)
-      }`,
-      responseMappingTemplate: `$util.toJson($context.result)`,
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    /* This works */
     new Resolver(this, 'QueryGetFileResolver', {
       api: api,
       typeName: 'Query',
@@ -232,7 +223,6 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    /* this works */
     new Resolver(this, 'QueryGetMetadataAugmentationResolver', {
       api: api,
       typeName: 'Query',
@@ -242,50 +232,49 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    /* This works, but try another tactic */
-    new CfnResolver(this, 'QueryListFilesResolver', {
-      apiId: api.apiId,
+    new Resolver(this, 'QueryListFilesResolver', {
+      api: api,
       typeName: 'Query',
       fieldName: 'listFiles',
-      dataSourceName: filesDynamoDataSource.name,
-      requestMappingTemplate: `{
+      dataSource: filesDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
         "version": "2017-02-28",
         "operation": "Scan",
         "filter": #if($context.args.filter) $util.transform.toDynamoDBFilterExpression($ctx.args.filter) #else null #end,
         "limit": $util.defaultIfNull($ctx.args.limit, 20),
         "nextToken": $util.toJson($util.defaultIfNullOrEmpty($ctx.args.nextToken, null)),
-      }`,
-      responseMappingTemplate: `$util.toJson($context.result)`,
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    new CfnResolver(this, 'QueryListMetadataAugmentationsResolver', {
-      apiId: api.apiId,
+    new Resolver(this, 'QueryListMetadataAugmentationsResolver', {
+      api: api,
       typeName: 'Query',
       fieldName: 'listMetadataAugmentations',
-      dataSourceName: metadataAugmentationDynamoDataSource.name,
-      requestMappingTemplate: `{
+      dataSource: metadataAugmentationDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
         "version": "2017-02-28",
         "operation": "Scan",
         "filter": #if($context.args.filter) $util.transform.toDynamoDBFilterExpression($ctx.args.filter) #else null #end,
         "limit": $util.defaultIfNull($ctx.args.limit, 20),
         "nextToken": $util.toJson($util.defaultIfNullOrEmpty($ctx.args.nextToken, null)),
-      }`,
-      responseMappingTemplate: `$util.toJson($context.result)`,
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    new CfnResolver(this, 'QueryListMergedMetadataResolver', {
-      apiId: api.apiId,
+    new Resolver(this, 'QueryListMergedMetadataResolver', {
+      api: api,
       typeName: 'Query',
       fieldName: 'listMergedMetadata',
-      dataSourceName: metadataDynamoDataSource.name,
-      requestMappingTemplate: `{
+      dataSource: metadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
         "version": "2017-02-28",
         "operation": "Scan",
         "filter": #if($context.args.filter) $util.transform.toDynamoDBFilterExpression($ctx.args.filter) #else null #end,
         "limit": $util.defaultIfNull($ctx.args.limit, 20),
         "nextToken": $util.toJson($util.defaultIfNullOrEmpty($ctx.args.nextToken, null)),
-      }`,
-      responseMappingTemplate: `$util.toJson($context.result)`,
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
   }

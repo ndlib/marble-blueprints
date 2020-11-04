@@ -2,7 +2,6 @@ type File {
 	id: String!
 	eTag: String
 	expireTime: Int
-	fileId: String
 	iiifImageUri: String
 	iiifUri: String
 	key: String

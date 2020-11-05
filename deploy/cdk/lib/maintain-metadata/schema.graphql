@@ -1,0 +1,205 @@
+type File {
+	id: String!
+	eTag: String
+	expireTime: Int
+	iiifImageUri: String
+	iiifUri: String
+	key: String
+	label: String
+	lastModified: String
+	objectFileGroupId: String!
+	path: String
+	sequence: Int
+	size: Int
+	source: String
+	sourceType: String
+	sourceUri: String
+	storageClass: String
+}
+
+type FilesConnection {
+	items: [File]
+	nextToken: String
+}
+
+type MergedMetadataItem {
+	id: String!
+	collectionId: String
+	collections: [MetadataObjectWithDisplayField]
+	contributors: [MetadataObjectWithDisplayField]
+	copyrightStatement: String
+	copyrightStatus: String
+	copyrightUrl: String
+	createdDate: String
+	creators: [MetadataObjectWithDisplayField]
+	dedication: String
+	defaultFile: File
+	defaultFilePath: String
+	description: String
+	digitalAccess: String
+	dimensions: String
+	expireTime: Int
+	fileCreatedDate: String
+	format: String
+	iiifUri: String
+	languages: [MetadataObjectWithDisplayField]
+	level: String
+	linkToSource: String
+	objectFileGroupId: String
+	parentId: String
+	publishers: [MetadataObjectWithDisplayField]
+	repository: String
+	sequence: Int
+	sourceSystem: String
+	subjects: [MetadataSubject]
+	title: String
+	uniqueIdentifier: String
+	workType: String
+	files(limit: Int, nextToken: String): FilesConnection
+	items(limit: Int, nextToken: String): MergedMetadataConnection
+	metadataAugmentation: MetadataAugmentation
+}
+
+type MergedMetadataConnection {
+	items: [MergedMetadataItem]
+	nextToken: String
+}
+
+type MetadataAugmentation {
+	id: String!
+	collectionId: String
+	generalDefaultFilePath: String
+	generalDefaultImageId: String
+	generalObjectFileGroupId: String
+	generalPartiallyDigitized: Boolean
+}
+
+type MetadataAugmentationConnection {
+	items: [MetadataAugmentation]
+	nextToken: String
+}
+
+input MetadataAugmentationInput {
+	id: String!
+	collectionId: String
+	generalDefaultFilePath: String
+	generalDefaultImageId: String
+	generalObjectFileGroupId: String
+	generalPartiallyDigitized: Boolean
+}
+
+type MetadataObjectWithDisplayField {
+	display: String
+}
+
+type MetadataSubject {
+	term: String
+	uri: String
+	authority: String
+	variants: [String]
+	display: String
+	parentTerm: String
+	broaderTerms: [MetadataSubject]
+}
+
+type Mutation {
+	createMetadataAugmentation(input: MetadataAugmentationInput!): MetadataAugmentation
+	updateMetadataAugmentation(input: MetadataAugmentationInput!): MetadataAugmentation
+}
+
+type Query {
+	getFile(id: String!): File
+	getMergedMetadata(id: String!): MergedMetadataItem
+	getMetadataAugmentation(id: String!): MetadataAugmentation
+	listFiles(filter: TableFilesFilterInput, limit: Int, nextToken: String): FilesConnection
+	listMergedMetadata(filter: TableMergedMetadataFilterInput, limit: Int, nextToken: String): MergedMetadataConnection
+	listMetadataAugmentations(filter: TableMetadataAugmentationFilterInput, limit: Int, nextToken: String): MetadataAugmentationConnection
+}
+
+type Subscription {
+	onCreateMetadataAugmentation(id: String, collectionId: String): MetadataAugmentation
+		@aws_subscribe(mutations: ["createMetadataAugmentation"])
+	onUpdateMetadataAugmentation(id: String, collectionId: String): MetadataAugmentation
+		@aws_subscribe(mutations: ["updateMetadataAugmentation"])
+}
+
+input TableBooleanFilterInput {
+	ne: Boolean
+	eq: Boolean
+}
+
+input TableFilesFilterInput {
+	id: TableStringFilterInput
+	ObjectFileGroupId: TableStringFilterInput
+}
+
+input TableFloatFilterInput {
+	ne: Float
+	eq: Float
+	le: Float
+	lt: Float
+	ge: Float
+	gt: Float
+	contains: Float
+	notContains: Float
+	between: [Float]
+}
+
+input TableIDFilterInput {
+	ne: ID
+	eq: ID
+	le: ID
+	lt: ID
+	ge: ID
+	gt: ID
+	contains: ID
+	notContains: ID
+	between: [ID]
+	beginsWith: ID
+}
+
+input TableIntFilterInput {
+	ne: Int
+	eq: Int
+	le: Int
+	lt: Int
+	ge: Int
+	gt: Int
+	contains: Int
+	notContains: Int
+	between: [Int]
+}
+
+input TableMergedMetadataFilterInput {
+	id: TableStringFilterInput
+	iiifUri: TableStringFilterInput
+	level: TableStringFilterInput
+	objectFileGroupId: TableStringFilterInput
+	parentId: TableStringFilterInput
+	sourceSystem: TableStringFilterInput
+	title: TableStringFilterInput
+}
+
+input TableMetadataAugmentationFilterInput {
+	id: TableStringFilterInput
+	collectionId: TableStringFilterInput
+}
+
+input TableStringFilterInput {
+	ne: String
+	eq: String
+	le: String
+	lt: String
+	ge: String
+	gt: String
+	contains: String
+	notContains: String
+	between: [String]
+	beginsWith: String
+}
+
+schema {
+	query: Query
+	mutation: Mutation
+	subscription: Subscription
+}

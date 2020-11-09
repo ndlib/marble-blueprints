@@ -55,6 +55,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack) => {
       const paramsPath = `/all/static-host/${targetStack}/`
       const esEndpointParamPath = `/all/stacks/${elasticStack.stackName}/domain-endpoint`
+      const bucketParamPath = `/all/stacks/${props.targetStack}/site-bucket-name`
+
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -93,6 +95,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
           SEARCH_INDEX: {
             value: props.searchIndex,
             type: BuildEnvironmentVariableType.PLAINTEXT,
+          },
+          S3_BUCKET_NAME: {
+            value: bucketParamPath,
+            type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
         },
       })

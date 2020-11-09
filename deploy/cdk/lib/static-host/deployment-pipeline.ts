@@ -56,6 +56,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       const paramsPath = `/all/static-host/${targetStack}/`
       const esEndpointParamPath = `/all/stacks/${elasticStack.stackName}/domain-endpoint`
       const bucketParamPath = `/all/stacks/${props.targetStack}/site-bucket-name`
+      const distributionPath = `/all/stacks/${props.targetStack}/distribution-id`
 
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
@@ -72,6 +73,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
           `./${props.buildScriptsDir}/post_build.sh`,
           `printf $CODEBUILD_RESOLVED_SOURCE_VERSION > ${props.buildOutputDir}/sha.txt`,
         ],
+        postDeployCommands: [
+          `aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"`,
+        ]
         outputDirectory: buildPath,
         outputFiles: [
           `**/*`,
@@ -100,6 +104,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
             value: bucketParamPath,
             type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
+          DISTRIBUTION_ID: {
+            value: distributionPath,
+            type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          }
         },
       })
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({

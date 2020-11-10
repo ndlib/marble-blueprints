@@ -55,8 +55,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack) => {
       const paramsPath = `/all/static-host/${targetStack}/`
       const esEndpointParamPath = `/all/stacks/${elasticStack.stackName}/domain-endpoint`
-      const bucketParamPath = `/all/stacks/${props.targetStack}/site-bucket-name`
-      const distributionPath = `/all/stacks/${props.targetStack}/distribution-id`
+      const bucketParamPath = `/all/stacks/${targetStack}/site-bucket-name`
+      const distributionPath = `/all/stacks/${targetStack}/distribution-id`
 
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
@@ -256,11 +256,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, s3syncTest.action, smokeTestsAction, approvalAction],
+          actions: [deployTest.action, smokeTestsAction, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action, s3syncProd.action, smokeTestsProdAction],
+          actions: [deployProd.action, smokeTestsProdAction],
           stageName: 'Production',
         },
       ],

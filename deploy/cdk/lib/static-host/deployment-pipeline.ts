@@ -176,10 +176,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
     const testBuildOutput = new Artifact('TestBuild')
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
-    const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', {
-      targetStack: testStackName,
-      inputBuildArtifact: testBuildOutput,
-    })
 
     const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
     const smokeTestsProject = new PipelineProject(this, 'StaticHostSmokeTests', {
@@ -226,10 +222,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
     const prodBuildOutput = new Artifact('ProdBuild')
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack)
-    const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', {
-      targetStack: prodStackName,
-      inputBuildArtifact: prodBuildOutput,
-    })
 
     const prodHostname = `${prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
     const smokeTestsProdProject = new PipelineProject(this, 'StaticHostProdSmokeTests', {

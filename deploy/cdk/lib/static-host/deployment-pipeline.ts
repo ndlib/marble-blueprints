@@ -75,7 +75,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         ],
         postDeployCommands: [
           `aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"`,
-        ]
+        ],
         outputDirectory: buildPath,
         outputFiles: [
           `**/*`,

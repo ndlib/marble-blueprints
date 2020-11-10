@@ -11,6 +11,7 @@ import { getRequiredContext, getContextByNamespace } from '../lib/context-helper
 import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
 import { PipelineFoundationStack } from '../lib/foundation'
+import maintainMetadata = require('../lib/maintain-metadata')
 
 export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv, testStacks: Stacks, prodStacks: Stacks): void => {
   const pipelineFoundationStack = new PipelineFoundationStack(app, `${namespace}-deployment-foundation`, {
@@ -84,5 +85,11 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   new manifestPipeline.DeploymentPipelineStack(app, `${namespace}-manifest-deployment`, {
     ...commonProps,
     ...manifestPipelineContext,
+  })
+
+  const maintainMetadataContext = getContextByNamespace('maintainMetadata')
+  new maintainMetadata.DeploymentPipelineStack(app, `${namespace}-maintain-metadata-deployment`, {
+    ...commonProps,
+    ...maintainMetadataContext,
   })
 }

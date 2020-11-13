@@ -195,13 +195,6 @@ export class ManifestPipelineStack extends Stack {
       },
     })
     this.filesDynamoTable.addGlobalSecondaryIndex({
-      indexName: 'objectFileGroupId',
-      partitionKey: {
-        name: 'objectFileGroupId',
-        type: dynamodb.AttributeType.STRING,
-      },
-    })
-    this.filesDynamoTable.addGlobalSecondaryIndex({
       indexName: 'objectFileGroupIdIndex',
       partitionKey: {
         name: 'objectFileGroupId',
@@ -227,13 +220,6 @@ export class ManifestPipelineStack extends Stack {
       },
       pointInTimeRecovery: true,
       timeToLiveAttribute: 'expireTime',
-    })
-    this.metadataDynamoTable.addGlobalSecondaryIndex({
-      indexName: 'parentId',
-      partitionKey: {
-        name: 'parentId',
-        type: dynamodb.AttributeType.STRING,
-      },
     })
     this.metadataDynamoTable.addGlobalSecondaryIndex({
       indexName: 'parentIdIndex',

@@ -41,6 +41,7 @@ type MergedMetadataItem {
 	expireTime: Int
 	fileCreatedDate: String
 	format: String
+	geographicLocations: [MetadataObjectWithDisplayField]
 	iiifUri: String
 	languages: [MetadataObjectWithDisplayField]
 	level: String
@@ -48,6 +49,7 @@ type MergedMetadataItem {
 	objectFileGroupId: String
 	parentId: String
 	publishers: [MetadataObjectWithDisplayField]
+	relatedIds: [String]
 	repository: String
 	sequence: Int
 	sourceSystem: String
@@ -79,15 +81,6 @@ type MetadataAugmentationConnection {
 	nextToken: String
 }
 
-input MetadataAugmentationInput {
-	id: String!
-	collectionId: String
-	generalDefaultFilePath: String
-	generalDefaultImageId: String
-	generalObjectFileGroupId: String
-	generalPartiallyDigitized: Boolean
-}
-
 type MetadataObjectWithDisplayField {
 	display: String
 }
@@ -103,8 +96,10 @@ type MetadataSubject {
 }
 
 type Mutation {
-	createMetadataAugmentation(input: MetadataAugmentationInput!): MetadataAugmentation
-	updateMetadataAugmentation(input: MetadataAugmentationInput!): MetadataAugmentation
+	createMetadataAugmentation(input: ReplaceDefaultImageInput!): MetadataAugmentation
+	updateMetadataAugmentation(input: ReplaceDefaultImageInput!): MetadataAugmentation
+	replaceDefaultImage(input: ReplaceDefaultImageInput!): MetadataAugmentation
+	replacePartiallyDigitized(input: ReplacePartiallyDigitizedInput): MetadataAugmentation
 }
 
 type Query {
@@ -114,6 +109,19 @@ type Query {
 	listFiles(filter: TableFilesFilterInput, limit: Int, nextToken: String): FilesConnection
 	listMergedMetadata(filter: TableMergedMetadataFilterInput, limit: Int, nextToken: String): MergedMetadataConnection
 	listMetadataAugmentations(filter: TableMetadataAugmentationFilterInput, limit: Int, nextToken: String): MetadataAugmentationConnection
+}
+
+input ReplaceDefaultImageInput {
+	id: String!
+	collectionId: String!
+	generalDefaultFilePath: String!
+	generalObjectFileGroupId: String!
+}
+
+input ReplacePartiallyDigitizedInput {
+	id: String!
+	collectionId: String!
+	generalPartiallyDigitized: Boolean!
 }
 
 type Subscription {

@@ -171,36 +171,47 @@ export class MaintainMetadataStack extends Stack {
 
 
     // Mutation resolvers
-    new Resolver(this, 'MutationcreateMetadataAugmentationResolver', {
+    new Resolver(this, 'MutationReplaceDefaultImageResolver', {
       api: api,
       typeName: 'Mutation',
-      fieldName: 'createMetadataAugmentation',
+      fieldName: 'replaceDefaultImage',
       dataSource: metadataAugmentationDynamoDataSource,
       requestMappingTemplate: MappingTemplate.fromString(`{
-          "version" : "2017-02-28",
-          "operation" : "PutItem",
-          "key" : {
-              ## If object "id" should come from GraphQL arguments, change to $util.dynamodb.toDynamoDBJson($ctx.args.id)
-              "id": $util.dynamodb.toDynamoDBJson($ctx.args.input.id),
-          },
-          "attributeValues" : $util.dynamodb.toMapValuesJson($ctx.args.input)
+        "version": "2017-02-28",
+        "operation": "UpdateItem",
+        "key": {
+          "id": $util.dynamodb.toDynamoDBJson($ctx.args.input.id)
+        },
+        "update": {
+          "expression": "SET collectionId = :collectionId, generalDefaultFilePath = :generalDefaultFilePath, generalObjectFileGroupId = :generalObjectFileGroupId",
+          "expressionValues": {
+            ":collectionId": $util.dynamodb.toDynamoDBJson($ctx.args.input.collectionId),      
+            ":generalDefaultFilePath": $util.dynamodb.toDynamoDBJson($ctx.args.input.generalDefaultFilePath),
+            ":generalObjectFileGroupId": $util.dynamodb.toDynamoDBJson($ctx.args.input.generalObjectFileGroupId)      
+          }
+        }
       }`),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    new Resolver(this, 'MutationupdateMetadataAugmentationResolver', {
+    new Resolver(this, 'MutationReplacePartiallyDigitizedResolver', {
       api: api,
       typeName: 'Mutation',
-      fieldName: 'updateMetadataAugmentation',
+      fieldName: 'replacePartiallyDigitized',
       dataSource: metadataAugmentationDynamoDataSource,
       requestMappingTemplate: MappingTemplate.fromString(`{
-          "version" : "2017-02-28",
-          "operation" : "PutItem",
-          "key" : {
-              ## If object "id" should come from GraphQL arguments, change to $util.dynamodb.toDynamoDBJson($ctx.args.id)
-              "id": $util.dynamodb.toDynamoDBJson($ctx.args.input.id),
-          },
-          "attributeValues" : $util.dynamodb.toMapValuesJson($ctx.args.input)
+        "version": "2017-02-28",
+        "operation": "UpdateItem",
+        "key": {
+          "id": $util.dynamodb.toDynamoDBJson($ctx.args.input.id)
+        },
+        "update": {
+          "expression": "SET collectionId = :collectionId, generalPartiallyDigitized = :generalPartiallyDigitized",
+          "expressionValues": {
+            ":collectionId": $util.dynamodb.toDynamoDBJson($ctx.args.input.collectionId)    
+            ":generalPartiallyDigitized": $util.dynamodb.toDynamoDBJson($ctx.args.input.generalPartiallyDigitized)
+          }
+        }
       }`),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })

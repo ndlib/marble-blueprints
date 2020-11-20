@@ -170,6 +170,38 @@ export class MaintainMetadataStack extends Stack {
     })
 
 
+    new Resolver(this, 'MetadataChildObjectItemResolver', {
+      api: api,
+      typeName: 'MetadataChildObject',
+      fieldName: 'item',
+      dataSource: metadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
+          "version": "2017-02-28",
+          "operation": "GetItem",
+          "key": {
+              "id": $util.dynamodb.toDynamoDBJson($ctx.source.id),
+          }
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+
+    new Resolver(this, 'MetadataRelatedObectItemResolver', {
+      api: api,
+      typeName: 'MetadataRelatedObject',
+      fieldName: 'item',
+      dataSource: metadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`{
+          "version": "2017-02-28",
+          "operation": "GetItem",
+          "key": {
+              "id": $util.dynamodb.toDynamoDBJson($ctx.source.id),
+          }
+      }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+
     // Mutation resolvers
     new Resolver(this, 'MutationReplaceDefaultImageResolver', {
       api: api,

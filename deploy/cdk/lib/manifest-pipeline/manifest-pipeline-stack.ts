@@ -188,13 +188,6 @@ export class ManifestPipelineStack extends Stack {
       timeToLiveAttribute: 'expireTime',
     })
     this.filesDynamoTable.addGlobalSecondaryIndex({
-      indexName: 'fileId',
-      partitionKey: {
-        name: 'fileId',
-        type: dynamodb.AttributeType.STRING,
-      },
-    })
-    this.filesDynamoTable.addGlobalSecondaryIndex({
       indexName: 'objectFileGroupIdIndex',
       partitionKey: {
         name: 'objectFileGroupId',

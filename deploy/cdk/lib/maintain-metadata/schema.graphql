@@ -24,6 +24,7 @@ type FilesConnection {
 
 type MergedMetadataItem {
 	id: String!
+	childIds: [MetadataChildObject]
 	collectionId: String
 	collections: [MetadataObjectWithDisplayField]
 	contributors: [MetadataObjectWithDisplayField]
@@ -49,12 +50,13 @@ type MergedMetadataItem {
 	objectFileGroupId: String
 	parentId: String
 	publishers: [MetadataObjectWithDisplayField]
-	relatedIds: [String]
+	relatedIds: [MetadataRelatedObject]
 	repository: String
 	sequence: Int
 	sourceSystem: String
 	subjects: [MetadataSubject]
 	title: String
+	treePath: String
 	uniqueIdentifier: String
 	workType: String
 	files(limit: Int, nextToken: String): FilesConnection
@@ -81,8 +83,20 @@ type MetadataAugmentationConnection {
 	nextToken: String
 }
 
+type MetadataChildObject {
+	id: String
+	sequence: Int
+	item: MergedMetadataItem
+}
+
 type MetadataObjectWithDisplayField {
 	display: String
+}
+
+type MetadataRelatedObject {
+	id: String
+	sequence: Int
+	item: MergedMetadataItem
 }
 
 type MetadataSubject {

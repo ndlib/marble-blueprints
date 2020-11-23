@@ -106,6 +106,10 @@ export class FoundationStack extends Stack {
     })
 
     this.cluster = new Cluster(this, 'Cluster', { vpc: this.vpc })
+    new CfnOutput(this, 'ExportsOutputFnGetAttClusterEB0386A7Arn2F2E3C3F', {
+      exportName: `${this.stackName}:ExportsOutputFnGetAttClusterEB0386A7Arn2F2E3C3F`,
+      value: this.cluster.clusterArn,
+    })
 
     this.logBucket = new Bucket(this, 'LogBucket', {
       accessControl: BucketAccessControl.LOG_DELIVERY_WRITE,
@@ -121,6 +125,11 @@ export class FoundationStack extends Stack {
 
     this.logGroup = new LogGroup(this, 'SharedLogGroup', {
       retention: RetentionDays.ONE_YEAR,
+    })
+
+    new CfnOutput(this, 'ExportsOutputFnGetAttSharedLogGroup74BE6F74Arn4AE42CDD', {
+      exportName: `${this.stackName}:ExportsOutputFnGetAttSharedLogGroup74BE6F74Arn4AE42CDD`,
+      value: this.logGroup.logGroupArn,
     })
 
     this.publicBucket = new Bucket(this, 'PublicBucket', {

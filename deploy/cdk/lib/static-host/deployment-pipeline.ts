@@ -61,14 +61,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
         infraSourceArtifact,
         appSourceArtifact,
         appBuildCommands: [
-          `chmod -R 755 ./${props.buildScriptsDir}/*`,
-          `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR"`,
-          `export PARAM_CONFIG_PATH="${paramsPath}"`,
-          `./${props.buildScriptsDir}/install.sh`,
-          `./${props.buildScriptsDir}/pre_build.sh`,
-          `./${props.buildScriptsDir}/build.sh`,
-          `./${props.buildScriptsDir}/post_build.sh`,
-          `printf $CODEBUILD_RESOLVED_SOURCE_VERSION > ${props.buildOutputDir}/sha.txt`,
         ],
         outputDirectory: buildPath,
         outputFiles: [
@@ -85,28 +77,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
           [`${props.instanceName}:hostnamePrefix`]: hostnamePrefix,
         },
-        environmentVariables: props.searchIndex === undefined ? {} : {
-          SEARCH_URL: {
-            value: esEndpointParamPath,
-            type: BuildEnvironmentVariableType.PARAMETER_STORE,
-          },
-          SEARCH_INDEX: {
-            value: props.searchIndex,
-            type: BuildEnvironmentVariableType.PLAINTEXT,
-          },
-        },
       })
-      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        actions: [
-          'ssm:GetParameter',
-          'ssm:GetParameters',
-          'ssm:GetParametersByPath',
-        ],
-        resources:[
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramsPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + esEndpointParamPath),
-        ],
-      }))
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: [
           's3:GetBucketAcl',
@@ -159,12 +130,16 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
-    const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
+    const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const testBuildOutput = new Artifact('TestBuild')
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', {
       targetStack: testStackName,
       inputBuildArtifact: testBuildOutput,
+      artifactPath: testBuildPath,
+      searchIndex: props.searchIndex,
+      esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
+      elasticSearchDomainName: props.testElasticStack.domainName,
     })
 
     const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
@@ -209,12 +184,17 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
-    const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}/${props.buildOutputDir}`
+    const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const prodBuildOutput = new Artifact('ProdBuild')
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack)
+
     const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', {
       targetStack: prodStackName,
       inputBuildArtifact: prodBuildOutput,
+      artifactPath: prodBuildPath,
+      searchIndex: props.searchIndex,
+      esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
+      elasticSearchDomainName: props.prodElasticStack.domainName,
     })
 
     const prodHostname = `${prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`

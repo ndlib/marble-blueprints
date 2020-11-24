@@ -37,8 +37,6 @@ export class PipelineS3Sync extends Construct {
   constructor(scope: Construct, id: string, props: IPipelineS3SyncProps) {
     super(scope, id)
     const paramsPath = `/all/static-host/${props.targetStack}/`
-    console.log("params path", paramsPath)
-    //const esEndpointParamPath = `/all/stacks/${props.elasticStack.stackName}/domain-endpoint`
 
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
@@ -49,11 +47,11 @@ export class PipelineS3Sync extends Construct {
       },
       environmentVariables: {
         S3_DEST_BUCKET: {
-          value: `/all/stacks/${props.targetStack}/site-bucket-name`,
+          value: `${paramsPath}/site-bucket-name`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
         DISTRIBUTION_ID: {
-          value: `/all/stacks/${props.targetStack}/distribution-id`,
+          value: `${paramsPath}/distribution-id`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
         SEARCH_URL: {
@@ -67,29 +65,27 @@ export class PipelineS3Sync extends Construct {
       },
       buildSpec: BuildSpec.fromObject({
         phases: {
+          install: {
+            commands: [
+              `chmod -R 755 ./scripts`,
+              `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR"`,
+              `export PARAM_CONFIG_PATH="${paramsPath}"`,
+              `./scripts/codebuild/install.sh`,
+            ]
+          },
           pre_build: {
             commands: [
-              // Remove existing files from the s3 bucket
+              `./scripts/codebuild/pre_build.sh`,
             ],
           },
           build: {
             commands: [
-              // Copy new build to the site s3 bucket
-              `chmod -R 755 ./scripts`,
-              `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR"`,
-              `export PARAM_CONFIG_PATH="${paramsPath}"`,
-              `echo $CODEBUILD_RESOLVED_SOURCE_VERSION`,
-              `./scripts/codebuild/install.sh`,
-              `./scripts/codebuild/pre_build.sh`,
               `./scripts/codebuild/build.sh`,
-              `./scripts/codebuild/post_build.sh`,
             ],
           },
           post_build: {
             commands: [
-              `echo "post build!"`,
-              `printenv`,
-              `echo $DISTRIBUTION_ID`,
+              `./scripts/codebuild/post_build.sh`,
               `aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"`,
             ],
           },
@@ -145,7 +141,7 @@ export class PipelineS3Sync extends Construct {
     }
 
     this.action = new CodeBuildAction({
-      actionName: 'Copy_Build_Files',
+      actionName: 'BuildSite_and_CopyS3',
       input: props.inputBuildArtifact,
       project: this.project,
       runOrder: 2,

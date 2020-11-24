@@ -166,7 +166,7 @@ export class CDKPipelineDeploy extends Construct {
     }))
 
     this.action = new CodeBuildAction({
-      actionName: 'Deploy',
+      actionName: 'DeployInfastructure',
       input: props.infraSourceArtifact,
       extraInputs: extraInputs,
       project: this.project,

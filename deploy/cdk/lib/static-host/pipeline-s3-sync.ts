@@ -78,7 +78,7 @@ export class PipelineS3Sync extends Construct {
               `chmod -R 755 ./scripts`,
               `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR"`,
               `export PARAM_CONFIG_PATH="${paramsPath}"`,
-              `printf $CODEBUILD_RESOLVED_SOURCE_VERSION > sha.txt`,
+              `echo $CODEBUILD_RESOLVED_SOURCE_VERSION`,
               `./scripts/codebuild/install.sh`,
               `./scripts/codebuild/pre_build.sh`,
               `./scripts/codebuild/build.sh`,
@@ -87,6 +87,9 @@ export class PipelineS3Sync extends Construct {
           },
           post_build: {
             commands: [
+              `echo "post build!"`,
+              `printenv`
+              `echo $DISTRIBUTION_ID`,
               `aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"`,
             ],
           },

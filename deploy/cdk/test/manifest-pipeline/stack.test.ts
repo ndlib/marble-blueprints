@@ -773,5 +773,146 @@ describe('ManifestPipelineStack', () => {
 
 
 
+  describe('dynamoDB tables', () => {
+    test('creates filesDynamoTable ', () => {
+      const app = new cdk.App()
+
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+
+      // WHEN
+      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH",
+          },
+        ],
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "objectFileGroupId",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "sequence",
+            "AttributeType": "N",
+          },
+        ],
+      }))
+    }) 
+
+    test('creates metadataDynamoTable ', () => {
+      const app = new cdk.App()
+
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+
+      // WHEN
+      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH",
+          },
+        ],
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "parentId",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "sequence",
+            "AttributeType": "N",
+          },
+        ],
+      }))
+    }) 
+
+    test('creates metadataAugmentationDynamoTable ', () => {
+      const app = new cdk.App()
+
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+
+      // WHEN
+      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH",
+          },
+        ],
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S",
+          },
+        ],
+      }))
+    }) 
+
+    test('creates defaultFileMetadata ', () => {
+      const app = new cdk.App()
+
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+
+      // WHEN
+      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH",
+          },
+        ],
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S",
+          },
+        ],
+      }))
+    }) 
+
+  }) /* end of describe dynamoDB tables */
+
+
+
 
 }) /* end of describe ManifestPipelineStack */

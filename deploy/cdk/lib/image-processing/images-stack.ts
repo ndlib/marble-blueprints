@@ -130,7 +130,7 @@ export class ImagesStack extends cdk.Stack {
 
     /* setup ECS to run via cron to process images */
     new Rule(this, 'ScheduleRule', {
-      schedule: Schedule.cron({ minute: '0,15,30,45' }),
+      schedule: Schedule.cron({ minute: '0,30' }),
       targets: [ecsTaskTarget],
     })
   }

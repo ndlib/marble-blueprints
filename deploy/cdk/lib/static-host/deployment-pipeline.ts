@@ -130,13 +130,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
     // Deploy to Test
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
-    console.log("HREHER --", testBuildPath)
     const testBuildOutput = new Artifact('TestBuild')
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', {
       targetStack: testStackName,
-      inputBuildArtifact: testBuildOutput,
-      artifactPath: testBuildPath,
+      inputBuildArtifact: appSourceArtifact,
       searchIndex: props.searchIndex,
       esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.testElasticStack.domainName,
@@ -190,8 +188,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', {
       targetStack: prodStackName,
-      inputBuildArtifact: prodBuildOutput,
-      artifactPath: prodBuildPath,
+      inputBuildArtifact: appSourceArtifact,
       searchIndex: props.searchIndex,
       esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.prodElasticStack.domainName,

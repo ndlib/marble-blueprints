@@ -165,6 +165,12 @@ export class ManifestPipelineStack extends Stack {
    */
   public readonly filesDynamoTable: dynamodb.Table
 
+  /**
+   *
+   * The dynamodb table to hold default file information, including id (parentId), filePath,
+   * objectFileGroupId, copyrightStatus, copyrightText
+   */
+  public readonly defaultFileMetadataDynamoTable: dynamodb.Table
   
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
@@ -250,6 +256,20 @@ export class ManifestPipelineStack extends Stack {
       parameterName: `/all/stacks/${this.stackName}/metadata-augmentation-tablename`,
       stringValue: this.metadataAugmentationDynamoTable.tableName,
     })
+
+    this.defaultFileMetadataDynamoTable = new dynamodb.Table(this, 'defaultFileMetadata', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.STRING,
+      },
+      pointInTimeRecovery: true,
+    })
+    new StringParameter(this, 'DefaultFileMetadataTableNameParam', {
+      parameterName: `/all/stacks/${this.stackName}/default-file-metadata-tablename`,
+      stringValue: this.defaultFileMetadataDynamoTable.tableName,
+    })
+
 
      // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {
@@ -599,7 +619,7 @@ export class ManifestPipelineStack extends Stack {
     processBucket.grantReadWrite(museumExportLambda)
     this.filesDynamoTable.grantReadWriteData(museumExportLambda)
     this.metadataDynamoTable.grantReadWriteData(museumExportLambda)
-
+    this.defaultFileMetadataDynamoTable.grantReadWriteData(museumExportLambda)
 
     const alephExportLambda = new Function(this, 'AlephExportLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'aleph_export/')),
@@ -632,6 +652,7 @@ export class ManifestPipelineStack extends Stack {
     processBucket.grantReadWrite(alephExportLambda)
     this.filesDynamoTable.grantReadWriteData(alephExportLambda)
     this.metadataDynamoTable.grantReadWriteData(alephExportLambda)
+    this.defaultFileMetadataDynamoTable.grantReadWriteData(alephExportLambda)
 
 
     const curateExportLambda = new Function(this, 'CurateExportLambda', {
@@ -665,7 +686,8 @@ export class ManifestPipelineStack extends Stack {
     processBucket.grantReadWrite(curateExportLambda)
     this.filesDynamoTable.grantReadWriteData(curateExportLambda)
     this.metadataDynamoTable.grantReadWriteData(curateExportLambda)
-    
+    this.defaultFileMetadataDynamoTable.grantReadWriteData(curateExportLambda)
+
 
     const archivesSpaceExportLambda = new Function(this, 'ArchivesSpaceExportLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'archivesspace_export/')),
@@ -698,6 +720,7 @@ export class ManifestPipelineStack extends Stack {
     processBucket.grantReadWrite(archivesSpaceExportLambda)
     this.filesDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
     this.metadataDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
+    this.defaultFileMetadataDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
 
 
     const collectionsApiLambda = new Function(this, 'CollectionsApiLambda', {

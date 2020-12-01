@@ -118,11 +118,6 @@ export class FoundationStack extends Stack {
       lifecycleRules: [{ enabled: true, expiration: Duration.days(365 * 10), noncurrentVersionExpiration: Duration.days(1) }],
     })
 
-    new CfnOutput(this, 'ExportsOutputFnGetAttLogBucketCC3B17E8DomainName1D649D3C', {
-      exportName: `${this.stackName}:ExportsOutputFnGetAttLogBucketCC3B17E8DomainName1D649D3C`,
-      value: this.logBucket.bucketDomainName,
-    })
-
     this.logGroup = new LogGroup(this, 'SharedLogGroup', {
       retention: RetentionDays.ONE_YEAR,
     })

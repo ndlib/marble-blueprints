@@ -73,13 +73,8 @@ export class PipelineS3Sync extends Construct {
         phases: {
           install: {
             commands: [
-              `ls -la ./`,
-              `ls -la ../`,
-              `echo $CODEBUILD_SRC_DIR`,
-              `echo $CODEBUILD_SRC_DIR_AppCode`,
               `chmod -R 755 ./scripts`,
-              `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR"`,
-              `export PARAM_CONFIG_PATH="${paramsPath}"`,
+              `export PARAM_CONFIG_PATH="${staticHostPath}"`,
               `./scripts/codebuild/install.sh`,
             ]
           },

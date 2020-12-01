@@ -37,7 +37,6 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
   readonly buildScriptsDir: string
-  readonly buildOutputDir: string
   readonly createDns: boolean
   readonly testElasticStack: ElasticStack
   readonly prodElasticStack: ElasticStack
@@ -131,6 +130,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     // Deploy to Test
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
+    console.log("HREHER --", testBuildPath)
     const testBuildOutput = new Artifact('TestBuild')
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', {

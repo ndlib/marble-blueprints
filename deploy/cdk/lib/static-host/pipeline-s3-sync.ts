@@ -4,7 +4,6 @@ import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Construct, Fn, Duration } from '@aws-cdk/core'
 import { NamespacedPolicy } from '../namespaced-policy'
-import { ElasticStack } from '../elasticsearch'
 
 export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
    * The name of the stack that this project will deploy to. Will add
@@ -36,7 +35,8 @@ export class PipelineS3Sync extends Construct {
 
   constructor(scope: Construct, id: string, props: IPipelineS3SyncProps) {
     super(scope, id)
-    const paramsPath = `/all/static-host/${props.targetStack}/`
+    const paramsPath = `/all/stacks/${props.targetStack}/`
+    const staticHostPath = `/all/stacks/${props.targetStack}/`
 
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
@@ -47,11 +47,11 @@ export class PipelineS3Sync extends Construct {
       },
       environmentVariables: {
         S3_DEST_BUCKET: {
-          value: `${paramsPath}/site-bucket-name`,
+          value: `${paramsPath}site-bucket-name`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
         DISTRIBUTION_ID: {
-          value: `${paramsPath}/distribution-id`,
+          value: `${paramsPath}distribution-id`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
         SEARCH_URL: {
@@ -67,6 +67,10 @@ export class PipelineS3Sync extends Construct {
         phases: {
           install: {
             commands: [
+              `ls -la ./`,
+              `ls -la ../`,
+              `echo $CODEBUILD_SRC_DIR`,
+              `echo $CODEBUILD_SRC_DIR_AppCode`,
               `chmod -R 755 ./scripts`,
               `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR"`,
               `export PARAM_CONFIG_PATH="${paramsPath}"`,
@@ -113,6 +117,7 @@ export class PipelineS3Sync extends Construct {
       ],
       resources:[
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramsPath + '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + staticHostPath + '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.esEndpointParamPath),
       ],
     }))

@@ -40,7 +40,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean
   readonly testElasticStack: ElasticStack
   readonly prodElasticStack: ElasticStack
-  readonly searchIndex?: string
+  readonly searchIndex: string
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {

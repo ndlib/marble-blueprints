@@ -122,11 +122,6 @@ export class FoundationStack extends Stack {
       retention: RetentionDays.ONE_YEAR,
     })
 
-    new CfnOutput(this, 'ExportsOutputFnGetAttSharedLogGroup74BE6F74Arn4AE42CDD', {
-      exportName: `${this.stackName}:ExportsOutputFnGetAttSharedLogGroup74BE6F74Arn4AE42CDD`,
-      value: this.logGroup.logGroupArn,
-    })
-
     this.publicBucket = new Bucket(this, 'PublicBucket', {
       cors: [
         {

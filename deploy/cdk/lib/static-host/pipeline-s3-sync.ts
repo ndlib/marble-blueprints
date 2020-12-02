@@ -20,19 +20,19 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   /**
   * The name of the index that should be created for the website in elasticsearch
   */
-  readonly searchIndex?: string
+  readonly searchIndex: string
 
   /**
   * the ssm path to the full elasticsearch domain that we want a search index on\
   * example: https://search-jon-test-sites-xnwpt33aguihqeotpz7yp6zp5m.us-east-1.es.amazonaws.com
   */
-  readonly esEndpointParamPath?: string
+  readonly esEndpointParamPath: string
 
   /**
   * the domain name part that is used for permissions to the elastic search domain.
   * example: jon-test-sites
   */
-  readonly elasticSearchDomainName?: string
+  readonly elasticSearchDomainName: string
 }
 
 export class PipelineS3Sync extends Construct {

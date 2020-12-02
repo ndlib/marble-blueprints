@@ -12,6 +12,7 @@ import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
+import { DockerhubImage } from '../dockerhub-image'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -181,7 +182,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
+        buildImage: DockerhubImage.fromNewman(this, 'StaticHostSmokeTestsImage'),
       },
     })
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
@@ -231,7 +232,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
+        buildImage: DockerhubImage.fromNewman(this, 'StaticHostProdSmokeTestsImage'),
       },
     })
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({

@@ -10,6 +10,7 @@ import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { Fn } from '@aws-cdk/core'
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { DockerhubImage } from '../dockerhub-image'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -178,7 +179,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
+        buildImage: DockerhubImage.fromNewman(this, 'IIIFServerlessSmokeTestsImage'),
       },
     })
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
@@ -233,7 +234,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
+        buildImage: DockerhubImage.fromNewman(this, 'IIIFServerlessSmokeTestsProdImage'),
       },
     })
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({

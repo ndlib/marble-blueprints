@@ -35,6 +35,7 @@
   "infraRepoOwner": "ndlib",
   "infraRepoName": "marble-blueprints",
   "infraSourceBranch": "master",
+  "dockerhubCredentialsPath": "/all/dockerhub/credentials",
 
   "iiifImageService:serverlessIiifSrcPath": "../../../serverless-iiif",
   "iiifImageService:hostnamePrefix": "image-iiif",

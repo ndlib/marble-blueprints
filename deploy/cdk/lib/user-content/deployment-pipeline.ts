@@ -9,6 +9,7 @@ import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
+import { DockerhubImage } from '../dockerhub-image'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -152,7 +153,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman'),
+        buildImage: DockerhubImage.fromNewman(this, 'MarbleUserContentSmokeTestsImage'),
       },
     })
     const addTestDataAction = new codepipelineActions.CodeBuildAction({

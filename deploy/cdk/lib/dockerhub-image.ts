@@ -18,7 +18,7 @@ export class DockerhubImage {
   static fromNewman(scope: Construct, id: string, credentialsContextKeyName?: string): IBuildImage {
     const contextKeyName = credentialsContextKeyName ?? 'dockerhubCredentialsPath'
     const secretName = getRequiredContext(scope.node, contextKeyName)
-    return LinuxBuildImage.fromDockerRegistry('postman/newman', {
+    return LinuxBuildImage.fromDockerRegistry('postman/newman:5', {
       secretsManagerCredentials: Secret.fromSecretNameV2(scope, `${id}Credentials`, secretName),
     })
   }

@@ -106,10 +106,6 @@ export class FoundationStack extends Stack {
     })
 
     this.cluster = new Cluster(this, 'Cluster', { vpc: this.vpc })
-    new CfnOutput(this, 'ExportsOutputFnGetAttClusterEB0386A7Arn2F2E3C3F', {
-      exportName: `${this.stackName}:ExportsOutputFnGetAttClusterEB0386A7Arn2F2E3C3F`,
-      value: this.cluster.clusterArn,
-    })
 
     this.logBucket = new Bucket(this, 'LogBucket', {
       accessControl: BucketAccessControl.LOG_DELIVERY_WRITE,

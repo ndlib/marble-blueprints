@@ -71,26 +71,15 @@ export class PipelineS3Sync extends Construct {
       },
       buildSpec: BuildSpec.fromObject({
         phases: {
-          install: {
+          build: {
             commands: [
               `chmod -R 755 ./scripts`,
               `export PARAM_CONFIG_PATH="${staticHostPath}"`,
-              `./scripts/codebuild/install.sh`,
-            ]
-          },
-          pre_build: {
-            commands: [
-              `./scripts/codebuild/pre_build.sh`,
-            ],
-          },
-          build: {
-            commands: [
-              `./scripts/codebuild/build.sh`,
+              `./scripts/codebuild/codebuild.sh`,
             ],
           },
           post_build: {
             commands: [
-              `./scripts/codebuild/post_build.sh`,
               `aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"`,
             ],
           },

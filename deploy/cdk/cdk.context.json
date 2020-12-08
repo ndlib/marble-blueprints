@@ -57,7 +57,6 @@
   "website:appRepoName": "marble-website-starter",
   "website:appSourceBranch": "master",
   "website:buildScriptsDir": "scripts/codebuild",
-  "website:buildOutputDir": "public",
   "website:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "website:qaSpecPath": "tests/postman/collection.json",
   "website:searchIndex": "marble",
@@ -67,9 +66,9 @@
   "redbox:appRepoName": "marble-redbox",
   "redbox:appSourceBranch": "master",
   "redbox:buildScriptsDir": "scripts/codebuild",
-  "redbox:buildOutputDir": "public",
   "redbox:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "redbox:qaSpecPath": "tests/postman/collection.json",
+  "redbox:searchIndex": "",
 
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",
@@ -100,7 +99,7 @@
   "manifestPipeline:prodMetadataTimeToLiveDays": "5",
   "manifestPipeline:filesTimeToLiveDays": "365",
   "manifestPipeline:prodFilesTimeToLiveDays": "5",
-  
+
   "slos:emailSubscriber": "hesburgh-libraries-duty-office-list@nd.edu",
   "slos:sloDocLink": "https://docs.google.com/document/d/1AZGtz4es6fPMPzgkJuDOL0RDULFpy97emeKMPFYxyCA/edit",
   "slos:runbookLink": "https://github.com/ndlib/TechnologistsPlaybook/tree/master/run-books",

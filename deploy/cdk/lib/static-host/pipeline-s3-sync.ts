@@ -12,15 +12,27 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly targetStack: string
 
   /**
-   * Artifact that contains the build which needs to be synced to the s3 bucket.
-   * Presumably the output from a previous codebuild project.
+   * Artifact that contains the files which need to be built by the code.
+   * Presumably the output from a github pull
    */
   readonly inputBuildArtifact: Artifact;
 
   /**
-   * Subdirectory of files to sync. Optional; will sync everything by default.
-   */
-  readonly subdirectory?: string
+  * The name of the index that should be created for the website in elasticsearch
+  */
+  readonly searchIndex: string
+
+  /**
+  * the ssm path to the full elasticsearch domain that we want a search index on\
+  * example: https://search-jon-test-sites-xnwpt33aguihqeotpz7yp6zp5m.us-east-1.es.amazonaws.com
+  */
+  readonly esEndpointParamPath: string
+
+  /**
+  * the domain name part that is used for permissions to the elastic search domain.
+  * example: jon-test-sites
+  */
+  readonly elasticSearchDomainName: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -29,6 +41,8 @@ export class PipelineS3Sync extends Construct {
 
   constructor(scope: Construct, id: string, props: IPipelineS3SyncProps) {
     super(scope, id)
+    const paramsPath = `/all/stacks/${props.targetStack}/`
+    const staticHostPath = `/all/static-host/${props.targetStack}/`
 
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
@@ -38,28 +52,30 @@ export class PipelineS3Sync extends Construct {
         privileged: true,
       },
       environmentVariables: {
-        DEST_BUCKET: {
-          value: `/all/stacks/${props.targetStack}/site-bucket-name`,
+        S3_DEST_BUCKET: {
+          value: `${paramsPath}site-bucket-name`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
         DISTRIBUTION_ID: {
-          value: `/all/stacks/${props.targetStack}/distribution-id`,
+          value: `${paramsPath}distribution-id`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        SEARCH_URL: {
+          value: props.esEndpointParamPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        SEARCH_INDEX: {
+            value: props.searchIndex,
+            type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
       buildSpec: BuildSpec.fromObject({
         phases: {
-          pre_build: {
-            commands: [
-              // Remove existing files from the s3 bucket
-              `aws s3 rm s3://$DEST_BUCKET --recursive`,
-            ],
-          },
           build: {
             commands: [
-              // Copy new build to the site s3 bucket
-              `cd ${props.subdirectory || '.'}`,
-              `aws s3 cp --recursive . s3://$DEST_BUCKET/ --exclude "sha.txt"`,
+              `chmod -R 755 ./scripts`,
+              `export PARAM_CONFIG_PATH="${staticHostPath}"`,
+              `./scripts/codebuild/codebuild.sh`,
             ],
           },
           post_build: {
@@ -85,6 +101,18 @@ export class PipelineS3Sync extends Construct {
     }))
     this.project.addToRolePolicy(new PolicyStatement({
       actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters',
+        'ssm:GetParametersByPath',
+      ],
+      resources:[
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramsPath + '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + staticHostPath + '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.esEndpointParamPath),
+      ],
+    }))
+    this.project.addToRolePolicy(new PolicyStatement({
+      actions: [
         's3:ListBucket',
         's3:GetObject',
         's3:PutObject',
@@ -103,9 +131,12 @@ export class PipelineS3Sync extends Construct {
     // We don't know exactly what the bucket's name will be until runtime, but it starts with the stack's name
     this.project.addToRolePolicy(NamespacedPolicy.s3(props.targetStack))
     this.project.addToRolePolicy(NamespacedPolicy.ssm(props.targetStack))
+    if (props.elasticSearchDomainName !== undefined) {
+      this.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(props.elasticSearchDomainName))
+    }
 
     this.action = new CodeBuildAction({
-      actionName: 'Copy_Build_Files',
+      actionName: 'BuildSite_and_CopyS3',
       input: props.inputBuildArtifact,
       project: this.project,
       runOrder: 2,

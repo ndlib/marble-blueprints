@@ -74,7 +74,7 @@
 
   "inquisitions:hostnamePrefix": "inquisitions",
   "inquisitions:appRepoOwner": "ndlib",
-  "inquisitions:appRepoName": "inquisitions",
+  "inquisitions:appRepoName": "marble-website-starter",
   "inquisitions:appSourceBranch": "test-s3-deploy",
   "inquisitions:buildScriptsDir": "scripts/codebuild",
   "inquisitions:lambdaCodePath": "../../src/unifiedEdgeLambda",

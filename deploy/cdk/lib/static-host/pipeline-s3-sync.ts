@@ -35,6 +35,7 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly elasticSearchDomainName: string
 
   readonly siteDirectory: string
+  readonly workspaceName: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -73,7 +74,11 @@ export class PipelineS3Sync extends Construct {
         SITE_DIRECTORY: {
           value: props.siteDirectory,
           type: BuildEnvironmentVariableType.PLAINTEXT,
-        }
+        },
+        WORKSPACE_NAME: {
+          value: props.workspaceName,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
       },
       buildSpec: BuildSpec.fromObject({
         phases: {

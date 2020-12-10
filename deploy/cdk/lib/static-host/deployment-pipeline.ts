@@ -43,6 +43,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly prodElasticStack: ElasticStack
   readonly searchIndex: string
   readonly siteDirectory: string
+  readonly workspaceName: string
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -139,6 +140,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       inputBuildArtifact: appSourceArtifact,
       searchIndex: props.searchIndex,
       siteDirectory: props.siteDirectory,
+      workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.testElasticStack.domainName,
     })
@@ -194,6 +196,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       inputBuildArtifact: appSourceArtifact,
       searchIndex: props.searchIndex,
       siteDirectory: props.siteDirectory,
+      workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.prodElasticStack.domainName,
     })

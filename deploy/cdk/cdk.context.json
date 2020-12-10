@@ -55,12 +55,13 @@
   "website:hostnamePrefix": "marble",
   "website:appRepoOwner": "ndlib",
   "website:appRepoName": "marble-website-starter",
-  "website:appSourceBranch": "test-s3-deploy",
+  "website:appSourceBranch": "master",
   "website:buildScriptsDir": "scripts/codebuild",
   "website:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "website:qaSpecPath": "tests/postman/collection.json",
   "website:searchIndex": "marble",
   "website:siteDirectory": "site",
+  "website:workspaceName": "site",
 
   "redbox:hostnamePrefix": "redbox",
   "redbox:appRepoOwner": "ndlib",
@@ -71,6 +72,7 @@
   "redbox:qaSpecPath": "tests/postman/collection.json",
   "redbox:searchIndex": "",
   "redbox:siteDirectory": "",
+  "redbox:workspaceName": "",
 
   "inquisitions:hostnamePrefix": "inquisitions",
   "inquisitions:appRepoOwner": "ndlib",
@@ -80,7 +82,8 @@
   "inquisitions:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "inquisitions:qaSpecPath": "tests/postman/collection.json",
   "inquisitions:searchIndex": "inquisitions",
-  "inquisitions:siteDirectory": "inquisitions",
+  "inquisitions:siteDirectory": "sites/inquisition",
+  "inquisitions:workspaceName": "inquisition",
 
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",

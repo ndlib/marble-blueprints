@@ -33,6 +33,8 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   * example: jon-test-sites
   */
   readonly elasticSearchDomainName: string
+
+  readonly siteDirectory: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -65,9 +67,13 @@ export class PipelineS3Sync extends Construct {
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
         SEARCH_INDEX: {
-            value: props.searchIndex,
-            type: BuildEnvironmentVariableType.PLAINTEXT,
+          value: props.searchIndex,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
         },
+        SITE_DIRECTORY: {
+          value: props.siteDirectory,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        }
       },
       buildSpec: BuildSpec.fromObject({
         phases: {

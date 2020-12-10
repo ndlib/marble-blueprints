@@ -81,7 +81,7 @@
   "inquisitions:buildScriptsDir": "scripts/codebuild",
   "inquisitions:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "inquisitions:qaSpecPath": "tests/postman/collection.json",
-  "inquisitions:searchIndex": "inquisitions",
+  "inquisitions:searchIndex": "",
   "inquisitions:siteDirectory": "sites/inquisition",
   "inquisitions:workspaceName": "inquisition",
 

@@ -41,7 +41,6 @@ export class MaintainMetadataStack extends Stack {
             expires: Expiration.after(Duration.days(365)),
           },
         },
-        additionalAuthorizationModes: [{ authorizationType: AuthorizationType.IAM }],
       },
       xrayEnabled: true,
       logConfig: { fieldLogLevel: FieldLogLevel.ERROR },

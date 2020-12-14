@@ -60,8 +60,8 @@
   "website:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "website:qaSpecPath": "tests/postman/collection.json",
   "website:searchIndex": "marble",
-  "website:siteDirectory": "site",
-  "website:workspaceName": "site",
+  "website:siteDirectory": "sites/marble",
+  "website:workspaceName": "marble",
 
   "redbox:hostnamePrefix": "redbox",
   "redbox:appRepoOwner": "ndlib",

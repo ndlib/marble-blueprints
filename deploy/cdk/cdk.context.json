@@ -60,6 +60,8 @@
   "website:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "website:qaSpecPath": "tests/postman/collection.json",
   "website:searchIndex": "marble",
+  "website:prodCertificateArnPath": "/all/marble/website/prod/certificateArn",
+  "website:prodDomainNameOverride": "nd.edu",
 
   "redbox:hostnamePrefix": "redbox",
   "redbox:appRepoOwner": "ndlib",

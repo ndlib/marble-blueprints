@@ -63,10 +63,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
         [`${props.instanceName}:hostnamePrefix`]: hostnamePrefix,
       }
       if (certificateArnPath) {
-        additionalContext["certificateArnPath"] = certificateArnPath
+        additionalContext[`${props.instanceName}:certificateArnPath`] = certificateArnPath
       }
       if (domainNameOverride) {
-        additionalContext["domainNameOverride"] = domainNameOverride
+        additionalContext[`${props.instanceName}:domainNameOverride`] = domainNameOverride
       }
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
@@ -204,7 +204,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.prodElasticStack.domainName,
     })
 
-    const prodHostname = `${prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
+    const domainName = domainNameOverride || props.prodFoundationStack.hostedZone.zoneName
+    const prodHostname = `${prodHostnamePrefix}.${domainName}`
     const smokeTestsProdProject = new PipelineProject(this, 'StaticHostProdSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {

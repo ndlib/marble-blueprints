@@ -158,7 +158,7 @@ export class StaticHostStack extends cdk.Stack {
     })
 
     new cdk.CfnOutput(this, 'DistributionDomainName', {
-      value: this.cloudfront.domainName,
+      value: this.cloudfront.distributionDomainName,
       description: 'The cloudfront distribution domain name.',
     })
   }

@@ -110,6 +110,16 @@ export class DeploymentPipelineStack extends cdk.Stack {
         cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
       }
 
+      if (certificateArnPath) {
+        cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+          actions: [
+            'ssm:GetParameters',
+          ],
+          resources: [
+            cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + certificateArnPath),
+          ],
+        }))
+      }
       return cdkDeploy
     }
 

@@ -18,6 +18,12 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly inputBuildArtifact: Artifact;
 
   /**
+   * Additional Artifacts that contain the files which need to be built by the code.
+   * Presumably the output from a github pull
+   */
+  extraBuildArtifacts?: Array<Artifact>;
+
+  /**
   * The name of the index that should be created for the website in elasticsearch
   */
   readonly searchIndex: string
@@ -46,6 +52,7 @@ export class PipelineS3Sync extends Construct {
     super(scope, id)
     const paramsPath = `/all/stacks/${props.targetStack}/`
     const staticHostPath = `/all/static-host/${props.targetStack}/`
+    const subModName = props.extraBuildArtifacts?.find(x=>x!==undefined)?.artifactName
 
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
@@ -84,10 +91,11 @@ export class PipelineS3Sync extends Construct {
         phases: {
           build: {
             commands: [
-              `chmod -R 755 ./scripts`,
-              `export PARAM_CONFIG_PATH="${staticHostPath}"`,
-              `./scripts/codebuild/codebuild.sh`,
-            ],
+                `chmod -R 755 ./scripts`,
+                `export PARAM_CONFIG_PATH="${staticHostPath}"`,
+                `export SUBMOD_DIR=$CODEBUILD_SRC_DIR_${subModName}`,
+                `./scripts/codebuild/codebuild.sh`,
+              ],
           },
           post_build: {
             commands: [
@@ -149,6 +157,7 @@ export class PipelineS3Sync extends Construct {
     this.action = new CodeBuildAction({
       actionName: 'BuildSite_and_CopyS3',
       input: props.inputBuildArtifact,
+      extraInputs: props.extraBuildArtifacts,
       project: this.project,
       runOrder: 2,
     })

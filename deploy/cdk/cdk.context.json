@@ -84,6 +84,8 @@
   "inquisitions:searchIndex": "",
   "inquisitions:siteDirectory": "sites/inquisition",
   "inquisitions:workspaceName": "inquisition",
+  "inquisitions:submoduleRepoName": "inquisition",
+  "inquisitions:submoduleSourceBranch": "main",
 
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",

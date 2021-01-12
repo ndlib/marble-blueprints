@@ -774,6 +774,102 @@ describe('ManifestPipelineStack', () => {
 
 
   describe('dynamoDB tables', () => {
+    test('creates websiteMetadataDynamoTable ', () => {
+      const app = new cdk.App()
+
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+
+      // WHEN
+      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
+        "KeySchema": [
+          {
+            "AttributeName": "PK",
+            "KeyType": "HASH",
+          },
+          {
+            "AttributeName": "SK",
+            "KeyType": "RANGE",
+          },
+        ],
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "PK",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "SK",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "GSI1PK",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "GSI1SK",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "GSI2PK",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "GSI2SK",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "GSI1",
+            "KeySchema": [
+              {
+                "AttributeName": "GSI1PK",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "GSI1SK",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+          },
+          {
+            "IndexName": "GSI2",
+            "KeySchema": [
+              {
+                "AttributeName": "GSI2PK",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "GSI2SK",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+          },
+        ],
+        "PointInTimeRecoverySpecification": {
+          "PointInTimeRecoveryEnabled": true,
+        },
+        "TimeToLiveSpecification": {
+          "AttributeName": "expireTime",
+          "Enabled": true,
+        },
+      }))
+    }) 
+
     test('creates filesDynamoTable ', () => {
       const app = new cdk.App()
 

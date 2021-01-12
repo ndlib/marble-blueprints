@@ -1347,10 +1347,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@ndlib/ndlib-cdk@^1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@ndlib/ndlib-cdk/-/ndlib-cdk-1.5.0.tgz#adcf093b3070a90f1c654b3c5d2c2860e9209c8c"
-  integrity sha512-zwssHQOxvkYcLkDrJP3/Dv9WyFOJ6oHD8fq9cLABPfGdNOtonc4BjKt2mJSP6riDbIGF3uewln0Jcvo3G7O1VA==
+"@ndlib/ndlib-cdk@^1.6.0":
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/@ndlib/ndlib-cdk/-/ndlib-cdk-1.6.0.tgz#505d5a0ec645325b5e35c48d9b2ed9a534fc10a8"
+  integrity sha512-ItvtR8oGUueyOeFU1mq+yI2v7VLK0aCzk1Ypb70psCJULakJrazNecP+TumbqQ8k56Zyd8DjtvR7Hqkq4eoMrA==
   dependencies:
     "@aws-cdk/aws-cloudformation" "^1.45.0"
     "@aws-cdk/aws-cloudwatch" "^1.45.0"

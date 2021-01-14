@@ -14,6 +14,7 @@ import ssm = require('@aws-cdk/aws-ssm')
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../foundation'
 import { CnameRecord } from '@aws-cdk/aws-route53'
+import { Certificate, ICertificate } from '@aws-cdk/aws-certificatemanager'
 
 export interface IStaticHostStackProps extends cdk.StackProps {
   readonly contextEnvName: string
@@ -22,6 +23,14 @@ export interface IStaticHostStackProps extends cdk.StackProps {
   readonly hostnamePrefix: string
   readonly lambdaCodePath: string
   readonly createDns: boolean
+  /**
+   * Optional SSM path to certificateARN 
+   */
+  readonly certificateArnPath?: string
+  /**
+   * Optional domainName override
+   */
+  readonly domainNameOverride?: string
 }
 
 export class StaticHostStack extends cdk.Stack {
@@ -56,12 +65,21 @@ export class StaticHostStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_12_X,
     })
 
-    this.hostname = `${props.hostnamePrefix || this.stackName}.${props.foundationStack.hostedZone.zoneName}`
+    const domainName = props.domainNameOverride || props.foundationStack.hostedZone.zoneName
+    this.hostname = `${props.hostnamePrefix || this.stackName}.${domainName}`
 
     this.bucket = new s3.Bucket(this, 'SiteBucket', {
       serverAccessLogsBucket: props.foundationStack.logBucket,
       serverAccessLogsPrefix: `s3/${this.hostname}`,
     })
+
+    let websiteCertificate: ICertificate
+    if (props.certificateArnPath) {
+      const certificateArn = ssm.StringParameter.valueForStringParameter(this, props.certificateArnPath)
+      websiteCertificate = Certificate.fromCertificateArn(this, 'WebsiteCertificate', certificateArn)
+    } else {
+      websiteCertificate = props.foundationStack.certificate
+    }
 
     this.cloudfront = new CloudFrontWebDistribution(this, 'Distribution', {
       comment: this.hostname,
@@ -69,7 +87,14 @@ export class StaticHostStack extends cdk.Stack {
         {
           errorCode: 403,
           responseCode: 404,
-          responsePagePath: '/404.html',
+          responsePagePath: '/404.html/index.html',
+          errorCachingMinTtl: 300,
+        },
+        {
+          errorCode: 404,
+          responseCode: 404,
+          responsePagePath: '/404.html/index.html',
+          errorCachingMinTtl: 300,
         },
       ],
       loggingConfig: {
@@ -101,7 +126,7 @@ export class StaticHostStack extends cdk.Stack {
           ],
         },
       ],
-      viewerCertificate: ViewerCertificate.fromAcmCertificate(props.foundationStack.certificate, {
+      viewerCertificate: ViewerCertificate.fromAcmCertificate(websiteCertificate, {
         aliases: [this.hostname],
         securityPolicy: SecurityPolicyProtocol.TLS_V1_1_2016,
         sslMethod: SSLMethod.SNI,
@@ -133,7 +158,7 @@ export class StaticHostStack extends cdk.Stack {
     })
 
     new cdk.CfnOutput(this, 'DistributionDomainName', {
-      value: this.cloudfront.domainName,
+      value: this.cloudfront.distributionDomainName,
       description: 'The cloudfront distribution domain name.',
     })
   }

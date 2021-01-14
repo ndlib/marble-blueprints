@@ -1,4 +1,4 @@
-import { BuildEnvironmentVariableType, BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
+import { BuildSpec, PipelineProject } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
@@ -46,6 +46,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly workspaceName: string
   readonly submoduleRepoName?: string
   readonly submoduleSourceBranch?: string
+  readonly prodCertificateArnPath?: string
+  readonly prodDomainNameOverride?: string
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -56,9 +58,20 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack) => {
-      const paramsPath = `/all/static-host/${targetStack}/`
-      const esEndpointParamPath = `/all/stacks/${elasticStack.stackName}/domain-endpoint`
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack, certificateArnPath?: string, domainNameOverride?:string) => {
+      const additionalContext = {
+        description: props.description,
+        projectName: props.projectName,
+        owner: props.owner,
+        contact: props.contact,
+        [`${props.instanceName}:hostnamePrefix`]: hostnamePrefix,
+      }
+      if (certificateArnPath) {
+        additionalContext[`${props.instanceName}:certificateArnPath`] = certificateArnPath
+      }
+      if (domainNameOverride) {
+        additionalContext[`${props.instanceName}:domainNameOverride`] = domainNameOverride
+      }
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -74,13 +87,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         cdkDirectory: 'deploy/cdk',
         namespace,
         contextEnvName: props.contextEnvName,
-        additionalContext: {
-          description: props.description,
-          projectName: props.projectName,
-          owner: props.owner,
-          contact: props.contact,
-          [`${props.instanceName}:hostnamePrefix`]: hostnamePrefix,
-        },
+        additionalContext: additionalContext,
       })
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: [
@@ -107,6 +114,16 @@ export class DeploymentPipelineStack extends cdk.Stack {
         cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
       }
 
+      if (certificateArnPath) {
+        cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+          actions: [
+            'ssm:GetParameters',
+          ],
+          resources: [
+            cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + certificateArnPath),
+          ],
+        }))
+      }
       return cdkDeploy
     }
 
@@ -210,7 +227,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
     const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const prodBuildOutput = new Artifact('ProdBuild')
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack)
+    const certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
+    const domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride)
 
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,
@@ -226,7 +245,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
     const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', s3syncProdProps)
 
-    const prodHostname = `${prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
+    const domainName = domainNameOverride || props.prodFoundationStack.hostedZone.zoneName
+    const prodHostname = `${prodHostnamePrefix}.${domainName}`
     const smokeTestsProdProject = new PipelineProject(this, 'StaticHostProdSmokeTests', {
       buildSpec: BuildSpec.fromObject({
         phases: {

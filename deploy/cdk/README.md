@@ -52,6 +52,14 @@ It is recommended you run this as a diff to review the changes prior to redeploy
 
 `cdk diff -c env=prod -c stackType=pipeline  marble*deployment`
 
+Once all pipelines have fully deployed to production, deploy the service levels stack to monitor the production stacks:
+
+```sh
+npm run cdk deploy -- --exclusively marbleb-prod-service-levels \
+  -c "namespace=marbleb-prod" \
+  -c "env=prod"
+```
+
 ## Context overrides
 
 There are a number of context values that can be overridden on the cli at deploy time that will change how and where the stacks are deployed.

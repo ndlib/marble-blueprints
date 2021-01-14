@@ -113,7 +113,7 @@ export class ImagesStack extends cdk.Stack {
     }
     taskDef.addContainer("AppContainer", {
       image: ecs.ContainerImage.fromAsset(props.dockerfilePath),
-      memoryLimitMiB: 1024,
+      memoryReservationMiB: 256,
       logging,
       environment: {
         LEVEL0: 'enable',

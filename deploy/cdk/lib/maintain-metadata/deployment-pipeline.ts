@@ -83,6 +83,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
         actions: [
           'appsync:GetGraphqlApi',
           'appsync:StartSchemaCreation',
+          'appsync:ListTagsForResource',
+          'appsync:UntagResource',
+          'appsync:UpdateGraphqlApi',
         ],
         resources: [
           cdk.Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:apis/*'),
@@ -94,7 +97,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
           cdk.Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/createdatasource'),
         ],
       }))
-
       return cdkDeploy
     }
 

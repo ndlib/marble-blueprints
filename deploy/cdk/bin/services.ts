@@ -44,6 +44,13 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...redboxContext,
   })
 
+  const inquisitionsContext = getContextByNamespace('inquisitions')
+  const inquisitions = new staticHost.StaticHostStack(app, `${namespace}-inquisitions`, {
+    foundationStack,
+    ...commonProps,
+    ...inquisitionsContext,
+  })
+
   const imageServiceContext = getContextByNamespace('iiifImageService')
   const iiifServerlessStack = new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, {
     foundationStack,
@@ -98,6 +105,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     foundationStack,
     website,
     redbox,
+    inquisitions,
     iiifServerlessStack,
     userContentStack,
     imageProcessingStack,

@@ -10,7 +10,7 @@ import { PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
-import { PipelineS3Sync } from './pipeline-s3-sync'
+import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
 import { DockerhubImage } from '../dockerhub-image'
 
@@ -42,6 +42,10 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly testElasticStack: ElasticStack
   readonly prodElasticStack: ElasticStack
   readonly searchIndex: string
+  readonly siteDirectory: string
+  readonly workspaceName: string
+  readonly submoduleRepoName?: string
+  readonly submoduleSourceBranch?: string
   readonly prodCertificateArnPath?: string
   readonly prodDomainNameOverride?: string
 }
@@ -134,6 +138,21 @@ export class DeploymentPipelineStack extends cdk.Stack {
         repo: props.appRepoName,
         trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
+    // Submodule App Source
+    let subAppSourceAction
+    let subAppSourceArtifact
+    if (props.submoduleRepoName !== undefined) {
+      subAppSourceArtifact = new codepipeline.Artifact('SubAppCode')
+      subAppSourceAction = new codepipelineActions.GitHubSourceAction({
+          actionName: 'SubAppCode',
+          branch: props.submoduleSourceBranch,
+          oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+          output: subAppSourceArtifact,
+          owner: props.appRepoOwner,
+          repo: props.submoduleRepoName,
+          trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
+      })
+    }
     const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'InfraCode',
@@ -150,13 +169,19 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const testBuildOutput = new Artifact('TestBuild')
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
-    const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', {
+    const s3syncTestProps: IPipelineS3SyncProps = {
       targetStack: testStackName,
       inputBuildArtifact: appSourceArtifact,
       searchIndex: props.searchIndex,
+      siteDirectory: props.siteDirectory,
+      workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.testElasticStack.domainName,
-    })
+    }
+    if (subAppSourceArtifact !== undefined) {
+      s3syncTestProps.extraBuildArtifacts = [subAppSourceArtifact]
+    }
+    const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', s3syncTestProps)
 
     const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
     const smokeTestsProject = new PipelineProject(this, 'StaticHostSmokeTests', {
@@ -206,13 +231,19 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride)
 
-    const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', {
+    const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,
       inputBuildArtifact: appSourceArtifact,
       searchIndex: props.searchIndex,
+      siteDirectory: props.siteDirectory,
+      workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.prodElasticStack.domainName,
-    })
+    }
+    if (subAppSourceArtifact !== undefined) {
+      s3syncProdProps.extraBuildArtifacts = [subAppSourceArtifact]
+    }
+    const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', s3syncProdProps)
 
     const domainName = domainNameOverride || props.prodFoundationStack.hostedZone.zoneName
     const prodHostname = `${prodHostnamePrefix}.${domainName}`
@@ -240,11 +271,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     // Pipeline
+    const sources = [appSourceAction, infraSourceAction]
+    if (subAppSourceAction !== undefined) {
+      sources.push(subAppSourceAction)
+    }
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
       artifactBucket: props.pipelineFoundationStack.artifactBucket,
       stages: [
         {
-          actions: [appSourceAction, infraSourceAction],
+          actions: sources,
           stageName: 'Source',
         },
         {

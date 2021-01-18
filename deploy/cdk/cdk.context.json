@@ -62,6 +62,8 @@
   "website:searchIndex": "marble",
   "website:siteDirectory": "sites/marble",
   "website:workspaceName": "marble",
+  "website:submoduleRepoName": "marble-web",
+  "website:submoduleSourceBranch": "master",
   "website:prodCertificateArnPath": "/all/marble/website/prod/certificateArn",
   "website:prodDomainNameOverride": "nd.edu",
 

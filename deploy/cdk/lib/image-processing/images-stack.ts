@@ -1,4 +1,3 @@
-import * as ec2 from '@aws-cdk/aws-ec2'
 import * as ecs from '@aws-cdk/aws-ecs'
 import { Rule, Schedule } from '@aws-cdk/aws-events'
 import { EcsTask } from '@aws-cdk/aws-events-targets'
@@ -61,14 +60,6 @@ export class ImagesStack extends cdk.Stack {
     // https://github.com/aws/aws-cdk/issues/2004
     new S3NotificationToLambdaCustomResource(this, id, rbscBucket, imageTracker)
 
-    const cluster = props.foundationStack.cluster as ecs.Cluster
-    cluster.addCapacity('Ec2Group', {
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
-      minCapacity: 1,
-      maxCapacity: 1,
-      desiredCapacity: 1,
-    })
-
     const taskRole = new iam.Role(this, 'MarbleImageTaskRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
     })
@@ -104,17 +95,19 @@ export class ImagesStack extends cdk.Stack {
       ],
     }))
 
-    const taskDef = new ecs.Ec2TaskDefinition(this, "TaskDefinition", { taskRole })
-    const logging = new ecs.AwsLogDriver({ streamPrefix: 'marbleimg' })
-
     if(!fs.existsSync(props.dockerfilePath)) {
       this.node.addError(`Cannot deploy this stack. Asset path not found ${props.dockerfilePath}`)
       return
     }
+
+    const taskDef = new ecs.FargateTaskDefinition(this, 'TaskDef', {
+      taskRole: taskRole,
+      memoryLimitMiB: 4096,
+      cpu: 2048,
+    })
     taskDef.addContainer("AppContainer", {
       image: ecs.ContainerImage.fromAsset(props.dockerfilePath),
-      memoryReservationMiB: 256,
-      logging,
+      logging: new ecs.AwsLogDriver({ streamPrefix: 'marbleimg' }),
       environment: {
         LEVEL0: 'enable',
         RBSC_BUCKET: rbscBucketName,
@@ -123,14 +116,16 @@ export class ImagesStack extends cdk.Stack {
       },
     })
 
+    const cluster = props.foundationStack.cluster as ecs.Cluster
     const ecsTaskTarget = new EcsTask({
       cluster,
       taskDefinition: taskDef,
     })
 
-    /* setup ECS to run via cron to process images */
+    /* setup ECS task to run via cron to process images
+       run at 6:30am EST; 11:30am UTC */
     new Rule(this, 'ScheduleRule', {
-      schedule: Schedule.cron({ minute: '0,30' }),
+      schedule: Schedule.cron({ hour: '11', minute: '30' }),
       targets: [ecsTaskTarget],
     })
   }

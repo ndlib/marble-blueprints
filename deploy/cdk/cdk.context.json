@@ -78,10 +78,10 @@
   "redbox:siteDirectory": "",
   "redbox:workspaceName": "",
 
-  "inquisitions:hostnamePrefix": "inquisitions",
+  "inquisitions:hostnamePrefix": "inquisition",
   "inquisitions:appRepoOwner": "ndlib",
   "inquisitions:appRepoName": "marble-website-starter",
-  "inquisitions:appSourceBranch": "test-s3-deploy",
+  "inquisitions:appSourceBranch": "master",
   "inquisitions:buildScriptsDir": "scripts/codebuild",
   "inquisitions:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "inquisitions:qaSpecPath": "tests/postman/collection.json",

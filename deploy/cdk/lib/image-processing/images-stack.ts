@@ -107,7 +107,10 @@ export class ImagesStack extends cdk.Stack {
     })
     taskDef.addContainer("AppContainer", {
       image: ecs.ContainerImage.fromAsset(props.dockerfilePath),
-      logging: new ecs.AwsLogDriver({ streamPrefix: 'marbleimg' }),
+      logging: new ecs.AwsLogDriver({
+        logGroup: props.foundationStack.logGroup,
+        streamPrefix: `${this.stackName}-AppContainer`,
+      }),
       environment: {
         LEVEL0: 'enable',
         RBSC_BUCKET: rbscBucketName,

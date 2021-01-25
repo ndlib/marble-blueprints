@@ -91,6 +91,17 @@
   "inquisitions:submoduleRepoName": "inquisition",
   "inquisitions:submoduleSourceBranch": "main",
 
+  "viewer:hostnamePrefix": "viewer-iiif",
+  "viewer:appRepoOwner": "ndlib",
+  "viewer:appRepoName": "marble-image-viewer",
+  "viewer:appSourceBranch": "master",
+  "viewer:buildScriptsDir": "build",
+  "viewer:lambdaCodePath": "../../src/unifiedEdgeLambda",
+  "viewer:qaSpecPath": "tests/postman/collection.json",
+  "viewer:searchIndex": "",
+  "viewer:siteDirectory": "",
+  "viewer:workspaceName": "",
+
   "userContent:allowedOrigins": "*",
   "userContent:lambdaCodePath": "../../../marble-user-content/src",
   "userContent:tokenAudiencePath": "/all/stacks/marble-user-content/tokenAudiencePath",

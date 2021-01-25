@@ -51,6 +51,13 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...inquisitionsContext,
   })
 
+  const viewerContext = getContextByNamespace('viewer')
+  const viewer = new staticHost.StaticHostStack(app, `${namespace}-viewer`, {
+    foundationStack,
+    ...commonProps,
+    ...viewerContext,
+  })
+
   const imageServiceContext = getContextByNamespace('iiifImageService')
   const iiifServerlessStack = new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, {
     foundationStack,

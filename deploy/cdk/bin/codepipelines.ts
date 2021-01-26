@@ -45,6 +45,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     'website', // Main marble site
     'redbox',
     'inquisitions',
+    'viewer',
   ]
   siteInstances.map(instanceName => {
     const instanceContext = getContextByNamespace(instanceName)

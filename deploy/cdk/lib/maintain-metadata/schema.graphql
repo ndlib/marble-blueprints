@@ -1,5 +1,12 @@
+input AddItemMetadataToWebsiteInput {
+	websiteId: String
+	itemMetadataId: String
+}
+
 type File {
 	id: String!
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
 	eTag: String
 	expireTime: Int
 	iiifImageUri: String
@@ -8,6 +15,7 @@ type File {
 	label: String
 	lastModified: String
 	objectFileGroupId: String!
+	FileGroup: FileGroup
 	path: String
 	sequence: Int
 	size: Int
@@ -15,6 +23,22 @@ type File {
 	sourceType: String
 	sourceUri: String
 	storageClass: String
+	TYPE: String
+}
+
+type FileGroup {
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
+	id: String
+	objectFileGroupId: String
+	title: String
+	TYPE: String
+	files: FilesConnection
+}
+
+type FileGroupsConnection {
+	items: [FileGroup]
+	nextToken: String
 }
 
 type FilesConnection {
@@ -22,7 +46,7 @@ type FilesConnection {
 	nextToken: String
 }
 
-type MergedMetadataItem {
+type ItemMetadata {
 	id: String!
 	childIds: [MetadataChildObject]
 	collectionId: String
@@ -33,6 +57,8 @@ type MergedMetadataItem {
 	copyrightUrl: String
 	createdDate: String
 	creators: [MetadataObjectWithDisplayField]
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
 	dedication: String
 	defaultFile: File
 	defaultFilePath: String
@@ -49,6 +75,8 @@ type MergedMetadataItem {
 	linkToSource: String
 	objectFileGroupId: String
 	parentId: String
+	parent: ItemMetadata
+	partiallyDigitized: Boolean
 	publishers: [MetadataObjectWithDisplayField]
 	relatedIds: [MetadataRelatedObject]
 	repository: String
@@ -57,36 +85,22 @@ type MergedMetadataItem {
 	subjects: [MetadataSubject]
 	title: String
 	treePath: String
+	TYPE: String
 	uniqueIdentifier: String
 	workType: String
-	files(limit: Int, nextToken: String): FilesConnection
-	items(limit: Int, nextToken: String): MergedMetadataConnection
-	metadataAugmentation: MetadataAugmentation
+	children: ItemMetadataConnection
+	files: FilesConnection
 }
 
-type MergedMetadataConnection {
-	items: [MergedMetadataItem]
-	nextToken: String
-}
-
-type MetadataAugmentation {
-	id: String!
-	collectionId: String
-	generalDefaultFilePath: String
-	generalDefaultImageId: String
-	generalObjectFileGroupId: String
-	generalPartiallyDigitized: Boolean
-}
-
-type MetadataAugmentationConnection {
-	items: [MetadataAugmentation]
+type ItemMetadataConnection {
+	items: [ItemMetadata]
 	nextToken: String
 }
 
 type MetadataChildObject {
 	id: String
 	sequence: Int
-	item: MergedMetadataItem
+	item: ItemMetadata
 }
 
 type MetadataObjectWithDisplayField {
@@ -96,7 +110,7 @@ type MetadataObjectWithDisplayField {
 type MetadataRelatedObject {
 	id: String
 	sequence: Int
-	item: MergedMetadataItem
+	item: ItemMetadata
 }
 
 type MetadataSubject {
@@ -110,49 +124,70 @@ type MetadataSubject {
 }
 
 type Mutation {
-	createMetadataAugmentation(input: ReplaceDefaultImageInput!): MetadataAugmentation
-	updateMetadataAugmentation(input: ReplaceDefaultImageInput!): MetadataAugmentation
-	replaceDefaultImage(input: ReplaceDefaultImageInput!): MetadataAugmentation
-	replacePartiallyDigitized(input: ReplacePartiallyDigitizedInput): MetadataAugmentation
+	addItemMetadataToWebsite(input: AddItemMetadataToWebsiteInput): WebsiteItems
+	removeItemMetadateFromWebsite(input: RemoveItemMetadataToWebsiteInput): WebsiteItems
+	replaceCopyrightStatement(input: ReplaceCopyrightStatementInput): ItemMetadata
+	replaceDefaultImage(input: ReplaceDefaultImageInput!): ItemMetadata
+	replacePartiallyDigitized(input: ReplacePartiallyDigitizedInput): ItemMetadata
 }
 
 type Query {
-	getFile(id: String!): File
-	getMergedMetadata(id: String!): MergedMetadataItem
-	getMetadataAugmentation(id: String!): MetadataAugmentation
-	listFiles(filter: TableFilesFilterInput, limit: Int, nextToken: String): FilesConnection
-	listMergedMetadata(filter: TableMergedMetadataFilterInput, limit: Int, nextToken: String): MergedMetadataConnection
-	listMetadataAugmentations(filter: TableMetadataAugmentationFilterInput, limit: Int, nextToken: String): MetadataAugmentationConnection
+	getWebsite(id: String!): Website
+	getItem(id: String!): ItemMetadata
+	getFileGroup(id: String!): FileGroup
+	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection
+	listFileGroupsByStorageSystem(storageSystem: String!, typeOfData: String!, limit: Int, nextToken: String): FileGroupsConnection
+	listFileGroupsForS3(limit: Int, nextToken: String): FileGroupsConnection
+	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
+	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
+	listWebsites(filter: WebsiteFilterInput, limit: Int, nextToken: String): WebsiteConnection
+}
+
+input RemoveItemMetadataToWebsiteInput {
+	websiteId: String
+	itemMetadataId: String
+}
+
+input ReplaceCopyrightStatementInput {
+	id: String!
+	generalCopyrightStatement: String!
+	generalInCopyright: Boolean!
 }
 
 input ReplaceDefaultImageInput {
 	id: String!
-	collectionId: String!
 	generalDefaultFilePath: String!
 	generalObjectFileGroupId: String!
 }
 
 input ReplacePartiallyDigitizedInput {
 	id: String!
-	collectionId: String!
 	generalPartiallyDigitized: Boolean!
 }
 
-type Subscription {
-	onCreateMetadataAugmentation(id: String, collectionId: String): MetadataAugmentation
-		@aws_subscribe(mutations: ["createMetadataAugmentation"])
-	onUpdateMetadataAugmentation(id: String, collectionId: String): MetadataAugmentation
-		@aws_subscribe(mutations: ["updateMetadataAugmentation"])
+type SupplementalData {
+	itemId: String!
+	rowType: String!
+	collectionId: String
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
+	generalDefaultFilePath: String
+	generalDefaultImageId: String
+	generalObjectFileGroupId: String
+	generalPartiallyDigitized: Boolean
+	generalCopyrightStatement: String
+	generalCopyrightStatus: String
+	generalInCopyright: Boolean
+}
+
+type SupplementalDataConnection {
+	items: [SupplementalData]
+	nextToken: String
 }
 
 input TableBooleanFilterInput {
 	ne: Boolean
 	eq: Boolean
-}
-
-input TableFilesFilterInput {
-	id: TableStringFilterInput
-	ObjectFileGroupId: TableStringFilterInput
 }
 
 input TableFloatFilterInput {
@@ -192,21 +227,6 @@ input TableIntFilterInput {
 	between: [Int]
 }
 
-input TableMergedMetadataFilterInput {
-	id: TableStringFilterInput
-	iiifUri: TableStringFilterInput
-	level: TableStringFilterInput
-	objectFileGroupId: TableStringFilterInput
-	parentId: TableStringFilterInput
-	sourceSystem: TableStringFilterInput
-	title: TableStringFilterInput
-}
-
-input TableMetadataAugmentationFilterInput {
-	id: TableStringFilterInput
-	collectionId: TableStringFilterInput
-}
-
 input TableStringFilterInput {
 	ne: String
 	eq: String
@@ -220,8 +240,29 @@ input TableStringFilterInput {
 	beginsWith: String
 }
 
-schema {
-	query: Query
-	mutation: Mutation
-	subscription: Subscription
+type Website {
+	id: String
+	title: String
+	TYPE: String
+	websiteItems(limit: Int, nextToken: String): WebsiteItemsConnection
+}
+
+type WebsiteConnection {
+	items: [Website]
+	nextToken: String
+}
+
+input WebsiteFilterInput {
+	title: String
+}
+
+type WebsiteItems {
+	itemMetadataId: String
+	websiteId: String
+	ItemMetadata: ItemMetadata
+}
+
+type WebsiteItemsConnection {
+	items: [WebsiteItems]
+	nextToken: String
 }

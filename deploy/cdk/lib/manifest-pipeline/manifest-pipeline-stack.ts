@@ -147,31 +147,6 @@ export class ManifestPipelineStack extends Stack {
    */
   public readonly distribution: CloudFrontWebDistribution
 
-  /**
-   * 
-   * The dynamodb table for metadata harvested from source systems
-   */
-  public readonly metadataDynamoTable: dynamodb.Table
-
-  /**
-   * 
-   * The dynamodb table to hold metadata augmented by users outside of source systems
-   */
-  public readonly metadataAugmentationDynamoTable: dynamodb.Table
-
-  /**
-   * 
-   * The dynamodb table to hold file information
-   */
-  public readonly filesDynamoTable: dynamodb.Table
-
-  /**
-   *
-   * The dynamodb table to hold default file information, including id (parentId), filePath,
-   * objectFileGroupId, copyrightStatus, copyrightText
-   */
-  public readonly defaultFileMetadataDynamoTable: dynamodb.Table
-  
   /** The DynamoDB table to hold all WebsiteMetadata for MARBLE content and all related websites. 
    * This will be used by Red Box to maintain supplimentary metadata and will also be used as a source to build MARBLE and related websites.
   */
@@ -234,93 +209,6 @@ export class ManifestPipelineStack extends Stack {
       parameterName: `/all/stacks/${this.stackName}/website-metadata-time-to-live-days`,
       stringValue: props.metadataTimeToLiveDays,
       description: 'Time To live for metadata dynamodb records',
-    })
-
-    // Note:  After we successfully migrate all access to websiteMetadataDynamoTable, we will come back and delete the other DynamoDB tables here.
-    this.filesDynamoTable = new dynamodb.Table(this, 'files', {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      pointInTimeRecovery: true,
-      timeToLiveAttribute: 'expireTime',
-    })
-    this.filesDynamoTable.addGlobalSecondaryIndex({
-      indexName: 'objectFileGroupIdIndex',
-      partitionKey: {
-        name: 'objectFileGroupId',
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: 'sequence',
-        type: dynamodb.AttributeType.NUMBER,
-      },
-    })
-    new StringParameter(this, 'FilesTTLDaysParam', {
-      type: ParameterType.STRING,
-      parameterName: `/all/stacks/${this.stackName}/files-time-to-live-days`,
-      stringValue: props.filesTimeToLiveDays,
-      description: 'Time To live for files dynamodb records',
-    })
-
-    this.metadataDynamoTable = new dynamodb.Table(this, 'metadata', {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      pointInTimeRecovery: true,
-      timeToLiveAttribute: 'expireTime',
-    })
-    this.metadataDynamoTable.addGlobalSecondaryIndex({
-      indexName: 'parentIdIndex',
-      partitionKey: {
-        name: 'parentId',
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: 'sequence',
-        type: dynamodb.AttributeType.NUMBER,
-      },
-    })
-    new StringParameter(this, 'MetadataTableNameParam', {
-      parameterName: `/all/stacks/${this.stackName}/metadata-tablename`,
-      stringValue: this.metadataDynamoTable.tableName,
-    })
-    new StringParameter(this, 'MetadataTTLDaysParam', {
-      type: ParameterType.STRING,
-      parameterName: `/all/stacks/${this.stackName}/metadata-time-to-live-days`,
-      stringValue: props.metadataTimeToLiveDays,
-      description: 'Time To live for metadata dynamodb records',
-    })
-
-
-
-    this.metadataAugmentationDynamoTable = new dynamodb.Table(this, 'metadataAugmentation', {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      pointInTimeRecovery: true,
-    })
-    new StringParameter(this, 'MetadataAugmentationTableNameParam', {
-      parameterName: `/all/stacks/${this.stackName}/metadata-augmentation-tablename`,
-      stringValue: this.metadataAugmentationDynamoTable.tableName,
-    })
-
-    this.defaultFileMetadataDynamoTable = new dynamodb.Table(this, 'defaultFileMetadata', {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      pointInTimeRecovery: true,
-    })
-    new StringParameter(this, 'DefaultFileMetadataTableNameParam', {
-      parameterName: `/all/stacks/${this.stackName}/default-file-metadata-tablename`,
-      stringValue: this.defaultFileMetadataDynamoTable.tableName,
     })
 
 
@@ -647,10 +535,6 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
-        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
-        FILES_TABLE_PRIMARY_KEY: 'id',
-        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
-        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -672,9 +556,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(museumExportLambda)
     processBucket.grantReadWrite(museumExportLambda)
     this.websiteMetadataDynamoTable.grantReadWriteData(museumExportLambda)
-    this.filesDynamoTable.grantReadWriteData(museumExportLambda)
-    this.metadataDynamoTable.grantReadWriteData(museumExportLambda)
-    this.defaultFileMetadataDynamoTable.grantReadWriteData(museumExportLambda)
 
     const alephExportLambda = new Function(this, 'AlephExportLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'aleph_export/')),
@@ -683,10 +564,6 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
-        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
-        FILES_TABLE_PRIMARY_KEY: 'id',
-        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
-        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -707,9 +584,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(alephExportLambda)
     processBucket.grantReadWrite(alephExportLambda)
     this.websiteMetadataDynamoTable.grantReadWriteData(alephExportLambda)
-    this.filesDynamoTable.grantReadWriteData(alephExportLambda)
-    this.metadataDynamoTable.grantReadWriteData(alephExportLambda)
-    this.defaultFileMetadataDynamoTable.grantReadWriteData(alephExportLambda)
 
 
     const curateExportLambda = new Function(this, 'CurateExportLambda', {
@@ -719,10 +593,6 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
-        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
-        FILES_TABLE_PRIMARY_KEY: 'id',
-        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
-        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -743,9 +613,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(curateExportLambda)
     processBucket.grantReadWrite(curateExportLambda)
     this.websiteMetadataDynamoTable.grantReadWriteData(curateExportLambda)
-    this.filesDynamoTable.grantReadWriteData(curateExportLambda)
-    this.metadataDynamoTable.grantReadWriteData(curateExportLambda)
-    this.defaultFileMetadataDynamoTable.grantReadWriteData(curateExportLambda)
 
 
     const archivesSpaceExportLambda = new Function(this, 'ArchivesSpaceExportLambda', {
@@ -755,10 +622,6 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
-        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
-        FILES_TABLE_PRIMARY_KEY: 'id',
-        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
-        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -779,9 +642,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(archivesSpaceExportLambda)
     processBucket.grantReadWrite(archivesSpaceExportLambda)
     this.websiteMetadataDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
-    this.filesDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
-    this.metadataDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
-    this.defaultFileMetadataDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
 
 
     const collectionsApiLambda = new Function(this, 'CollectionsApiLambda', {
@@ -791,10 +651,6 @@ export class ManifestPipelineStack extends Stack {
       runtime: Runtime.PYTHON_3_8,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
-        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
-        FILES_TABLE_PRIMARY_KEY: 'id',
-        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
-        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -817,9 +673,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(collectionsApiLambda)
     processBucket.grantReadWrite(collectionsApiLambda)
     this.websiteMetadataDynamoTable.grantReadWriteData(collectionsApiLambda)
-    this.filesDynamoTable.grantReadWriteData(collectionsApiLambda)
-    this.metadataDynamoTable.grantReadWriteData(collectionsApiLambda)
-    this.metadataAugmentationDynamoTable.grantReadWriteData(collectionsApiLambda)
 
 
     const objectFilesApiLambda = new Function(this, 'ObjectFilesApiLambda', {
@@ -830,10 +683,6 @@ export class ManifestPipelineStack extends Stack {
       memorySize: 512,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
-        FILES_TABLE_NAME: this.filesDynamoTable.tableName,
-        FILES_TABLE_PRIMARY_KEY: 'id',
-        METADATA_TABLE_NAME: this.metadataDynamoTable.tableName,
-        METADATA_TABLE_PRIMARY_KEY: 'id',
         SENTRY_DSN: props.sentryDsn,
         SSM_KEY_BASE: props.appConfigPath,
       },
@@ -849,9 +698,6 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(objectFilesApiLambda)
     processBucket.grantReadWrite(objectFilesApiLambda)
     this.websiteMetadataDynamoTable.grantReadWriteData(objectFilesApiLambda)
-    this.filesDynamoTable.grantReadWriteData(objectFilesApiLambda)
-    this.metadataDynamoTable.grantReadWriteData(objectFilesApiLambda)
-    this.metadataAugmentationDynamoTable.grantReadWriteData(objectFilesApiLambda)
 
 
     // Create tasks for harvest state machine
@@ -988,11 +834,6 @@ export class ManifestPipelineStack extends Stack {
         level: LogLevel.ALL,
         includeExecutionData: true,
       },
-    })
-
-    new StringParameter(this, 'ObjectFilesTableNameParam', {
-      parameterName: `/all/stacks/${this.stackName}/files-tablename`,
-      stringValue: this.filesDynamoTable.tableName,
     })
 
     if (props.createEventRules) {

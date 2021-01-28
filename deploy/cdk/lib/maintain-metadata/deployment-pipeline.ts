@@ -91,13 +91,17 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'appsync:ListTagsForResource',
           'appsync:UntagResource',
           'appsync:UpdateGraphqlApi',
+          'appsync:DeleteGraphqlApi',
         ],
         resources: [
           cdk.Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:apis/*'),
         ],
       }))
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        actions: ['appsync:CreateDataSource'],
+        actions: [
+          'appsync:CreateDataSource',
+          'appsync:DeleteDataSource',
+        ],
         resources: [
           cdk.Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/createdatasource'),
         ],

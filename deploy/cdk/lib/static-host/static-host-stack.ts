@@ -58,7 +58,6 @@ export class StaticHostStack extends cdk.Stack {
     super(scope, id, props)
 
     this.spaRedirectionLambda = new lambda.Function(this, 'SPARedirectionLambda', {
-      functionName: `${this.stackName}-spa-redirection`,
       code: lambda.Code.fromAsset(props.lambdaCodePath),
       description: 'Basic rewrite rule to send directory requests to appropriate locations in the SPA.',
       handler: 'handler.handler',

@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "@aws-cdk/aws-certificatemanager": "^1.78.0"
-  }
-}

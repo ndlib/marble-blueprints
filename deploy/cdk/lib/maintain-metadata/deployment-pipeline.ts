@@ -79,6 +79,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'appsync:DeleteApiKey',
           'appsync:DeleteFunction',
           'appsync:GetFunction',
+          'appsync:GetResolver',
         ],
         resources: [
           cdk.Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:*'),

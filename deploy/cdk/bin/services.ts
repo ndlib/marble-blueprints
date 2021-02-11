@@ -113,6 +113,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     website,
     redbox,
     inquisitions,
+    viewer,
     iiifServerlessStack,
     userContentStack,
     imageProcessingStack,

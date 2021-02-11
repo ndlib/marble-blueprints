@@ -317,7 +317,7 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
-    test('creates MutationRemoveItemMetadateFromWebsiteResolver', () => {
+    test('creates MutationAddItemToWebsiteResolver', () => {
       const app = new cdk.App()
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
         domainName,
@@ -337,9 +337,130 @@ describe('MaintainMetadataStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Mutation",
-        FieldName: "removeItemMetadateFromWebsite",
+        FieldName: "addItemToWebsite",
       }))
     })
+
+    test('creates MutationRemoveItemFromWebsiteResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "removeItemFromWebsite",
+      }))
+    })
+
+    test('creates MutationSaveCopyrightForWebsiteResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "saveCopyrightForWebsite",
+      }))
+    })
+
+    test('creates MutationSaveDefaultImageForWebsiteResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "saveDefaultImageForWebsite",
+      }))
+    })
+
+    test('creates MutationSavePartiallyDigitizedForWebsiteResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "savePartiallyDigitizedForWebsite",
+      }))
+    })
+
+    test('creates WebsiteItemItemMetadataResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "WebsiteItem",
+        FieldName: "ItemMetadata",
+      }))
+    })
+
 
     test('creates MutationReplaceCopyrightStatement', () => {
       const app = new cdk.App()

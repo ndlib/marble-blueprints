@@ -83,6 +83,7 @@ type ItemMetadata {
 	sequence: Int
 	sourceSystem: String
 	subjects: [MetadataSubject]
+	suppliedWebsiteId: String
 	title: String
 	treePath: String
 	TYPE: String
@@ -94,6 +95,7 @@ type ItemMetadata {
 
 type ItemMetadataConnection {
 	items: [ItemMetadata]
+	limit: Int
 	nextToken: String
 }
 
@@ -125,15 +127,19 @@ type MetadataSubject {
 
 type Mutation {
 	addItemMetadataToWebsite(input: AddItemMetadataToWebsiteInput): WebsiteItems
-	removeItemMetadateFromWebsite(input: RemoveItemMetadataToWebsiteInput): WebsiteItems
 	replaceCopyrightStatement(input: ReplaceCopyrightStatementInput): ItemMetadata
 	replaceDefaultImage(input: ReplaceDefaultImageInput!): ItemMetadata
 	replacePartiallyDigitized(input: ReplacePartiallyDigitizedInput): ItemMetadata
+	addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
+	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
+	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String!, inCopyright: Boolean!): ItemMetadata
+	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String!): ItemMetadata
+	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
 }
 
 type Query {
 	getWebsite(id: String!): Website
-	getItem(id: String!): ItemMetadata
+	getItem(id: String!, websiteId: String): ItemMetadata
 	getFileGroup(id: String!): FileGroup
 	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsByStorageSystem(storageSystem: String!, typeOfData: String!, limit: Int, nextToken: String): FileGroupsConnection
@@ -141,11 +147,7 @@ type Query {
 	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
 	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
 	listWebsites(filter: WebsiteFilterInput, limit: Int, nextToken: String): WebsiteConnection
-}
-
-input RemoveItemMetadataToWebsiteInput {
-	websiteId: String
-	itemMetadataId: String
+	showItemByWebsite(itemId: String!, websiteId: String): ItemMetadata
 }
 
 input ReplaceCopyrightStatementInput {
@@ -180,8 +182,59 @@ type SupplementalData {
 	generalInCopyright: Boolean
 }
 
+type SupplementalDataRecord {
+	id: String!
+	childIds: [MetadataChildObject]
+	collectionId: String
+	collections: [MetadataObjectWithDisplayField]
+	contributors: [MetadataObjectWithDisplayField]
+	copyrightStatement: String
+	copyrightStatus: String
+	copyrightUrl: String
+	createdDate: String
+	creators: [MetadataObjectWithDisplayField]
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
+	dedication: String
+	defaultFile: File
+	defaultFilePath: String
+	description: String
+	digitalAccess: String
+	dimensions: String
+	expireTime: Int
+	fileCreatedDate: String
+	format: String
+	geographicLocations: [MetadataObjectWithDisplayField]
+	iiifUri: String
+	inCopyright: Boolean
+	languages: [MetadataObjectWithDisplayField]
+	level: String
+	linkToSource: String
+	objectFileGroupId: String
+	parentId: String
+	parent: ItemMetadata
+	partiallyDigitized: Boolean
+	publishers: [MetadataObjectWithDisplayField]
+	relatedIds: [MetadataRelatedObject]
+	repository: String
+	sequence: Int
+	sourceSystem: String
+	subjects: [MetadataSubject]
+	title: String
+	treePath: String
+	TYPE: String
+	uniqueIdentifier: String
+	websiteId: String
+	workType: String
+}
+
 type SupplementalDataConnection {
 	items: [SupplementalData]
+	nextToken: String
+}
+
+type SupplementalDataRecordConnection {
+	items: [SupplementalDataRecord]
 	nextToken: String
 }
 
@@ -256,6 +309,12 @@ input WebsiteFilterInput {
 	title: String
 }
 
+type WebsiteItem {
+	itemId: String
+	websiteId: String
+	ItemMetadata: ItemMetadata
+}
+
 type WebsiteItems {
 	itemMetadataId: String
 	websiteId: String
@@ -263,6 +322,11 @@ type WebsiteItems {
 }
 
 type WebsiteItemsConnection {
-	items: [WebsiteItems]
+	items: [WebsiteItem]
+	nextToken: String
+}
+
+type ItemRecordsForWebsiteConnection{
+	items: [SupplementalDataRecord]
 	nextToken: String
 }

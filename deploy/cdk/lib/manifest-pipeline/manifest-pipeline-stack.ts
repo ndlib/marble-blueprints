@@ -518,7 +518,7 @@ export class ManifestPipelineStack extends Stack {
       .addCatch(restartFinalizeManifestChoice, { errors: [Errors.ALL], resultPath: '$.unexpected' })
       .next(restartFinalizeManifestChoice)
     
-    const schemaStateMachine = new StateMachine(this, 'SchemaStateMachine', {
+    const schemaStateMachine = new StateMachine(this, `${this.stackName}-SchemaStateMachine`, {
       definition: initManifestTask,
       logs: {
         destination: props.foundationStack.logGroup,
@@ -644,37 +644,6 @@ export class ManifestPipelineStack extends Stack {
     this.websiteMetadataDynamoTable.grantReadWriteData(archivesSpaceExportLambda)
 
 
-    const collectionsApiLambda = new Function(this, 'CollectionsApiLambda', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'collections_api/')),
-      description: 'Creates json representations of collections to be used by Red Box.',
-      handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
-      environment: {
-        WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
-        SENTRY_DSN: props.sentryDsn,
-        SSM_KEY_BASE: props.appConfigPath,
-      },
-      initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
-        ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ["s3:ListObjects", "s3:ListBucket"],
-          resources: [
-            Fn.sub(`arn:aws:s3:::${props.rBSCS3ImageBucketName}`),
-            Fn.sub(`arn:aws:s3:::${props.rBSCS3ImageBucketName}/*`),
-          ],
-        }),
-      ],
-      timeout: Duration.seconds(900),
-    })
-
-    // Grants
-    this.manifestBucket.grantReadWrite(collectionsApiLambda)
-    processBucket.grantReadWrite(collectionsApiLambda)
-    this.websiteMetadataDynamoTable.grantReadWriteData(collectionsApiLambda)
-
-
     const objectFilesApiLambda = new Function(this, 'ObjectFilesApiLambda', {
       code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'object_files_api/')),
       description: 'Creates json representations files to be used by Red Box.',
@@ -698,6 +667,29 @@ export class ManifestPipelineStack extends Stack {
     this.manifestBucket.grantReadWrite(objectFilesApiLambda)
     processBucket.grantReadWrite(objectFilesApiLambda)
     this.websiteMetadataDynamoTable.grantReadWriteData(objectFilesApiLambda)
+
+
+    const expandSubjectTermsLambda = new Function(this, 'ExpandSubjectTermsLambda', {
+      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'expand_subject_terms_lambda/')),
+      description: 'Cycles through subject term URIs stored in dynamo, and expands those subject terms using the appropriate online authority.',
+      handler: 'handler.run',
+      runtime: Runtime.PYTHON_3_8,
+      memorySize: 512,
+      environment: {
+        WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
+        SENTRY_DSN: props.sentryDsn,
+        SSM_KEY_BASE: props.appConfigPath,
+      },
+      initialPolicy: [
+        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
+        ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
+        ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
+      ],
+      timeout: Duration.seconds(900),
+    })
+
+    // Grants
+    this.websiteMetadataDynamoTable.grantReadWriteData(expandSubjectTermsLambda)
 
 
     // Create tasks for harvest state machine
@@ -735,22 +727,6 @@ export class ManifestPipelineStack extends Stack {
       .addCatch(archivesSpaceExportFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
       .next(archivesSpaceLoopChoice)
 
-    // CollectionsApi
-    const collectionsApiTask = new tasks.LambdaInvoke(this, 'CollectionsApiTask', {
-      lambdaFunction: collectionsApiLambda,
-      outputPath: '$.Payload',
-    })
-    const collectionsApiLoopChoice = (new Choice(this, 'CollectionsApiLoopChoice', {
-    })
-      .when(Condition.booleanEquals('$.collectionsApiComplete', false), collectionsApiTask)
-      .otherwise(new Succeed(this, 'CollectionsApiSucceed'))
-    )
-    const collectionsFailureState = new Fail(this, "CollectionsFail")
-    collectionsApiTask
-      .addCatch(collectionsFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(collectionsFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(collectionsFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(collectionsApiLoopChoice)
 
     // Curate
     const curateExportTask = new tasks.LambdaInvoke(this, 'CurateExportTask', {
@@ -769,6 +745,22 @@ export class ManifestPipelineStack extends Stack {
       .addCatch(curateExportFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
       .next(curateLoopChoice)
 
+    // Expand Subject Terms
+    const expandSubjectTermsTask = new tasks.LambdaInvoke(this, 'ExpandSubjectTermsTask', {
+      lambdaFunction: expandSubjectTermsLambda,
+      outputPath: '$.Payload',
+    })
+    const expandSubjectTermsLoopChoice = (new Choice(this, 'ExpandSubjectTermsLoopChoice', {
+    })
+      .when(Condition.booleanEquals('$.expandSubjectTermsComplete', false), expandSubjectTermsTask)
+      .otherwise(new Succeed(this, 'ExpandSubjectTermsSucceed'))
+    )
+    const expandSubjectTermsFailureState = new Fail(this, "ExpandSubjectTermsFail")
+    expandSubjectTermsTask
+      .addCatch(expandSubjectTermsFailureState, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
+      .addCatch(expandSubjectTermsFailureState, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
+      .addCatch(expandSubjectTermsFailureState, { errors: [Errors.ALL], resultPath: '$.unexpected' })
+      .next(expandSubjectTermsLoopChoice)
 
     // Museum
     const museumExportTask = new tasks.LambdaInvoke(this, 'MuseumExportTask', {
@@ -816,6 +808,7 @@ export class ManifestPipelineStack extends Stack {
     parallelSteps.branch(alephExportTask)
     parallelSteps.branch(archivesSpaceExportTask)
     parallelSteps.branch(curateExportTask)
+    parallelSteps.branch(expandSubjectTermsTask)
     parallelSteps.branch(museumExportTask)
     parallelSteps.branch(objectFilesApiTask)
     // Catch errors
@@ -824,10 +817,10 @@ export class ManifestPipelineStack extends Stack {
     parallelSteps.addCatch(passDictEventTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
     // Continue after all previous steps have completed
     parallelSteps.next(passDictEventTask)
-      .next(collectionsApiTask)
+      .next(new Succeed(this, 'HarvestSucceed'))
 
 
-    const harvestStateMachine = new StateMachine(this, 'HarvestStateMachine', {
+    const harvestStateMachine = new StateMachine(this, `${this.stackName}-HarvestStateMachine`, {
       definition: parallelSteps,
       logs: {
         destination: props.foundationStack.logGroup,

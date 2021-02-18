@@ -468,7 +468,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates CollectionsApiLambda', () => {
+    test('creates ExpandSubjectTermsLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -483,10 +483,10 @@ describe('ManifestPipelineStack', () => {
 
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
-        Description: 'Creates json representations of collections to be used by Red Box.',
+        Description: 'Cycles through subject term URIs stored in dynamo, and expands those subject terms using the appropriate online authority.',
         Role: {
           "Fn::GetAtt": [
-            "CollectionsApiLambdaServiceRoleA17A992D",
+            "ExpandSubjectTermsLambdaServiceRole9D8A83E3",
             "Arn",
           ],
         },
@@ -635,7 +635,18 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"CurateLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.curateHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"CurateExportTask\"}],\"Default\":\"CurateSucceed\"},\"CurateSucceed\":{\"Type\":\"Succeed\"},\"CurateExportFail\":{\"Type\":\"Fail\"}}},{\"StartAt\":\"MuseumExportTask\",\"States\":{\"MuseumExportTask\":{\"Next\":\"MuseumLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportFail\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportFail\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportFail\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              "\",\"Payload.$\":\"$\"}},\"CurateLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.curateHarvestComplete\",\"BooleanEquals\":false,\"Next\":\"CurateExportTask\"}],\"Default\":\"CurateSucceed\"},\"CurateSucceed\":{\"Type\":\"Succeed\"},\"CurateExportFail\":{\"Type\":\"Fail\"}}},{\"StartAt\":\"ExpandSubjectTermsTask\",\"States\":{\"ExpandSubjectTermsTask\":{\"Next\":\"ExpandSubjectTermsLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ExpandSubjectTermsFail\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ExpandSubjectTermsFail\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ExpandSubjectTermsFail\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
+              {
+                "Fn::GetAtt": [
+                  "ExpandSubjectTermsLambdaEEC78B3D",
+                  "Arn",
+                ],
+              },
+              "\",\"Payload.$\":\"$\"}},\"ExpandSubjectTermsLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.expandSubjectTermsComplete\",\"BooleanEquals\":false,\"Next\":\"ExpandSubjectTermsTask\"}],\"Default\":\"ExpandSubjectTermsSucceed\"},\"ExpandSubjectTermsSucceed\":{\"Type\":\"Succeed\"},\"ExpandSubjectTermsFail\":{\"Type\":\"Fail\"}}},{\"StartAt\":\"MuseumExportTask\",\"States\":{\"MuseumExportTask\":{\"Next\":\"MuseumLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportFail\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportFail\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"MuseumExportFail\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
               {
                 "Ref": "AWS::Partition",
               },
@@ -657,18 +668,7 @@ describe('ManifestPipelineStack', () => {
                   "Arn",
                 ],
               },
-              "\",\"Payload.$\":\"$\"}},\"objectFilesApiLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.objectFilesApiComplete\",\"BooleanEquals\":false,\"Next\":\"ObjectFilesApiTask\"}],\"Default\":\"ObjectFilesSucceed\"},\"ObjectFilesSucceed\":{\"Type\":\"Succeed\"},\"ObjectFilesApiFail\":{\"Type\":\"Fail\"}}}]},\"PassDictEventTask\":{\"Type\":\"Pass\",\"Comment\":\"Added to discard list event created by execution of parallel branches and pass along a dict event for subsequent steps.\",\"Result\":{\"passTaskComplete\":true},\"InputPath\":null,\"Next\":\"CollectionsApiTask\"},\"CollectionsApiTask\":{\"Next\":\"CollectionsApiLoopChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsFail\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsFail\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"CollectionsFail\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
-              {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
-              {
-                "Fn::GetAtt": [
-                  "CollectionsApiLambdaEFE5F6DF",
-                  "Arn",
-                ],
-              },
-              "\",\"Payload.$\":\"$\"}},\"CollectionsApiLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.collectionsApiComplete\",\"BooleanEquals\":false,\"Next\":\"CollectionsApiTask\"}],\"Default\":\"CollectionsApiSucceed\"},\"CollectionsApiSucceed\":{\"Type\":\"Succeed\"},\"CollectionsFail\":{\"Type\":\"Fail\"}}}",
+              "\",\"Payload.$\":\"$\"}},\"objectFilesApiLoopChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.objectFilesApiComplete\",\"BooleanEquals\":false,\"Next\":\"ObjectFilesApiTask\"}],\"Default\":\"ObjectFilesSucceed\"},\"ObjectFilesSucceed\":{\"Type\":\"Succeed\"},\"ObjectFilesApiFail\":{\"Type\":\"Fail\"}}}]},\"PassDictEventTask\":{\"Type\":\"Pass\",\"Comment\":\"Added to discard list event created by execution of parallel branches and pass along a dict event for subsequent steps.\",\"Result\":{\"passTaskComplete\":true},\"InputPath\":null,\"Next\":\"HarvestSucceed\"},\"HarvestSucceed\":{\"Type\":\"Succeed\"}}}",
             ],
           ],
         },

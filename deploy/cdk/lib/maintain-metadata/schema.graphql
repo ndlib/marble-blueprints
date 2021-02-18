@@ -89,7 +89,7 @@ type ItemMetadata {
 	TYPE: String
 	uniqueIdentifier: String
 	workType: String
-	children: ItemMetadataConnection
+	children(limit: Int, nextToken: String): ItemMetadataConnection
 	files: FilesConnection
 }
 

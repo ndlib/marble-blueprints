@@ -580,7 +580,7 @@ export class MaintainMetadataStack extends Stack {
                 }
             },
             ## Add 'limit' and 'nextToken' arguments to this field in your schema to implement pagination. **
-            "limit": $util.defaultIfNull($ctx.args.limit, 20),
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
             "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
@@ -640,7 +640,7 @@ export class MaintainMetadataStack extends Stack {
             ######### ultimately, I think I need to add suppliedWebsiteId to each record returned to propogate that down the hierarchy so the next call to getItem will have the websiteId included.
 
             ## Add 'limit' and 'nextToken' arguments to this field in your schema to implement pagination. **
-            "limit": $util.defaultIfNull($ctx.args.limit, 20),
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
             "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
@@ -682,7 +682,7 @@ export class MaintainMetadataStack extends Stack {
                 }
             },
             ## Add 'limit' and 'nextToken' arguments to this field in your schema to implement pagination. **
-            "limit": $util.defaultIfNull($ctx.args.limit, 20),
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
             "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
@@ -1229,7 +1229,7 @@ export class MaintainMetadataStack extends Stack {
                 }
             },
             ## Add 'limit' and 'nextToken' arguments to this field in your schema to implement pagination. **
-            "limit": $util.defaultIfNull($ctx.args.limit, 20),
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
             "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`

@@ -94,7 +94,7 @@
   "viewer:hostnamePrefix": "viewer-iiif",
   "viewer:appRepoOwner": "ndlib",
   "viewer:appRepoName": "marble-image-viewer",
-  "viewer:appSourceBranch": "update-new-pipeline",
+  "viewer:appSourceBranch": "master",
   "viewer:buildScriptsDir": "scripts/codebuild",
   "viewer:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "viewer:qaSpecPath": "tests/postman/collection.json",

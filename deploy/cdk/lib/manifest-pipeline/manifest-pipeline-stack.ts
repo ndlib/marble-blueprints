@@ -607,6 +607,7 @@ export class ManifestPipelineStack extends Stack {
         }),
       ],
       timeout: Duration.seconds(900),
+      memorySize: 512,
     })
 
     // Grants

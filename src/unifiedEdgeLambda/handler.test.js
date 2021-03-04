@@ -34,6 +34,7 @@ describe('URL ReWrites', () => {
     { test_uri: '/sub.path', expected_uri: '/sub.path/index.html' },
     { test_uri: '/1999.024', expected_uri: '/1999.024/index.html' },
     { test_uri: '/1239.024.534', expected_uri: '/1239.024.534/index.html' },
+    { test_uri: '/image.avif', expected_uri: '/image.avif' },
   ]
 
   // Loop through each of the test URIs and make sure the function under test rewrites

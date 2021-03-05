@@ -156,6 +156,8 @@ export class ManifestPipelineStack extends Stack {
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
+    console.log('Within manifest-pipeline-stack.ts, deploying stack named ', this.stackName, 'with hostname passed: ', props.hostnamePrefix, 'which should yield a CNAME of ', `${props.hostnamePrefix}.${props.domainName}`)
+
     if (props.hostnamePrefix.length > 63) {
       Annotations.of(this).addError(`Max length of hostnamePrefix is 63.  "${props.hostnamePrefix}" is too long.}`)
     }

@@ -42,6 +42,8 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
 
   readonly siteDirectory: string
   readonly workspaceName: string
+  readonly graphqlApiUrl: string
+  readonly graphqlApiKey: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -84,6 +86,14 @@ export class PipelineS3Sync extends Construct {
         },
         WORKSPACE_NAME: {
           value: props.workspaceName,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        TEST_GRAPHQL_API_URL: {
+          value: props.graphqlApiUrl,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        TEST_GRAPHQL_API_KEY: {
+          value: props.graphqlApiKey,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },

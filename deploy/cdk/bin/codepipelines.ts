@@ -53,6 +53,8 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       instanceName,
       testElasticStack: testStacks.elasticSearchStack,
       prodElasticStack: prodStacks.elasticSearchStack,
+      testMaintainMetadataStack: testStacks.maintainMetadataStack,
+      prodMaintainMetadataStack: prodStacks.maintainMetadataStack,
       ...commonProps,
       ...staticHostContext,
       ...instanceContext,

@@ -24,6 +24,16 @@ export class MaintainMetadataStack extends Stack {
    */
   public readonly maintainMetadataApiUrl: string
 
+  /***
+   * The API ID for the Graphql API
+   */
+  public readonly maintainMetadataApiId: string
+  
+  /***
+   * The API Key for the Graphql API
+   */
+  public readonly maintainMetadataApiKey: string
+
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
@@ -46,6 +56,8 @@ export class MaintainMetadataStack extends Stack {
     })
 
     this.maintainMetadataApiUrl = api.graphqlUrl
+    this.maintainMetadataApiId = api.apiId
+    this.maintainMetadataApiKey = api.apiKey + ''
 
     // Save values to Parameter Store (SSM) for later reference
     new StringParameter(this, 'SSMGraphqlApiUrl', {

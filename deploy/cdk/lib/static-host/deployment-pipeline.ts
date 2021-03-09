@@ -180,8 +180,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.testElasticStack.domainName,
-      graphqlApiUrl: props.testMaintainMetadataStack.maintainMetadataApiUrl,
-      graphqlApiKey: props.testMaintainMetadataStack.maintainMetadataApiKey,
+      graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
+      graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncTestProps.extraBuildArtifacts = [subAppSourceArtifact]
@@ -244,8 +244,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.prodElasticStack.domainName,
-      graphqlApiUrl: props.prodMaintainMetadataStack.maintainMetadataApiUrl,
-      graphqlApiKey: props.prodMaintainMetadataStack.maintainMetadataApiKey,
+      graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
+      graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
 
     }
     if (subAppSourceArtifact !== undefined) {

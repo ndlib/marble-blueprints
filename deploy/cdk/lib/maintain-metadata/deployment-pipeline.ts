@@ -8,11 +8,9 @@ import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation'
-import { ManifestPipelineStack } from '../manifest-pipeline'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack;
-  readonly manifestPipelineStack: ManifestPipelineStack;
   readonly oauthTokenPath: string; // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
   readonly infraRepoOwner: string;
   readonly infraRepoName: string;

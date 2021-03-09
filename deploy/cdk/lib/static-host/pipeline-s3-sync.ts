@@ -42,8 +42,8 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
 
   readonly siteDirectory: string
   readonly workspaceName: string
-  readonly graphqlApiUrl: string
-  readonly graphqlApiKey: string
+  readonly graphqlApiUrlKeyPath: string
+  readonly graphqlApiKeyKeyPath: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -88,13 +88,13 @@ export class PipelineS3Sync extends Construct {
           value: props.workspaceName,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
-        TEST_GRAPHQL_API_URL: {
-          value: props.graphqlApiUrl,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
+        GRAPHQL_API_URL: {
+          value: props.graphqlApiUrlKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
-        TEST_GRAPHQL_API_KEY: {
-          value: props.graphqlApiKey,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
+        GRAPHQL_API_KEY: {
+          value: props.graphqlApiKeyKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
       },
       buildSpec: BuildSpec.fromObject({

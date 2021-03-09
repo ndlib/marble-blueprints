@@ -49,8 +49,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
     const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean, metadataTimeToLiveDays: string, filesTimeToLiveDays: string) => {
 
-      console.log('Within manifest-pipeline/deployment-pipeline.ts Getting ready to deploy stack', targetStack, 'passing hostnamePrefix', hostnamePrefix)
-
       const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
         targetStack,
         dependsOnStacks: [],
@@ -240,7 +238,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    console.log('testHostnamePrefix = ', testHostnamePrefix)
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays)
 
     // Approval

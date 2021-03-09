@@ -1,4 +1,4 @@
-import { Construct, Duration, Expiration, Stack, StackProps, CfnOutput } from "@aws-cdk/core"
+import { Construct, Duration, Expiration, Stack, StackProps } from "@aws-cdk/core"
 import { AppsyncFunction, AuthorizationType, DynamoDbDataSource, FieldLogLevel, GraphqlApi, MappingTemplate, Resolver, Schema } from '@aws-cdk/aws-appsync'
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { FoundationStack } from '../foundation'
@@ -19,20 +19,22 @@ export interface IBaseStackProps extends StackProps {
 }
 
 export class MaintainMetadataStack extends Stack {
-  /**
-   * The Url for the Graphql API
-   */
-  public readonly maintainMetadataApiUrl: string
-
-  /***
-   * The API ID for the Graphql API
-   */
-  public readonly maintainMetadataApiId: string
   
-  /***
-   * The API Key for the Graphql API
+  /**
+   * GraphQL API Url Key Path
    */
-  public readonly maintainMetadataApiKey: string
+  public readonly graphqlApiUrlKeyPath: string
+
+  /**
+   * GraphQL API Key Key Path - I know this looks odd duplicating "Key", but this is the key path for the api key
+   */
+  public readonly graphqlApiKeyKeyPath: string
+
+  /**
+   * GraphQL API ID Key Path
+   */
+  public readonly graphqlApiIdKeyPath: string
+
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
@@ -55,24 +57,28 @@ export class MaintainMetadataStack extends Stack {
       logConfig: { fieldLogLevel: FieldLogLevel.ERROR },
     })
 
-    this.maintainMetadataApiUrl = api.graphqlUrl
-    this.maintainMetadataApiId = api.apiId
-    this.maintainMetadataApiKey = api.apiKey + ''
+    // This will need to be populated separately
+    this.graphqlApiUrlKeyPath = `/all/stacks/${this.stackName}/graphql-api-url`
 
     // Save values to Parameter Store (SSM) for later reference
     new StringParameter(this, 'SSMGraphqlApiUrl', {
       type: ParameterType.STRING,
-      parameterName: `/all/stacks/${this.stackName}/graphql-api-url`,
+      parameterName: this.graphqlApiUrlKeyPath,
       stringValue: api.graphqlUrl,
       description: 'AppSync GraphQL base url',
     })
     
-    // print out the AppSync GraphQL endpoint to the terminal
-    new CfnOutput(this, `${this.stackName}:ApiUrl`, {
-      value: api.graphqlUrl,
-      exportName: `${this.stackName}:ApiUrl`,
+    this.graphqlApiKeyKeyPath = `/all/stacks/${this.stackName}/graphql-api-key`
+
+    this.graphqlApiIdKeyPath = `/all/stacks/${this.stackName}/graphql-api-id`
+    new StringParameter(this, 'SSMGraphqlApiId', {
+      type: ParameterType.STRING,
+      parameterName: this.graphqlApiIdKeyPath,
+      stringValue: api.apiId,
+      description: 'AppSync GraphQL base id',
     })
 
+    /// For now, the graphql-api-key must be manually set in SSM as a secure string
 
     // Add Data Sources
     const websiteMetadataTable = props.manifestPipelineStack.websiteMetadataDynamoTable

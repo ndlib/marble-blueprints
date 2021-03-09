@@ -48,6 +48,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
     const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean, metadataTimeToLiveDays: string, filesTimeToLiveDays: string) => {
+
       const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
         targetStack,
         dependsOnStacks: [],

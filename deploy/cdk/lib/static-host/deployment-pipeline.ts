@@ -13,6 +13,7 @@ import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
 import { DockerhubImage } from '../dockerhub-image'
+import { MaintainMetadataStack } from '../maintain-metadata'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -48,6 +49,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly submoduleSourceBranch?: string
   readonly prodCertificateArnPath?: string
   readonly prodDomainNameOverride?: string
+  readonly testMaintainMetadataStack: MaintainMetadataStack
+  readonly prodMaintainMetadataStack: MaintainMetadataStack
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -177,6 +180,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.testElasticStack.domainName,
+      graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
+      graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncTestProps.extraBuildArtifacts = [subAppSourceArtifact]
@@ -239,6 +244,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
       workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.prodElasticStack.domainName,
+      graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
+      graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
+
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncProdProps.extraBuildArtifacts = [subAppSourceArtifact]

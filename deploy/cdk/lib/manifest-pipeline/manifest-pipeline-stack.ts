@@ -156,6 +156,7 @@ export class ManifestPipelineStack extends Stack {
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
+
     if (props.hostnamePrefix.length > 63) {
       Annotations.of(this).addError(`Max length of hostnamePrefix is 63.  "${props.hostnamePrefix}" is too long.}`)
     }

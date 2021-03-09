@@ -133,7 +133,6 @@ export class FoundationStack extends Stack {
       serverAccessLogsBucket: this.logBucket,
       serverAccessLogsPrefix: 's3/data-broker/',
       websiteIndexDocument: 'index.html',
-      publicReadAccess: true,
     })
     this.publicBucketParam = `/all/stacks/${this.stackName}/publicBucket`
     new StringParameter(this, 'PublicBucketParam', {

@@ -8,9 +8,16 @@ exports.handler = (event, context, callback) => {
   const parsedPath = path.parse(request.uri);
   let newUri;
 
+  const dynamicPaths = ['user', 'myportfolio'];
+  if (dynamicPaths.includes(parsedPath.dir.split('/')[1])) {
+    newUri = '/index.html';
+    request.uri = newUri;
+    return callback(null, request);
+  }
+
   // this is not the best way that this we may need to do an s3 head request to fully
   // detect if the file exists.
-  let valid_extensions = ['.html', '.js', '.json', '.css', '.jpg', '.jpeg', '.png', '.ico', '.map', '.txt', '.kml', '.svg', '.webmanifest', '.webp', '.xml', '.zip', '.avif']
+  const valid_extensions = ['.html', '.js', '.json', '.css', '.jpg', '.jpeg', '.png', '.ico', '.map', '.txt', '.kml', '.svg', '.webmanifest', '.webp', '.xml', '.zip', '.avif'];
   // if there is no extension or it is not in one of the extensions we expect to find on the
   // server.
   if (parsedPath.ext == '' || !valid_extensions.includes(parsedPath.ext)) {

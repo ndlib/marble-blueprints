@@ -78,8 +78,6 @@ export class MaintainMetadataStack extends Stack {
       description: 'AppSync GraphQL base id',
     })
 
-    /// For now, the graphql-api-key must be manually set in SSM as a secure string
-
     // Add Data Sources
     const websiteMetadataTable = props.manifestPipelineStack.websiteMetadataDynamoTable
     const websiteMetadataDynamoDataSource = new DynamoDbDataSource(this, 'WebsiteDynamoDataSource', {
@@ -966,6 +964,41 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'MutationSaveFileLastProcessedDateResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'saveFileLastProcessedDate',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($itemId = $ctx.args.itemId)
+        #set($itemId = $util.defaultIfNullOrBlank($itemId, ""))
+        #set($itemId = $util.str.toUpper($itemId))
+        #set($itemId = $util.str.toReplace($itemId, " ", ""))
+        #set($pk = "FILETOPROCESS")
+        #set($sk = "FILEPATH#$itemId")
+        #set($dateLastProcessed = $util.time.nowISO8601())
+        #set($GSI2SK = "DATELASTPROCESSED#$dateLastProcessed")
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            "expression": "SET dateLastProcessed = :dateLastProcessed, dateModifiedInDynamo = :dateModifiedInDynamo, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
+            "expressionValues": {
+              ":dateLastProcessed": $util.dynamodb.toDynamoDBJson($dateLastProcessed),
+              ":dateModifiedInDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
+              ":GSI2PK": $util.dynamodb.toDynamoDBJson("FILETOPROCESS"),
+              ":GSI2SK": $util.dynamodb.toDynamoDBJson($GSI2SK),
+            }
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'MutationSavePartiallyDigitizedForWebsiteResolver', {
       api: api,
       typeName: 'Mutation',
@@ -1100,6 +1133,40 @@ export class MaintainMetadataStack extends Stack {
               }
           },
           "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+          "items": $util.toJson($context.result.items),
+          "nextToken": $util.toJson($context.result.nextToken)
+        }`),
+    })
+
+    new Resolver(this, 'QueryListFilesToProcessResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'listFilesToProcess',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($dateLastProcessedBefore = $ctx.args.dateLastProcessedBefore)
+        #set($dateLastProcessedBefore = $util.defaultIfNullOrBlank($dateLastProcessedBefore, ""))
+        #set($dateLastProcessedBefore = $util.str.toUpper($dateLastProcessedBefore))
+        #set($dateLastProcessedBefore = $util.str.toReplace($dateLastProcessedBefore, " ", ""))
+
+        #set($pk = "FILETOPROCESS")
+        #set($sk = "DATELASTPROCESSED#$dateLastProcessedBefore" )
+        {
+          "version" : "2017-02-28",
+          "operation" : "Query",
+          "index": "GSI2",
+          "query" : {
+              "expression": "GSI2PK = :pk and GSI2SK <= :sk",
+              "expressionValues" : {
+                  ":pk": $util.dynamodb.toDynamoDBJson($pk),
+                  ":sk": $util.dynamodb.toDynamoDBJson($sk),
+              }
+          },
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
           "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`

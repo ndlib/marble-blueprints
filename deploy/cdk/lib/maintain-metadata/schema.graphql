@@ -7,22 +7,47 @@ type File {
 	id: String!
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
+	description: String
+	digitalAccess: String
 	eTag: String
-	expireTime: Int
+	filePath: String
+	iiifImageServiceUri: String
 	iiifImageUri: String
 	iiifUri: String
-	key: String
-	label: String
 	lastModified: String
+	mimeType: String
 	objectFileGroupId: String!
 	FileGroup: FileGroup
-	path: String
 	sequence: Int
 	size: Int
 	source: String
 	sourceType: String
 	sourceUri: String
-	storageClass: String
+	title: String
+	treePath: String
+	TYPE: String
+}
+
+type FileToProcess {
+	id: String
+	copyrightStatus: String
+	dateAddedToDynamo: String
+	dateLastProcessed: String
+	dateModifiedInDynamo: String
+	description: String
+	digitalAccess: String
+	eTag: String
+	filePath: String
+	md5Checksum: String
+	mimeType: String
+	modifiedDate: String
+	size: Int
+	sourceBucketName: String
+	sourceFilePath: String
+	sourceSystem: String
+	sourceType: String
+	sourceUri: String
+	storageSystem: String
 	TYPE: String
 }
 
@@ -43,6 +68,11 @@ type FileGroupsConnection {
 
 type FilesConnection {
 	items: [File]
+	nextToken: String
+}
+
+type FilesToProcessConnection {
+	items: [FileToProcess]
 	nextToken: String
 }
 
@@ -134,6 +164,7 @@ type Mutation {
 	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
 	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String!, inCopyright: Boolean!): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String!): ItemMetadata
+	saveFileLastProcessedDate(itemId: String!): FileToProcess
 	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
 }
 
@@ -144,6 +175,7 @@ type Query {
 	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsByStorageSystem(storageSystem: String!, typeOfData: String!, limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsForS3(limit: Int, nextToken: String): FileGroupsConnection
+	listFilesToProcess(dateLastProcessedBefore: String, limit: Int, nextToken: String): FilesToProcessConnection
 	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
 	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
 	listWebsites(filter: WebsiteFilterInput, limit: Int, nextToken: String): WebsiteConnection

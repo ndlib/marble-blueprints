@@ -413,6 +413,30 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
+    test('creates MutationSaveFileLastProcessedDateResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "saveFileLastProcessedDate",
+      }))
+    })
+
     test('creates MutationSavePartiallyDigitizedForWebsiteResolver', () => {
       const app = new cdk.App()
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -603,6 +627,30 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
         FieldName: "getWebsite",
+      }))
+    })
+
+    test('creates QueryListFilesToProcessResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listFilesToProcess",
       }))
     })
 

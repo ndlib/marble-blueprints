@@ -1,6 +1,6 @@
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
+import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
 import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
@@ -205,6 +205,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const appUnitTestsProject = new PipelineProject(this, 'AppUnitTests', {
       environment: {
         buildImage: LinuxBuildImage.STANDARD_4_0,
+      },
+      environmentVariables: {
+        /* macos and other versions(ex: aws ubuntu codebuild) of pyenv dont ALWAYS
+        allow for the same patch version of python to be installed. If they differ
+        then use this env var override .python-version files */
+        PYENV_VERSION: {
+          value: `3.8.8`,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
       },
       buildSpec: BuildSpec.fromObject({
         phases: {

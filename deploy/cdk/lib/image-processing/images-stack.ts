@@ -5,10 +5,12 @@ import * as iam from '@aws-cdk/aws-iam'
 import * as lambda from '@aws-cdk/aws-lambda'
 import * as s3 from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
+import { Annotations } from '@aws-cdk/core'
 import fs = require('fs')
 import { FoundationStack } from '../foundation'
 import { S3NotificationToLambdaCustomResource } from './s3ToLambda'
 import { ManifestPipelineStack } from '../manifest-pipeline'
+import { MaintainMetadataStack } from '../maintain-metadata'
 
 export interface ImagesStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string;
@@ -16,6 +18,7 @@ export interface ImagesStackProps extends cdk.StackProps {
   readonly rbscBucketName: string;
   readonly manifestPipelineStack: ManifestPipelineStack;
   readonly foundationStack: FoundationStack;
+  readonly maintainMetadataStack: MaintainMetadataStack;
 }
 
 export class ImagesStack extends cdk.Stack {
@@ -26,6 +29,8 @@ export class ImagesStack extends cdk.Stack {
     const rbscBucket = s3.Bucket.fromBucketName(this, 'RbscBucket', rbscBucketName)
     const processBucket = props.manifestPipelineStack.processBucket
     const imageBucket = props.foundationStack.publicBucket
+    const graphqlApiUrlKeyPath = props.maintainMetadataStack.graphqlApiUrlKeyPath
+    const graphqlApiKeyKeyPath = props.maintainMetadataStack.graphqlApiKeyKeyPath
 
     /* get rbsc bucket and attach object listener */
     const changedImgRole = new iam.Role(this, 'S3ImageRole', {
@@ -45,7 +50,7 @@ export class ImagesStack extends cdk.Stack {
     changedImgRole.addManagedPolicy(roleLoggingPolicy)
 
     if(!fs.existsSync(props.lambdaCodePath)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`)
+      Annotations.of(this).addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`)
       return
     }
     const imageTracker = new lambda.Function(this, 'Handler', {
@@ -94,9 +99,17 @@ export class ImagesStack extends cdk.Stack {
         "s3:GetObject",
       ],
     }))
+    taskRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      resources: [
+        cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + graphqlApiUrlKeyPath),
+        cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + graphqlApiKeyKeyPath),
+      ],
+      actions: ["ssm:Get*"],
+    }))
 
     if(!fs.existsSync(props.dockerfilePath)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.dockerfilePath}`)
+      Annotations.of(this).addError(`Cannot deploy this stack. Asset path not found ${props.dockerfilePath}`)
       return
     }
 
@@ -116,6 +129,8 @@ export class ImagesStack extends cdk.Stack {
         RBSC_BUCKET: rbscBucketName,
         PROCESS_BUCKET: processBucket.bucketName,
         IMAGE_BUCKET: imageBucket.bucketName,
+        GRAPHQL_API_URL_KEY_PATH: graphqlApiUrlKeyPath,
+        GRAPHQL_API_KEY_KEY_PATH: graphqlApiKeyKeyPath,
       },
     })
 

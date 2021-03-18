@@ -606,6 +606,30 @@ export class MaintainMetadataStack extends Stack {
       }`),
     })
 
+    new Resolver(this, 'ItemMetadataDefaultFileResolver', {
+      api: api,
+      typeName: 'ItemMetadata',
+      fieldName: 'defaultFile',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($id = $ctx.source.defaultFilePath)
+        #set($id = $util.defaultIfNullOrBlank($id, ""))
+        #set($id = $util.str.toUpper($id))
+        #set($id = $util.str.toReplace($id, " ", ""))
+
+        #set($pk = "FILE")
+        #set($sk = "FILE#$id")
+        {
+          "version": "2017-02-28",
+          "operation": "GetItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'ItemMetadataParentResolver', {
       api: api,
       typeName: 'ItemMetadata',

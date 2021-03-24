@@ -15,9 +15,9 @@
   "devDependencies": {
     "@aws-cdk/assert": "^1.94.1",
     "@aws-cdk/cx-api": "^1.94.1",
-    "@types/jest": "^26.0.20",
-    "@typescript-eslint/eslint-plugin": "^4.18.0",
-    "@typescript-eslint/parser": "^4.18.0",
+    "@types/jest": "^26.0.21",
+    "@typescript-eslint/eslint-plugin": "^4.19.0",
+    "@typescript-eslint/parser": "^4.19.0",
     "aws-cdk": "^1.94.1",
     "eslint": "^7.22.0",
     "eslint-plugin-jest": "^24.3.2",
@@ -50,7 +50,7 @@
     "@aws-cdk/custom-resources": "^1.94.1",
     "@ndlib/ndlib-cdk": "^1.6.0",
     "@types/source-map-support": "^0.5.2",
-    "constructs": "^3.3.65",
+    "constructs": "^3.3.68",
     "leaked-handles": "^5.2.0",
     "source-map-support": "^0.5.16"
   }

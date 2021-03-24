@@ -194,6 +194,8 @@ export class NamespacedPolicy {
         'dynamodb:ListTagsOfResource',
         'dynamodb:DescribeContinuousBackups',
         'dynamodb:UpdateContinuousBackups',
+        'dynamodb:BatchGetItem',
+        'dynamodb;BatchWriteItem',
       ],
     })
   }

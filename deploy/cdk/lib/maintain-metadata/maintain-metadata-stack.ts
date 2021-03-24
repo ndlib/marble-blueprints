@@ -160,6 +160,92 @@ export class MaintainMetadataStack extends Stack {
           #end
         #end
         $util.toJson($results)
+        $!{ctx.stash.put("itemRecord", $results)}
+      `),
+    })
+
+    const expandSubjectTermsFunction = new AppsyncFunction(this, 'ExpandSubjectTermsFunction', {
+      api: api,
+      dataSource: websiteMetadataDynamoDataSource,
+      name: 'expandSubjectTermsFunction',
+      description: 'Used to read all records for an Item from DynamoDB.',
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #######################################
+        ## This function accepts a stashed Item record.
+        ## It will accumulate all subject terms with a uri defined to be used as a Dynamo BatchGetItem.
+        ## Once the query is performed, we will loop through the results, replacing each original Subject entry with the appropriate expanded entry
+        #######################################
+
+        #set($subjects = $ctx.stash.itemRecord.subjects)
+        $!{ctx.stash.put("subjectsBefore", $subjects)}
+
+        #set($keys = [])
+
+    		#foreach($subject in $subjects)
+          #set($map = {})
+          #set($uri = $util.str.toUpper($util.defaultIfNullOrBlank($subject.uri, "")))
+          #if ( $uri != "" )
+            $util.qr($map.put("PK", $util.dynamodb.toString("SUBJECTTERM")))
+            $util.qr($map.put("SK", $util.dynamodb.toString("URI#$uri")))
+            $util.qr($keys.add($map))
+          #end
+		    #end
+
+        ## Query all records based on the primary key
+
+        {
+            "version" : "2017-02-28",
+            "operation" : "BatchGetItem",
+            "tables": {
+              "${websiteMetadataTable.tableName}": {
+                "keys": $util.toJson($keys),
+                "consistentRead": true
+              },
+            },
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        ## Raise a GraphQL field error in case of a datasource invocation error
+        #if($ctx.error)
+            $util.error($ctx.error.message, $ctx.error.type)
+        #end
+        ## Pass back the result from DynamoDB. **
+        ### Add extra processing here to try to generate a single record of output
+        
+        #set($subjectsAfter = [])
+        ## First, add subjects from database query
+        #foreach($item in $context.result.data.${websiteMetadataTable.tableName})
+          #set($map = {})
+          #foreach( $entry in $util.map.copyAndRemoveAllKeys($item, ["PK","SK","TYPE","GSI1PK","GSI1SK","GSI2PK","GSI2SK","dateAddedToDynamo","dateModifiedInDynamo"]).entrySet() )
+            ## $!{results.put("$entry.key", "$entry.value")}
+            #set($map[$entry.key] = $entry.value)
+          #end
+          $util.qr($subjectsAfter.add($map))
+        #end
+
+        ## Next, add in subjects that were not found in the query
+        #foreach($subject in $ctx.stash.subjectsBefore)
+          #if ( $util.defaultIfNullOrBlank($subject.uri, "") == "")
+            $util.qr($subjectsAfter.add($subject))
+          #else
+            #set($subjectInAfterList = 0)
+            #set($uriToFind = $util.str.toUpper($util.defaultIfNullOrBlank($subject.uri, "")))
+            #foreach($subjectAfter in $ctx.stash.subjectsAfter)
+              #if ( $uriToFind == $util.str.toUpper($util.defaultIfNullOrBlank($subjectAfter.uri, "")) )
+                #set($subjectInAfterList = 1)
+              #end
+              #if ( $subjectInAfterList == 0 )
+                $util.qr($subjectsAfter.add($subject))
+              #end
+            #end
+          #end
+        #end
+
+        ## Finally, replace existing subjects in record with new replacements
+        #set($itemRecord = $ctx.stash.itemRecord)
+        ## $!{itemRecord.put("subjects", $subjectsAfter)}
+        #set($itemRecord["subjects"] = $subjectsAfter)
+        ## $!{ctx.stash.put("subjectsAfter", $subjectsAfter)}
+        $util.toJson($itemRecord)
       `),
     })
 
@@ -167,7 +253,7 @@ export class MaintainMetadataStack extends Stack {
       api: api,
       typeName: 'Query',
       fieldName: 'showItemByWebsite',
-      pipelineConfig: [getMergedItemRecordFunction],
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         $!{ctx.stash.put("itemId", $ctx.args.itemId)}
         $!{ctx.stash.put("websiteId", $ctx.args.websiteId)}
@@ -634,7 +720,7 @@ export class MaintainMetadataStack extends Stack {
       api: api,
       typeName: 'ItemMetadata',
       fieldName: 'parent',
-      pipelineConfig: [getMergedItemRecordFunction],
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         $!{ctx.stash.put("itemId", $ctx.source.parentId)}
         $!{ctx.stash.put("websiteId", $ctx.source.suppliedWebsiteId)}
@@ -643,11 +729,6 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-
-    // TODO:  This should probably be modified to bring back getMergedItemRecordFunction records
-    // That would likely require 1. stashing content in the requestMappingTemplate
-    //   2. executing the query here as a function, and for each record, calling the getMergedItemRecordFunction
-    //   3. returning the enhanced result list along with the nextToken from the original query result
     new Resolver(this, 'ItemMetadataChildrenResolver', {
       api: api,
       typeName: 'ItemMetadata',
@@ -933,6 +1014,28 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'MutationSaveAdditionalNotesForWebsiteResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'saveAdditionalNotesForWebsite',
+      pipelineConfig: [updateSupplementalDataRecordFunction],
+      requestMappingTemplate: MappingTemplate.fromString(`
+        $!{ctx.stash.put("itemId", $ctx.args.itemId)}
+        $!{ctx.stash.put("websiteId", $ctx.args.websiteId)}
+        #set($supplementalDataArgs = {})
+        $!{supplementalDataArgs.put('itemId', $ctx.args.itemId)}
+        $!{supplementalDataArgs.put('websiteId', $ctx.args.websiteId)}
+
+        ## note:  $null is an undefined variable, which has the effect of assigning null to our variable
+        #set($additionalNotes = $util.defaultIfNullOrBlank($ctx.args.additionalNotes, $null))
+        $!{supplementalDataArgs.put('additionalNotes', $additionalNotes)}
+        $!{ctx.stash.put("supplementalDataArgs", $supplementalDataArgs)}
+
+        {}
+      `),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'MutationSaveCopyrightForWebsiteResolver', {
       api: api,
       typeName: 'Mutation',
@@ -1067,11 +1170,34 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'QueryGetFileToProcessRecordResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'getFileToProcessRecord',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($id = $ctx.args.filePath)
+        #set($id = $util.defaultIfNullOrBlank($id, ""))
+        #set($id = $util.str.toUpper($id))
+        #set($id = $util.str.toReplace($id, " ", ""))
+        #set($fullId = "FILEPATH#$id")
+
+        {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson("FILETOPROCESS"),
+              "SK": $util.dynamodb.toDynamoDBJson($fullId),
+            }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'QueryGetItemResolver', {
       api: api,
       typeName: 'Query',
       fieldName: 'getItem',
-      pipelineConfig: [getMergedItemRecordFunction],
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         ## add stash values to enable us to call GetMergedItemRecordFunction
         $!{ctx.stash.put("itemId", $ctx.args.id)}
@@ -1120,8 +1246,8 @@ export class MaintainMetadataStack extends Stack {
                     ":id" : $util.dynamodb.toDynamoDBJson("FILEGROUP")
                 }
             },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-            "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+            "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1156,8 +1282,8 @@ export class MaintainMetadataStack extends Stack {
                   ":id": $util.dynamodb.toDynamoDBJson($fullId)
               }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1217,8 +1343,8 @@ export class MaintainMetadataStack extends Stack {
                   ":id": $util.dynamodb.toDynamoDBJson($fullId)
               }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1249,8 +1375,8 @@ export class MaintainMetadataStack extends Stack {
                   ":beginsWith": $util.dynamodb.toDynamoDBJson("SORT#"),
                 }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1279,8 +1405,8 @@ export class MaintainMetadataStack extends Stack {
                   ":id": $util.dynamodb.toDynamoDBJson($fullId)
               }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1305,8 +1431,8 @@ export class MaintainMetadataStack extends Stack {
                   ":id" : $util.dynamodb.toDynamoDBJson("WEBSITE")
               }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1352,7 +1478,7 @@ export class MaintainMetadataStack extends Stack {
       api: api,
       typeName: 'WebsiteItem',
       fieldName: 'ItemMetadata',
-      pipelineConfig: [getMergedItemRecordFunction],
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         $!{ctx.stash.put("itemId", $ctx.source.itemId)}
         $!{ctx.stash.put("websiteId", $ctx.source.websiteId)}

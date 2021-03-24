@@ -191,6 +191,17 @@ export class MaintainMetadataStack extends Stack {
           #end
 		    #end
 
+        ## This is stupid, but I can't figure how else to skip the query and not error
+        #if ( $keys != [] )
+              $!{ctx.stash.put("queryAttempted", 1)}
+            #else
+              $!{ctx.stash.put("queryAttempted", 0)}
+              #set($map = {})
+              $util.qr($map.put("PK", $util.dynamodb.toString("NoKeyToFind")))
+              $util.qr($map.put("SK", $util.dynamodb.toString("YieldEmptyResultSet")))
+              $util.qr($keys.add($map))
+        #end
+
         ## Query all records based on the primary key
 
         {
@@ -212,14 +223,16 @@ export class MaintainMetadataStack extends Stack {
         ### Add extra processing here to try to generate a single record of output
         
         #set($subjectsAfter = [])
-        ## First, add subjects from database query
-        #foreach($item in $context.result.data.${websiteMetadataTable.tableName})
-          #set($map = {})
-          #foreach( $entry in $util.map.copyAndRemoveAllKeys($item, ["PK","SK","TYPE","GSI1PK","GSI1SK","GSI2PK","GSI2SK","dateAddedToDynamo","dateModifiedInDynamo"]).entrySet() )
-            ## $!{results.put("$entry.key", "$entry.value")}
-            #set($map[$entry.key] = $entry.value)
+        ## First, add subjects from database query - only if we actually queried something
+        #if ( $ctx.stash.queryAttempted == 1)
+          #foreach($item in $context.result.data.${websiteMetadataTable.tableName})
+            #set($map = {})
+            #foreach( $entry in $util.map.copyAndRemoveAllKeys($item, ["PK","SK","TYPE","GSI1PK","GSI1SK","GSI2PK","GSI2SK","dateAddedToDynamo","dateModifiedInDynamo"]).entrySet() )
+              ## $!{results.put("$entry.key", "$entry.value")}
+              #set($map[$entry.key] = $entry.value)
+            #end
+            $util.qr($subjectsAfter.add($map))
           #end
-          $util.qr($subjectsAfter.add($map))
         #end
 
         ## Next, add in subjects that were not found in the query

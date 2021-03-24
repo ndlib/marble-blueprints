@@ -15,6 +15,8 @@ type File {
 	iiifImageUri: String
 	iiifUri: String
 	lastModified: String
+	mediaResourceId: String
+	mediaServer: String
 	mimeType: String
 	objectFileGroupId: String!
 	FileGroup: FileGroup
@@ -78,6 +80,7 @@ type FilesToProcessConnection {
 
 type ItemMetadata {
 	id: String!
+	additionalNotes: String
 	childIds: [MetadataChildObject]
 	collectionId: String
 	collections: [MetadataObjectWithDisplayField]
@@ -94,6 +97,7 @@ type ItemMetadata {
 	defaultFilePath: String
 	description: String
 	digitalAccess: String
+	digitizationSource: String
 	dimensions: String
 	expireTime: Int
 	fileCreatedDate: String
@@ -149,10 +153,11 @@ type MetadataSubject {
 	term: String
 	uri: String
 	authority: String
-	variants: [String]
+	broaderTerms: [MetadataSubject]
+	description: String
 	display: String
 	parentTerm: String
-	broaderTerms: [MetadataSubject]
+	variants: [String]
 }
 
 type Mutation {
@@ -162,6 +167,7 @@ type Mutation {
 	replacePartiallyDigitized(input: ReplacePartiallyDigitizedInput): ItemMetadata
 	addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
 	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
+	saveAdditionalNotesForWebsite(itemId: String!, websiteId: String, additionalNotes: String!): ItemMetadata
 	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String!, inCopyright: Boolean!): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String!): ItemMetadata
 	saveFileLastProcessedDate(itemId: String!): FileToProcess
@@ -172,6 +178,7 @@ type Query {
 	getWebsite(id: String!): Website
 	getItem(id: String!, websiteId: String): ItemMetadata
 	getFileGroup(id: String!): FileGroup
+	getFileToProcessRecord(filePath: String!): FileToProcess
 	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsByStorageSystem(storageSystem: String!, typeOfData: String!, limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsForS3(limit: Int, nextToken: String): FileGroupsConnection

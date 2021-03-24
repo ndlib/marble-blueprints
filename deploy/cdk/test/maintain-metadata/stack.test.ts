@@ -172,6 +172,57 @@ describe('MaintainMetadataStack', () => {
   }) /* end of describe Data Sources */
 
 
+  describe('Functions', () => {
+    test('creates GetMergedItemRecordFunction', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::FunctionConfiguration', {
+        Name: "getMergedItemRecordFunction",
+      }))
+    })
+
+    test('creates ExpandSubjectTermsFunction', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::FunctionConfiguration', {
+        Name: "expandSubjectTermsFunction",
+      }))
+    })
+
+  })
+
+
+
   describe('Resolvers', () => {
     test('creates FileFileGroupResolver', () => {
       const app = new cdk.App()
@@ -389,6 +440,30 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
+    test('creates MutationSaveAdditionalNotesForWebsiteResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "saveAdditionalNotesForWebsite",
+      }))
+    })
+
     test('creates MutationSaveCopyrightForWebsiteResolver', () => {
       const app = new cdk.App()
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -603,6 +678,30 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
         FieldName: "getFileGroup",
+      }))
+    })
+
+    test('creates QueryGetFileToProcessRecordResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getFileToProcessRecord",
       }))
     })
 

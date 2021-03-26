@@ -172,6 +172,55 @@ describe('MaintainMetadataStack', () => {
   }) /* end of describe Data Sources */
 
 
+  describe('Lambda', () => {
+    test('creates RotateApiKeysLambdaFunction', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+        Description: "Rotates API Keys for AppSync - Maintain Metadata",
+      }))
+    })
+
+    test('creates RotateAPIKeysRule', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::Events::Rule', {
+        Description: "Start lambda to rotate API keys.",
+      }))
+    })
+
+  })
+
   describe('Functions', () => {
     test('creates GetMergedItemRecordFunction', () => {
       const app = new cdk.App()

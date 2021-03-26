@@ -3,7 +3,7 @@ import codepipeline = require('@aws-cdk/aws-codepipeline')
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
-import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
 import { PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
@@ -112,6 +112,16 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.s3(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(elasticStack.domainName))
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        effect: Effect.ALLOW,
+        resources: [
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testMaintainMetadataStack.graphqlApiUrlKeyPath),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testMaintainMetadataStack.graphqlApiKeyKeyPath),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.graphqlApiUrlKeyPath),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.graphqlApiKeyKeyPath),
+        ],
+        actions: ["ssm:Get*"],
+      }))
 
       if (props.createDns) {
         cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))

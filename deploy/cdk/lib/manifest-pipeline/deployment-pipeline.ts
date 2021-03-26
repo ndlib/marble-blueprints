@@ -127,6 +127,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'states:DeleteStateMachine',
           'states:TagResource',
           'states:UpdateStateMachine',
+          'states:UntagResource',
         ],
         resources: [
           cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'),

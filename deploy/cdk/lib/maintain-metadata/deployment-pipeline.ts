@@ -62,6 +62,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.logstream(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.dynamodb(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
       // Allow target stack to create AppSync resources
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: [

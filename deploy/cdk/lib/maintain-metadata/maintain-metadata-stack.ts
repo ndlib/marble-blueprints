@@ -1,5 +1,9 @@
-import { Construct, Duration, Expiration, Stack, StackProps } from "@aws-cdk/core"
+import { Construct, Duration, Expiration, Fn, Stack, StackProps } from "@aws-cdk/core"
 import { AppsyncFunction, AuthorizationType, DynamoDbDataSource, FieldLogLevel, GraphqlApi, MappingTemplate, Resolver, Schema } from '@aws-cdk/aws-appsync'
+import { Rule, Schedule } from "@aws-cdk/aws-events"
+import { LambdaFunction } from "@aws-cdk/aws-events-targets"
+import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
+import { Code, Function, Runtime } from "@aws-cdk/aws-lambda"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { FoundationStack } from '../foundation'
 import { ManifestPipelineStack } from '../manifest-pipeline'
@@ -19,7 +23,7 @@ export interface IBaseStackProps extends StackProps {
 }
 
 export class MaintainMetadataStack extends Stack {
-  
+
   /**
    * GraphQL API Url Key Path
    */
@@ -49,7 +53,7 @@ export class MaintainMetadataStack extends Stack {
         defaultAuthorization: {
           authorizationType: AuthorizationType.API_KEY,
           apiKeyConfig: {
-            expires: Expiration.after(Duration.days(365)),
+            expires: Expiration.after(Duration.days(7)),
           },
         },
       },
@@ -76,6 +80,101 @@ export class MaintainMetadataStack extends Stack {
       parameterName: this.graphqlApiIdKeyPath,
       stringValue: api.apiId,
       description: 'AppSync GraphQL base id',
+    })
+
+
+    // Add Lambda to rotate API Keys
+    const rotateApiKeysLambda = new Function(this, 'RotateApiKeysLambdaFunction', {
+      code: Code.fromInline(`
+import boto3
+import botocore
+import datetime
+import os
+
+
+def run(event, _context):
+    """ save string API Key as SecureString """
+    graphql_api_id_key_path = os.environ.get('GRAPHQL_API_ID_KEY_PATH')
+    graphql_api_key_key_path = os.environ.get('GRAPHQL_API_KEY_KEY_PATH')
+    days_for_key_to_last = int(os.environ.get('DAYS_FOR_KEY_TO_LAST', 7))
+    if graphql_api_id_key_path:
+        graphql_api_id = _get_parameter(graphql_api_id_key_path)
+        print("graphql_api_id =", graphql_api_id)
+        if graphql_api_id and graphql_api_key_key_path:
+            expire_time = _get_expire_time(days_for_key_to_last)
+            new_api_key = _generate_new_api_key(graphql_api_id, expire_time)
+            if new_api_key:
+                print("new key generated")
+                _save_secure_parameter(graphql_api_key_key_path, new_api_key)
+                print("saved new key here =", graphql_api_key_key_path)
+    return event
+
+
+def _get_parameter(name: str) -> str:
+    try:
+        response = boto3.client('ssm').get_parameter(Name=name, WithDecryption=True)
+        value = response.get('Parameter').get('Value')
+        return value
+    except botocore.exceptions.ClientError:
+        return None
+
+
+def _get_expire_time(days: int) -> int:
+    if days > 364:  # AppSync requires a key to expire less than 365 days in the future
+        days = 364
+    new_expire_time = (datetime.datetime.now() + datetime.timedelta(days=days)).timestamp()
+    return int(new_expire_time)
+
+
+def _generate_new_api_key(graphql_api_id: str, new_expire_time: int) -> str:
+    response = boto3.client('appsync').create_api_key(apiId=graphql_api_id, description='auto maintained api key', expires=new_expire_time)
+    key_id = response.get('apiKey').get('id')
+    return key_id
+
+
+def _save_secure_parameter(name: str, key_id: str) -> bool:
+    boto3.client('ssm').put_parameter(Name=name, Description='api key for graphql-api-url', Value=key_id, Type='SecureString', Overwrite=True)
+`),
+      description: 'Rotates API Keys for AppSync - Maintain Metadata',
+      handler: 'index.run',
+      runtime: Runtime.PYTHON_3_8,
+      environment: {
+        GRAPHQL_API_ID_KEY_PATH: this.graphqlApiIdKeyPath,
+        GRAPHQL_API_KEY_KEY_PATH: this.graphqlApiKeyKeyPath,
+        DAYS_FOR_KEY_TO_LAST: "2",
+      },
+      initialPolicy: [
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: [
+            'appsync:CreateApiKey',
+          ],
+          resources: [
+            Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/v1/apis/') + api.apiId + '/apikeys',
+
+          ],
+        }),
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: [
+            "ssm:GetParametersByPath",
+            "ssm:GetParameter",
+          ],
+          resources: [Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + this.graphqlApiIdKeyPath)],
+        }),
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ["ssm:PutParameter"],
+          resources: [Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + this.graphqlApiKeyKeyPath)],
+        }),
+      ],
+      timeout: Duration.seconds(90),
+    })
+
+    new Rule(this, 'RotateAPIKeysRule', {
+      schedule: Schedule.cron({ minute: '0', hour: '0' }),
+      targets: [new LambdaFunction(rotateApiKeysLambda)],
+      description: 'Start lambda to rotate API keys.',
     })
 
     // Add Data Sources

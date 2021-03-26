@@ -92,9 +92,18 @@ export class PipelineS3Sync extends Construct {
           value: props.graphqlApiUrlKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
+        // TODO: Remove at least GRAPHQL_API_KEY (maybe also GRAPHQL_API_URL) Once sites are updated to use GRAPHQL_API_KEY_KEY_PATH and GRAPHQL_API_URL_KEY_PATH
         GRAPHQL_API_KEY: {
           value: props.graphqlApiKeyKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        GRAPHQL_API_KEY_KEY_PATH: {
+          value: props.graphqlApiKeyKeyPath,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        GRAPHQL_API_URL_KEY_PATH: {
+          value: props.graphqlApiUrlKeyPath,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
       buildSpec: BuildSpec.fromObject({

@@ -222,10 +222,12 @@ export class NamespacedPolicy {
   }
 
   public static autoscale(stackName: string): PolicyStatement  {
+    // CDK truncates stack name for auto-created functions
+    const prefix = stackName.substring(0, 25)
     return new PolicyStatement({
       resources: [
-        Fn.sub('arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:launchConfiguration:*:launchConfigurationName/' + stackName + '*'),
-        Fn.sub('arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/' + stackName + '*'),
+        Fn.sub('arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:launchConfiguration:*:launchConfigurationName/' + prefix + '*'),
+        Fn.sub('arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/' + prefix + '*'),
       ],
       actions: [
         'autoscaling:CreateAutoScalingGroup',
@@ -257,9 +259,11 @@ export class NamespacedPolicy {
   }
 
   public static sns(stackName: string): PolicyStatement  {
+    // CDK truncates stack name for auto-created functions
+    const prefix = stackName.substring(0, 25)
     return new PolicyStatement({
       resources: [
-        Fn.sub('arn:aws:sns:${AWS::Region}:${AWS::AccountId}:' + stackName + '*'),
+        Fn.sub('arn:aws:sns:${AWS::Region}:${AWS::AccountId}:' + prefix + '*'),
       ],
       actions: [
         'sns:CreateTopic',

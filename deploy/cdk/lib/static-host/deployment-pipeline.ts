@@ -115,10 +115,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         effect: Effect.ALLOW,
         resources: [
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testMaintainMetadataStack.graphqlApiUrlKeyPath),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testMaintainMetadataStack.graphqlApiKeyKeyPath),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.graphqlApiUrlKeyPath),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.graphqlApiKeyKeyPath),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testMaintainMetadataStack.maintainMetadataKeyBase + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.maintainMetadataKeyBase + '*'),
         ],
         actions: ["ssm:Get*"],
       }))
@@ -192,6 +190,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.testElasticStack.domainName,
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
+      maintainMetadataKeyBase: props.testMaintainMetadataStack.maintainMetadataKeyBase,
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncTestProps.extraBuildArtifacts = [subAppSourceArtifact]
@@ -256,7 +255,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.prodElasticStack.domainName,
       graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
-
+      maintainMetadataKeyBase: props.prodMaintainMetadataStack.maintainMetadataKeyBase,
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncProdProps.extraBuildArtifacts = [subAppSourceArtifact]

@@ -39,6 +39,10 @@ export class MaintainMetadataStack extends Stack {
    */
   public readonly graphqlApiIdKeyPath: string
 
+  /**
+   * SSM Base Path to all SSM parameters created here
+   */
+  public readonly maintainMetadataKeyBase: string
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
@@ -63,6 +67,8 @@ export class MaintainMetadataStack extends Stack {
 
     // This will need to be populated separately
     this.graphqlApiUrlKeyPath = `/all/stacks/${this.stackName}/graphql-api-url`
+
+    this.maintainMetadataKeyBase = `/all/stacks/${this.stackName}`
 
     // Save values to Parameter Store (SSM) for later reference
     new StringParameter(this, 'SSMGraphqlApiUrl', {
@@ -279,16 +285,20 @@ def _save_secure_parameter(name: str, key_id: str) -> bool:
         $!{ctx.stash.put("subjectsBefore", $subjects)}
 
         #set($keys = [])
+        #set($uriList = [])
 
     		#foreach($subject in $subjects)
           #set($map = {})
           #set($uri = $util.str.toUpper($util.defaultIfNullOrBlank($subject.uri, "")))
-          #if ( $uri != "" )
+          #if ( $uri != ""  && !$uriList.contains($uri) )
+            $util.qr($uriList.add($uri))
             $util.qr($map.put("PK", $util.dynamodb.toString("SUBJECTTERM")))
             $util.qr($map.put("SK", $util.dynamodb.toString("URI#$uri")))
             $util.qr($keys.add($map))
           #end
 		    #end
+
+        $!{ctx.stash.put("uriList", $uriList)}
 
         ## This is stupid, but I can't figure how else to skip the query and not error
         #if ( $keys != [] )

@@ -182,6 +182,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.testElasticStack.domainName,
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
+      buildEnvirionment: 'test',
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncTestProps.extraBuildArtifacts = [subAppSourceArtifact]
@@ -246,7 +247,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.prodElasticStack.domainName,
       graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
-
+      buildEnvirionment: 'production',
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncProdProps.extraBuildArtifacts = [subAppSourceArtifact]

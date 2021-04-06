@@ -35,6 +35,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly createGithubWebhooks: boolean;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
+  readonly paramPathPrefix: string;
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -81,7 +82,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, foundationStack: FoundationStack) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, paramPath: string, foundationStack: FoundationStack) => {
       const fqdn = `${hostnamePrefix}.${foundationStack.hostedZone.zoneName}`
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
@@ -102,6 +103,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
           "iiifImageService:serverlessIiifSrcPath": "$CODEBUILD_SRC_DIR_AppCode",
           "iiifImageService:hostnamePrefix": hostnamePrefix,
+          "iiifImageService:paramPathPrefix": paramPath,
           "createDns": props.createDns ? "true" : "false",
         },
       })
@@ -117,6 +119,12 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         resources: [ Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:Dependencies*') ],
         actions: ['lambda:*'],
+      }))
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: ['ssm:GetParameters'],
+        resources:[
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramPath + '/*'),
+        ],
       }))
 
       if(props.createDns){
@@ -150,7 +158,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       ],
     }))
 
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `${props.hostnamePrefix}-test`, props.testFoundationStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `${props.hostnamePrefix}-test`, `${props.paramPathPrefix}/test`, props.testFoundationStack)
     const copyImagesTestAction = new CodeBuildAction({
       actionName: 'CopyImages',
       project: copyImagesProject,
@@ -205,7 +213,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       })
     }
 
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `${props.hostnamePrefix}`, props.prodFoundationStack)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `${props.hostnamePrefix}`, `${props.paramPathPrefix}/prod`, props.prodFoundationStack)
     const copyImagesProdAction = new CodeBuildAction({
       actionName: 'CopyImages',
       project: copyImagesProject,

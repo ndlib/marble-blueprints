@@ -9,7 +9,7 @@ import { Asset } from '@aws-cdk/aws-s3-assets'
 export interface IIiifServerlessStackProps extends StackProps {
   /**
    * The path to the root of the local copy of the serverless-iiif repo.
-   * Assumes all dependencies in this directory have already been built following 
+   * Assumes all dependencies in this directory have already been built following
    * https://github.com/nulib/serverless-iiif/blob/master/CONTRIBUTING.md#build-dependencies
    */
   readonly serverlessIiifSrcPath: string
@@ -25,20 +25,26 @@ export interface IIiifServerlessStackProps extends StackProps {
   readonly foundationStack: FoundationStack
 
   /**
-   * If true, will attempt to create a CNAME for the service in the 
+   * If true, will attempt to create a CNAME for the service in the
    * Route53 zone created in the foundation stack
    */
   readonly createDns: boolean
+
+  /**
+   * Path in SSM where parameters for this stack are stored.
+   */
+  readonly paramPathPrefix: string
 }
 
 export interface IIiifApiStackProps extends NestedStackProps {
   readonly serverlessIiifSrcPath: string
   readonly foundationStack: FoundationStack
+  readonly paramPathPrefix: string
 }
 
 /**
- * Creates an Api stack using the template from the source repo. It does have to modify the imported 
- * template to work in cdk in a few ways. This ideally will all go away if we decide to just create 
+ * Creates an Api stack using the template from the source repo. It does have to modify the imported
+ * template to work in cdk in a few ways. This ideally will all go away if we decide to just create
  * the API entirely in this cdk app without using the template from nulib
  */
 class ApiStack extends NestedStack {
@@ -81,6 +87,12 @@ class ApiStack extends NestedStack {
     // so we need to change the param to use ssm and set the default
     iiifTemplate.template.Parameters.SourceBucket.Type = 'AWS::SSM::Parameter::Value<String>'
     iiifTemplate.template.Parameters.SourceBucket.Default = props.foundationStack.publicBucketParam
+
+    iiifTemplate.template.Parameters.CacheEnabled.Type = 'AWS::SSM::Parameter::Value<String>'
+    iiifTemplate.template.Parameters.CacheEnabled.Default = `${props.paramPathPrefix}/cacheEnabled`
+
+    iiifTemplate.template.Parameters.CacheTtl.Type = 'AWS::SSM::Parameter::Value<String>'
+    iiifTemplate.template.Parameters.CacheTtl.Default = `${props.paramPathPrefix}/cacheTtl`
 
     // There's currently no way to have cdk transform the codeuri's in the same way that it's done when 
     // using sam or cloudformation cli. Have to find the resources and manually change this

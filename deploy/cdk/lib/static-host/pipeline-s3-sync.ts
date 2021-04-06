@@ -44,6 +44,7 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly workspaceName: string
   readonly graphqlApiUrlKeyPath: string
   readonly graphqlApiKeyKeyPath: string
+  readonly maintainMetadataKeyBase: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -96,9 +97,22 @@ export class PipelineS3Sync extends Construct {
           value: props.graphqlApiUrlKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
+        // TODO: Remove at least GRAPHQL_API_KEY (maybe also GRAPHQL_API_URL) Once sites are updated to use GRAPHQL_API_KEY_KEY_PATH and GRAPHQL_API_URL_KEY_PATH
         GRAPHQL_API_KEY: {
           value: props.graphqlApiKeyKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        GRAPHQL_API_KEY_KEY_PATH: {
+          value: props.graphqlApiKeyKeyPath,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        GRAPHQL_API_URL_KEY_PATH: {
+          value: props.graphqlApiUrlKeyPath,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        GRAPHQL_KEY_BASE: {
+          value: props.maintainMetadataKeyBase,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
       buildSpec: BuildSpec.fromObject({
@@ -142,6 +156,7 @@ export class PipelineS3Sync extends Construct {
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramsPath + '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + staticHostPath + '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.esEndpointParamPath),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.maintainMetadataKeyBase + '*'),
       ],
     }))
     this.project.addToRolePolicy(new PolicyStatement({

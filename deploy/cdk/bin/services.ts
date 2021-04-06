@@ -91,21 +91,22 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...manifestPipelineContext,
   })
 
-  const imageProcessingContext = getContextByNamespace('imageProcessing')
-  const imageProcessingStack = new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, {
-    foundationStack,
-    rbscBucketName: contextEnv.rBSCS3ImageBucketName,
-    manifestPipelineStack,
-    ...commonProps,
-    ...imageProcessingContext,
-  })
-
   const maintainMetadataContext = getContextByNamespace('maintainMetadata')
   const maintainMetadataStack = new maintainMetadata.MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
     foundationStack,
     manifestPipelineStack,
     ...commonProps,
     ...maintainMetadataContext,
+  })
+
+  const imageProcessingContext = getContextByNamespace('imageProcessing')
+  const imageProcessingStack = new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, {
+    foundationStack,
+    rbscBucketName: contextEnv.rBSCS3ImageBucketName,
+    manifestPipelineStack,
+    maintainMetadataStack,
+    ...commonProps,
+    ...imageProcessingContext,
   })
 
   const services = {

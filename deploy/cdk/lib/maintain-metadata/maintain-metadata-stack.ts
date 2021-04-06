@@ -1,5 +1,9 @@
-import { Construct, Duration, Expiration, Stack, StackProps } from "@aws-cdk/core"
+import { Construct, Duration, Expiration, Fn, Stack, StackProps } from "@aws-cdk/core"
 import { AppsyncFunction, AuthorizationType, DynamoDbDataSource, FieldLogLevel, GraphqlApi, MappingTemplate, Resolver, Schema } from '@aws-cdk/aws-appsync'
+import { Rule, Schedule } from "@aws-cdk/aws-events"
+import { LambdaFunction } from "@aws-cdk/aws-events-targets"
+import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
+import { Code, Function, Runtime } from "@aws-cdk/aws-lambda"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { FoundationStack } from '../foundation'
 import { ManifestPipelineStack } from '../manifest-pipeline'
@@ -19,7 +23,7 @@ export interface IBaseStackProps extends StackProps {
 }
 
 export class MaintainMetadataStack extends Stack {
-  
+
   /**
    * GraphQL API Url Key Path
    */
@@ -35,6 +39,10 @@ export class MaintainMetadataStack extends Stack {
    */
   public readonly graphqlApiIdKeyPath: string
 
+  /**
+   * SSM Base Path to all SSM parameters created here
+   */
+  public readonly maintainMetadataKeyBase: string
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
@@ -49,7 +57,7 @@ export class MaintainMetadataStack extends Stack {
         defaultAuthorization: {
           authorizationType: AuthorizationType.API_KEY,
           apiKeyConfig: {
-            expires: Expiration.after(Duration.days(365)),
+            expires: Expiration.after(Duration.days(7)),
           },
         },
       },
@@ -59,6 +67,8 @@ export class MaintainMetadataStack extends Stack {
 
     // This will need to be populated separately
     this.graphqlApiUrlKeyPath = `/all/stacks/${this.stackName}/graphql-api-url`
+
+    this.maintainMetadataKeyBase = `/all/stacks/${this.stackName}`
 
     // Save values to Parameter Store (SSM) for later reference
     new StringParameter(this, 'SSMGraphqlApiUrl', {
@@ -78,7 +88,100 @@ export class MaintainMetadataStack extends Stack {
       description: 'AppSync GraphQL base id',
     })
 
-    /// For now, the graphql-api-key must be manually set in SSM as a secure string
+
+    // Add Lambda to rotate API Keys
+    const rotateApiKeysLambda = new Function(this, 'RotateApiKeysLambdaFunction', {
+      code: Code.fromInline(`
+import boto3
+import botocore
+import datetime
+import os
+
+
+def run(event, _context):
+    """ save string API Key as SecureString """
+    graphql_api_id_key_path = os.environ.get('GRAPHQL_API_ID_KEY_PATH')
+    graphql_api_key_key_path = os.environ.get('GRAPHQL_API_KEY_KEY_PATH')
+    days_for_key_to_last = int(os.environ.get('DAYS_FOR_KEY_TO_LAST', 7))
+    if graphql_api_id_key_path:
+        graphql_api_id = _get_parameter(graphql_api_id_key_path)
+        print("graphql_api_id =", graphql_api_id)
+        if graphql_api_id and graphql_api_key_key_path:
+            expire_time = _get_expire_time(days_for_key_to_last)
+            new_api_key = _generate_new_api_key(graphql_api_id, expire_time)
+            if new_api_key:
+                print("new key generated")
+                _save_secure_parameter(graphql_api_key_key_path, new_api_key)
+                print("saved new key here =", graphql_api_key_key_path)
+    return event
+
+
+def _get_parameter(name: str) -> str:
+    try:
+        response = boto3.client('ssm').get_parameter(Name=name, WithDecryption=True)
+        value = response.get('Parameter').get('Value')
+        return value
+    except botocore.exceptions.ClientError:
+        return None
+
+
+def _get_expire_time(days: int) -> int:
+    if days > 364:  # AppSync requires a key to expire less than 365 days in the future
+        days = 364
+    new_expire_time = (datetime.datetime.now() + datetime.timedelta(days=days)).timestamp()
+    return int(new_expire_time)
+
+
+def _generate_new_api_key(graphql_api_id: str, new_expire_time: int) -> str:
+    response = boto3.client('appsync').create_api_key(apiId=graphql_api_id, description='auto maintained api key', expires=new_expire_time)
+    key_id = response.get('apiKey').get('id')
+    return key_id
+
+
+def _save_secure_parameter(name: str, key_id: str) -> bool:
+    boto3.client('ssm').put_parameter(Name=name, Description='api key for graphql-api-url', Value=key_id, Type='SecureString', Overwrite=True)
+`),
+      description: 'Rotates API Keys for AppSync - Maintain Metadata',
+      handler: 'index.run',
+      runtime: Runtime.PYTHON_3_8,
+      environment: {
+        GRAPHQL_API_ID_KEY_PATH: this.graphqlApiIdKeyPath,
+        GRAPHQL_API_KEY_KEY_PATH: this.graphqlApiKeyKeyPath,
+        DAYS_FOR_KEY_TO_LAST: "2",
+      },
+      initialPolicy: [
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: [
+            'appsync:CreateApiKey',
+          ],
+          resources: [
+            Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/v1/apis/') + api.apiId + '/apikeys',
+
+          ],
+        }),
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: [
+            "ssm:GetParametersByPath",
+            "ssm:GetParameter",
+          ],
+          resources: [Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + this.graphqlApiIdKeyPath)],
+        }),
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ["ssm:PutParameter"],
+          resources: [Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + this.graphqlApiKeyKeyPath)],
+        }),
+      ],
+      timeout: Duration.seconds(90),
+    })
+
+    new Rule(this, 'RotateAPIKeysRule', {
+      schedule: Schedule.cron({ minute: '0', hour: '0' }),
+      targets: [new LambdaFunction(rotateApiKeysLambda)],
+      description: 'Start lambda to rotate API keys.',
+    })
 
     // Add Data Sources
     const websiteMetadataTable = props.manifestPipelineStack.websiteMetadataDynamoTable
@@ -162,6 +265,109 @@ export class MaintainMetadataStack extends Stack {
           #end
         #end
         $util.toJson($results)
+        $!{ctx.stash.put("itemRecord", $results)}
+      `),
+    })
+
+    const expandSubjectTermsFunction = new AppsyncFunction(this, 'ExpandSubjectTermsFunction', {
+      api: api,
+      dataSource: websiteMetadataDynamoDataSource,
+      name: 'expandSubjectTermsFunction',
+      description: 'Used to read all records for an Item from DynamoDB.',
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #######################################
+        ## This function accepts a stashed Item record.
+        ## It will accumulate all subject terms with a uri defined to be used as a Dynamo BatchGetItem.
+        ## Once the query is performed, we will loop through the results, replacing each original Subject entry with the appropriate expanded entry
+        #######################################
+
+        #set($subjects = $ctx.stash.itemRecord.subjects)
+        $!{ctx.stash.put("subjectsBefore", $subjects)}
+
+        #set($keys = [])
+        #set($uriList = [])
+
+    		#foreach($subject in $subjects)
+          #set($map = {})
+          #set($uri = $util.str.toUpper($util.defaultIfNullOrBlank($subject.uri, "")))
+          #if ( $uri != ""  && !$uriList.contains($uri) )
+            $util.qr($uriList.add($uri))
+            $util.qr($map.put("PK", $util.dynamodb.toString("SUBJECTTERM")))
+            $util.qr($map.put("SK", $util.dynamodb.toString("URI#$uri")))
+            $util.qr($keys.add($map))
+          #end
+		    #end
+
+        $!{ctx.stash.put("uriList", $uriList)}
+
+        ## This is stupid, but I can't figure how else to skip the query and not error
+        #if ( $keys != [] )
+              $!{ctx.stash.put("queryAttempted", 1)}
+            #else
+              $!{ctx.stash.put("queryAttempted", 0)}
+              #set($map = {})
+              $util.qr($map.put("PK", $util.dynamodb.toString("NoKeyToFind")))
+              $util.qr($map.put("SK", $util.dynamodb.toString("YieldEmptyResultSet")))
+              $util.qr($keys.add($map))
+        #end
+
+        ## Query all records based on the primary key
+
+        {
+            "version" : "2017-02-28",
+            "operation" : "BatchGetItem",
+            "tables": {
+              "${websiteMetadataTable.tableName}": {
+                "keys": $util.toJson($keys),
+                "consistentRead": true
+              },
+            },
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        ## Raise a GraphQL field error in case of a datasource invocation error
+        #if($ctx.error)
+            $util.error($ctx.error.message, $ctx.error.type)
+        #end
+        ## Pass back the result from DynamoDB. **
+        ### Add extra processing here to try to generate a single record of output
+        
+        #set($subjectsAfter = [])
+        ## First, add subjects from database query - only if we actually queried something
+        #if ( $ctx.stash.queryAttempted == 1)
+          #foreach($item in $context.result.data.${websiteMetadataTable.tableName})
+            #set($map = {})
+            #foreach( $entry in $util.map.copyAndRemoveAllKeys($item, ["PK","SK","TYPE","GSI1PK","GSI1SK","GSI2PK","GSI2SK","dateAddedToDynamo","dateModifiedInDynamo"]).entrySet() )
+              ## $!{results.put("$entry.key", "$entry.value")}
+              #set($map[$entry.key] = $entry.value)
+            #end
+            $util.qr($subjectsAfter.add($map))
+          #end
+        #end
+
+        ## Next, add in subjects that were not found in the query
+        #foreach($subject in $ctx.stash.subjectsBefore)
+          #if ( $util.defaultIfNullOrBlank($subject.uri, "") == "")
+            $util.qr($subjectsAfter.add($subject))
+          #else
+            #set($subjectInAfterList = 0)
+            #set($uriToFind = $util.str.toUpper($util.defaultIfNullOrBlank($subject.uri, "")))
+            #foreach($subjectAfter in $ctx.stash.subjectsAfter)
+              #if ( $uriToFind == $util.str.toUpper($util.defaultIfNullOrBlank($subjectAfter.uri, "")) )
+                #set($subjectInAfterList = 1)
+              #end
+              #if ( $subjectInAfterList == 0 )
+                $util.qr($subjectsAfter.add($subject))
+              #end
+            #end
+          #end
+        #end
+
+        ## Finally, replace existing subjects in record with new replacements
+        #set($itemRecord = $ctx.stash.itemRecord)
+        ## $!{itemRecord.put("subjects", $subjectsAfter)}
+        #set($itemRecord["subjects"] = $subjectsAfter)
+        ## $!{ctx.stash.put("subjectsAfter", $subjectsAfter)}
+        $util.toJson($itemRecord)
       `),
     })
 
@@ -169,7 +375,7 @@ export class MaintainMetadataStack extends Stack {
       api: api,
       typeName: 'Query',
       fieldName: 'showItemByWebsite',
-      pipelineConfig: [getMergedItemRecordFunction],
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         $!{ctx.stash.put("itemId", $ctx.args.itemId)}
         $!{ctx.stash.put("websiteId", $ctx.args.websiteId)}
@@ -608,11 +814,35 @@ export class MaintainMetadataStack extends Stack {
       }`),
     })
 
+    new Resolver(this, 'ItemMetadataDefaultFileResolver', {
+      api: api,
+      typeName: 'ItemMetadata',
+      fieldName: 'defaultFile',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($id = $ctx.source.defaultFilePath)
+        #set($id = $util.defaultIfNullOrBlank($id, ""))
+        #set($id = $util.str.toUpper($id))
+        #set($id = $util.str.toReplace($id, " ", ""))
+
+        #set($pk = "FILE")
+        #set($sk = "FILE#$id")
+        {
+          "version": "2017-02-28",
+          "operation": "GetItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'ItemMetadataParentResolver', {
       api: api,
       typeName: 'ItemMetadata',
       fieldName: 'parent',
-      pipelineConfig: [getMergedItemRecordFunction],
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         $!{ctx.stash.put("itemId", $ctx.source.parentId)}
         $!{ctx.stash.put("websiteId", $ctx.source.suppliedWebsiteId)}
@@ -621,11 +851,6 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-
-    // TODO:  This should probably be modified to bring back getMergedItemRecordFunction records
-    // That would likely require 1. stashing content in the requestMappingTemplate
-    //   2. executing the query here as a function, and for each record, calling the getMergedItemRecordFunction
-    //   3. returning the enhanced result list along with the nextToken from the original query result
     new Resolver(this, 'ItemMetadataChildrenResolver', {
       api: api,
       typeName: 'ItemMetadata',
@@ -911,6 +1136,28 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'MutationSaveAdditionalNotesForWebsiteResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'saveAdditionalNotesForWebsite',
+      pipelineConfig: [updateSupplementalDataRecordFunction],
+      requestMappingTemplate: MappingTemplate.fromString(`
+        $!{ctx.stash.put("itemId", $ctx.args.itemId)}
+        $!{ctx.stash.put("websiteId", $ctx.args.websiteId)}
+        #set($supplementalDataArgs = {})
+        $!{supplementalDataArgs.put('itemId', $ctx.args.itemId)}
+        $!{supplementalDataArgs.put('websiteId', $ctx.args.websiteId)}
+
+        ## note:  $null is an undefined variable, which has the effect of assigning null to our variable
+        #set($additionalNotes = $util.defaultIfNullOrBlank($ctx.args.additionalNotes, $null))
+        $!{supplementalDataArgs.put('additionalNotes', $additionalNotes)}
+        $!{ctx.stash.put("supplementalDataArgs", $supplementalDataArgs)}
+
+        {}
+      `),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'MutationSaveCopyrightForWebsiteResolver', {
       api: api,
       typeName: 'Mutation',
@@ -966,6 +1213,41 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'MutationSaveFileLastProcessedDateResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'saveFileLastProcessedDate',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($itemId = $ctx.args.itemId)
+        #set($itemId = $util.defaultIfNullOrBlank($itemId, ""))
+        #set($itemId = $util.str.toUpper($itemId))
+        #set($itemId = $util.str.toReplace($itemId, " ", ""))
+        #set($pk = "FILETOPROCESS")
+        #set($sk = "FILEPATH#$itemId")
+        #set($dateLastProcessed = $util.time.nowISO8601())
+        #set($GSI2SK = "DATELASTPROCESSED#$dateLastProcessed")
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            "expression": "SET dateLastProcessed = :dateLastProcessed, dateModifiedInDynamo = :dateModifiedInDynamo, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
+            "expressionValues": {
+              ":dateLastProcessed": $util.dynamodb.toDynamoDBJson($dateLastProcessed),
+              ":dateModifiedInDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
+              ":GSI2PK": $util.dynamodb.toDynamoDBJson("FILETOPROCESS"),
+              ":GSI2SK": $util.dynamodb.toDynamoDBJson($GSI2SK),
+            }
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'MutationSavePartiallyDigitizedForWebsiteResolver', {
       api: api,
       typeName: 'Mutation',
@@ -1010,11 +1292,34 @@ export class MaintainMetadataStack extends Stack {
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'QueryGetFileToProcessRecordResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'getFileToProcessRecord',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($id = $ctx.args.filePath)
+        #set($id = $util.defaultIfNullOrBlank($id, ""))
+        #set($id = $util.str.toUpper($id))
+        #set($id = $util.str.toReplace($id, " ", ""))
+        #set($fullId = "FILEPATH#$id")
+
+        {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson("FILETOPROCESS"),
+              "SK": $util.dynamodb.toDynamoDBJson($fullId),
+            }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'QueryGetItemResolver', {
       api: api,
       typeName: 'Query',
       fieldName: 'getItem',
-      pipelineConfig: [getMergedItemRecordFunction],
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         ## add stash values to enable us to call GetMergedItemRecordFunction
         $!{ctx.stash.put("itemId", $ctx.args.id)}
@@ -1063,8 +1368,8 @@ export class MaintainMetadataStack extends Stack {
                     ":id" : $util.dynamodb.toDynamoDBJson("FILEGROUP")
                 }
             },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-            "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+            "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1099,7 +1404,41 @@ export class MaintainMetadataStack extends Stack {
                   ":id": $util.dynamodb.toDynamoDBJson($fullId)
               }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+          "items": $util.toJson($context.result.items),
+          "nextToken": $util.toJson($context.result.nextToken)
+        }`),
+    })
+
+    new Resolver(this, 'QueryListFilesToProcessResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'listFilesToProcess',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($dateLastProcessedBefore = $ctx.args.dateLastProcessedBefore)
+        #set($dateLastProcessedBefore = $util.defaultIfNullOrBlank($dateLastProcessedBefore, ""))
+        #set($dateLastProcessedBefore = $util.str.toUpper($dateLastProcessedBefore))
+        #set($dateLastProcessedBefore = $util.str.toReplace($dateLastProcessedBefore, " ", ""))
+
+        #set($pk = "FILETOPROCESS")
+        #set($sk = "DATELASTPROCESSED#$dateLastProcessedBefore" )
+        {
+          "version" : "2017-02-28",
+          "operation" : "Query",
+          "index": "GSI2",
+          "query" : {
+              "expression": "GSI2PK = :pk and GSI2SK <= :sk",
+              "expressionValues" : {
+                  ":pk": $util.dynamodb.toDynamoDBJson($pk),
+                  ":sk": $util.dynamodb.toDynamoDBJson($sk),
+              }
+          },
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
           "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
@@ -1126,8 +1465,8 @@ export class MaintainMetadataStack extends Stack {
                   ":id": $util.dynamodb.toDynamoDBJson($fullId)
               }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1158,8 +1497,8 @@ export class MaintainMetadataStack extends Stack {
                   ":beginsWith": $util.dynamodb.toDynamoDBJson("SORT#"),
                 }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1188,8 +1527,8 @@ export class MaintainMetadataStack extends Stack {
                   ":id": $util.dynamodb.toDynamoDBJson($fullId)
               }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1214,8 +1553,8 @@ export class MaintainMetadataStack extends Stack {
                   ":id" : $util.dynamodb.toDynamoDBJson("WEBSITE")
               }
           },
-          "limit": #if($context.arguments.limit) $context.arguments.limit #else 10 #end,
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
@@ -1261,7 +1600,7 @@ export class MaintainMetadataStack extends Stack {
       api: api,
       typeName: 'WebsiteItem',
       fieldName: 'ItemMetadata',
-      pipelineConfig: [getMergedItemRecordFunction],
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         $!{ctx.stash.put("itemId", $ctx.source.itemId)}
         $!{ctx.stash.put("websiteId", $ctx.source.websiteId)}

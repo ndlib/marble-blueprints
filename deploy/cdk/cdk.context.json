@@ -45,6 +45,7 @@
   "iiifImageService:qaRepoOwner": "ndlib",
   "iiifImageService:qaRepoName": "iiif-qa",
   "iiifImageService:qaSourceBranch": "master",
+  "iiifImageService:paramPathPrefix": "/all/marble/image-service",
 
   "imageProcessing:lambdaCodePath": "../../../marble-images/s3_event",
   "imageProcessing:dockerfilePath": "../../../marble-images/",

@@ -1,4 +1,4 @@
-import { expect as expectCDK, haveResource, haveResourceLike } from '@aws-cdk/assert'
+import { expect as expectCDK, haveResource, haveResourceLike, arrayWith, objectLike, anything, matchTemplate, MatchStyle } from '@aws-cdk/assert'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
 import { IiifServerlessStack } from '../../lib/iiif-serverless'
@@ -21,6 +21,7 @@ describe('IiifServerlessStack', () => {
         hostnamePrefix: 'test-iiif',
         foundationStack,
         createDns: createDns ?? true,
+        paramPathPrefix: '/all/marble/image-service',
       })
       return parentStack.domainStack
     }
@@ -120,6 +121,7 @@ describe('IiifServerlessStack', () => {
         hostnamePrefix: 'test-iiif',
         foundationStack,
         createDns: true,
+        paramPathPrefix: '/all/marble/image-service',
       })
       return parentStack.apiStack
     }
@@ -127,18 +129,28 @@ describe('IiifServerlessStack', () => {
     // These are things that we're doing specifically to integrate nulib's template into cdk. If/when we rewrite
     // the entire Api, lambda, and lambda layer to be defined in cdk, this can probably go away
     describe('template monkey patches', () => {
-      // Can't get this to work with a partial match. Ignoring it for now
-      xtest('changes the bucket param to read from SSM', () => {
+      test('changes Cfn params to read from SSM', () => {
         const subject = stack()
-        expectCDK(subject).toMatch({
-          "Parameters": {
-            "SourceBucket": {
-              "Type": "AWS::SSM::Parameter::Value<String>",
-              "Description": "Name of bucket containing source images",
-              "Default": "/all/stacks/FoundationStack/publicBucket",
+        const expected = {
+          Parameters: {
+            SourceBucket: {
+              Type: "AWS::SSM::Parameter::Value<String>",
+              Description: "Name of bucket containing source images",
+              Default: "/all/stacks/FoundationStack/publicBucket",
+            },
+            CacheEnabled: {
+              Type: "AWS::SSM::Parameter::Value<String>",
+              Description: "Enables API response caching.",
+              Default: "/all/marble/image-service/cacheEnabled",
+            },
+            CacheTtl: {
+              Type: "AWS::SSM::Parameter::Value<String>",
+              Description: "API cache time in seconds.",
+              Default: "/all/marble/image-service/cacheTtl",
             },
           },
-        })
+        }
+        expectCDK(subject).to(matchTemplate(expected, MatchStyle.NO_REPLACES))
       })
 
       test('changes the dependency layer ContentUri to point to the assets pushed to cdk staging', () => {
@@ -319,6 +331,22 @@ describe('IiifServerlessStack', () => {
           "Fn::Sub": "${StageName}",
         },
         "EndpointConfiguration": "REGIONAL",
+        "CacheClusterEnabled": {
+          "Fn::Sub": "${CacheEnabled}"
+        },
+        "CacheClusterSize": "0.5",
+        "MethodSettings": [
+          {
+            "ResourcePath": "/*",
+            "HttpMethod": "*",
+            "CachingEnabled": {
+              "Fn::Sub": "${CacheEnabled}"
+            },
+            "CacheTtlInSeconds": {
+              "Fn::Sub": "${CacheTtl}"
+            }
+          }
+        ],
         "Cors": {
           "AllowMethods": "'GET'",
           "AllowOrigin": "'*'",
@@ -383,6 +411,9 @@ describe('IiifServerlessStack', () => {
                   },
                   "passthroughBehavior": "when_no_match",
                   "httpMethod": "POST",
+                  "cacheKeyParameters": [
+                    "method.request.path.id"
+                  ],
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy",
                 },
@@ -502,6 +533,9 @@ describe('IiifServerlessStack', () => {
                   },
                   "passthroughBehavior": "when_no_match",
                   "httpMethod": "POST",
+                  "cacheKeyParameters": [
+                    "method.request.path.id"
+                  ],
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy",
                 },
@@ -641,7 +675,8 @@ describe('IiifServerlessStack', () => {
                   "httpMethod": "POST",
                   "cacheNamespace": "frz8df",
                   "cacheKeyParameters": [
-                    "method.request.path.proxy",
+                    "method.request.path.id",
+                    "method.request.path.proxy"
                   ],
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy",
@@ -707,10 +742,6 @@ describe('IiifServerlessStack', () => {
                   },
                   "passthroughBehavior": "when_no_match",
                   "httpMethod": "POST",
-                  "cacheNamespace": "frz8df",
-                  "cacheKeyParameters": [
-                    "method.request.path.proxy",
-                  ],
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy",
                 },

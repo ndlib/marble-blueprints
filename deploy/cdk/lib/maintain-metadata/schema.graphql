@@ -7,22 +7,49 @@ type File {
 	id: String!
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
+	description: String
+	digitalAccess: String
 	eTag: String
-	expireTime: Int
+	filePath: String
+	iiifImageServiceUri: String
 	iiifImageUri: String
 	iiifUri: String
-	key: String
-	label: String
 	lastModified: String
+	mediaResourceId: String
+	mediaServer: String
+	mimeType: String
 	objectFileGroupId: String!
 	FileGroup: FileGroup
-	path: String
 	sequence: Int
 	size: Int
 	source: String
 	sourceType: String
 	sourceUri: String
-	storageClass: String
+	title: String
+	treePath: String
+	TYPE: String
+}
+
+type FileToProcess {
+	id: String
+	copyrightStatus: String
+	dateAddedToDynamo: String
+	dateLastProcessed: String
+	dateModifiedInDynamo: String
+	description: String
+	digitalAccess: String
+	eTag: String
+	filePath: String
+	md5Checksum: String
+	mimeType: String
+	modifiedDate: String
+	size: Int
+	sourceBucketName: String
+	sourceFilePath: String
+	sourceSystem: String
+	sourceType: String
+	sourceUri: String
+	storageSystem: String
 	TYPE: String
 }
 
@@ -46,8 +73,14 @@ type FilesConnection {
 	nextToken: String
 }
 
+type FilesToProcessConnection {
+	items: [FileToProcess]
+	nextToken: String
+}
+
 type ItemMetadata {
 	id: String!
+	additionalNotes: String
 	childIds: [MetadataChildObject]
 	collectionId: String
 	collections: [MetadataObjectWithDisplayField]
@@ -64,6 +97,7 @@ type ItemMetadata {
 	defaultFilePath: String
 	description: String
 	digitalAccess: String
+	digitizationSource: String
 	dimensions: String
 	expireTime: Int
 	fileCreatedDate: String
@@ -119,10 +153,11 @@ type MetadataSubject {
 	term: String
 	uri: String
 	authority: String
-	variants: [String]
+	broaderTerms: [MetadataSubject]
+	description: String
 	display: String
 	parentTerm: String
-	broaderTerms: [MetadataSubject]
+	variants: [String]
 }
 
 type Mutation {
@@ -132,8 +167,10 @@ type Mutation {
 	replacePartiallyDigitized(input: ReplacePartiallyDigitizedInput): ItemMetadata
 	addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
 	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
+	saveAdditionalNotesForWebsite(itemId: String!, websiteId: String, additionalNotes: String!): ItemMetadata
 	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String!, inCopyright: Boolean!): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String!): ItemMetadata
+	saveFileLastProcessedDate(itemId: String!): FileToProcess
 	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
 }
 
@@ -141,9 +178,11 @@ type Query {
 	getWebsite(id: String!): Website
 	getItem(id: String!, websiteId: String): ItemMetadata
 	getFileGroup(id: String!): FileGroup
+	getFileToProcessRecord(filePath: String!): FileToProcess
 	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsByStorageSystem(storageSystem: String!, typeOfData: String!, limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsForS3(limit: Int, nextToken: String): FileGroupsConnection
+	listFilesToProcess(dateLastProcessedBefore: String, limit: Int, nextToken: String): FilesToProcessConnection
 	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
 	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
 	listWebsites(filter: WebsiteFilterInput, limit: Int, nextToken: String): WebsiteConnection

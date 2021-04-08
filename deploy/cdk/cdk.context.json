@@ -133,7 +133,7 @@
   "manifestPipeline:filesTimeToLiveDays": "365",
   "manifestPipeline:prodFilesTimeToLiveDays": "5",
 
-  "slos:emailSubscriber": "hesburgh-libraries-duty-office-list@nd.edu",
+  "slos:emailSubscriber": "rfox2@nd.edu",
   "slos:sloDocLink": "https://docs.google.com/document/d/1AZGtz4es6fPMPzgkJuDOL0RDULFpy97emeKMPFYxyCA/edit",
   "slos:runbookLink": "https://github.com/ndlib/TechnologistsPlaybook/tree/master/run-books",
   "slos:debugDashboardLink": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=Marble",

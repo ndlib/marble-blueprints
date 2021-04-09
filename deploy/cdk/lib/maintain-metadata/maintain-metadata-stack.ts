@@ -53,6 +53,8 @@ export class MaintainMetadataStack extends Stack {
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
+    const daysForKeyToLast = 7
+
     // Define construct contents here
     const apiSchema = Schema.fromAsset(path.join(__dirname, 'schema.graphql'))
 
@@ -63,7 +65,7 @@ export class MaintainMetadataStack extends Stack {
         defaultAuthorization: {
           authorizationType: AuthorizationType.API_KEY,
           apiKeyConfig: {
-            expires: Expiration.after(Duration.days(7)),
+            expires: Expiration.after(Duration.days(daysForKeyToLast)),
           },
         },
         additionalAuthorizationModes: [
@@ -169,7 +171,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
       environment: {
         GRAPHQL_API_ID_KEY_PATH: this.graphqlApiIdKeyPath,
         GRAPHQL_API_KEY_KEY_PATH: this.graphqlApiKeyKeyPath,
-        DAYS_FOR_KEY_TO_LAST: "7",
+        DAYS_FOR_KEY_TO_LAST: String(daysForKeyToLast),
       },
       initialPolicy: [
         new PolicyStatement({

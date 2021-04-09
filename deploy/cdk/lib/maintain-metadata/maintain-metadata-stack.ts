@@ -180,7 +180,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
             'appsync:ListApiKeys',
           ],
           resources: [
-            Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/v1/apis/') + api.apiId + '/apikeys',
+            Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/v1/apis/') + api.apiId + '/apikeys*',
           ],
         }),
         new PolicyStatement({

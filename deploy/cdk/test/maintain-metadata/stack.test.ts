@@ -31,6 +31,7 @@ const manifestPipelineContext = {
 }
 
 const maintainMetadataContext = {
+  openIdConnectProvider: "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
 }
 
 describe('MaintainMetadataStack', () => {
@@ -753,6 +754,31 @@ describe('MaintainMetadataStack', () => {
         FieldName: "getFileToProcessRecord",
       }))
     })
+
+    test('creates QueryGetFileResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getFile",
+      }))
+    })
+
 
     test('creates QueryGetItemResolver', () => {
       const app = new cdk.App()

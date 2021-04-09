@@ -177,6 +177,7 @@ type Mutation {
 type Query {
 	getWebsite(id: String!): Website
 	getItem(id: String!, websiteId: String): ItemMetadata
+	getFile(id: String!): File
 	getFileGroup(id: String!): FileGroup
 	getFileToProcessRecord(filePath: String!): FileToProcess
 	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection

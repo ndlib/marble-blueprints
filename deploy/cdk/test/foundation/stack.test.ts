@@ -180,7 +180,7 @@ describe('FoundationStack', () => {
   })
 
   describe('Logs', () => {
-    test('creates a shared log bucket with ten year retention and one version for backup', () => {
+    test('creates a shared log bucket with 90 day retention and one version for backup', () => {
       const app = new cdk.App()
       // WHEN
       const stack = new FoundationStack(app, 'MyTestStack', {
@@ -192,7 +192,7 @@ describe('FoundationStack', () => {
         LifecycleConfiguration: {
           Rules: [{
             Status: "Enabled",
-            ExpirationInDays: 3650,
+            ExpirationInDays: 90,
             NoncurrentVersionExpirationInDays: 1,
           }],
         },

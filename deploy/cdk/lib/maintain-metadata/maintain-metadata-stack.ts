@@ -20,6 +20,12 @@ export interface IBaseStackProps extends StackProps {
    * The name of the manifest pipeline stack which defines dynamodb tables used here
    */
   readonly manifestPipelineStack: ManifestPipelineStack;
+
+  /**
+   * 
+   * OpenID Connect provider
+   */
+  readonly openIdConnectProvider: string
 }
 
 export class MaintainMetadataStack extends Stack {
@@ -60,6 +66,14 @@ export class MaintainMetadataStack extends Stack {
             expires: Expiration.after(Duration.days(7)),
           },
         },
+        additionalAuthorizationModes: [
+          {
+            authorizationType: AuthorizationType.OIDC,
+            openIdConnectConfig: {
+              oidcProvider: props.openIdConnectProvider,
+            },
+          },
+        ],
       },
       xrayEnabled: true,
       logConfig: { fieldLogLevel: FieldLogLevel.ERROR },
@@ -113,6 +127,7 @@ def run(event, _context):
                 print("new key generated")
                 _save_secure_parameter(graphql_api_key_key_path, new_api_key)
                 print("saved new key here =", graphql_api_key_key_path)
+                _delete_expired_api_keys(graphql_api_id)
     return event
 
 
@@ -140,6 +155,13 @@ def _generate_new_api_key(graphql_api_id: str, new_expire_time: int) -> str:
 
 def _save_secure_parameter(name: str, key_id: str) -> bool:
     boto3.client('ssm').put_parameter(Name=name, Description='api key for graphql-api-url', Value=key_id, Type='SecureString', Overwrite=True)
+
+
+def _delete_expired_api_keys(graphql_api_id: str):
+    response = boto3.client('appsync').list_api_keys(apiId=graphql_api_id)
+    for api_key in response.get('apiKeys'):
+        if api_key.get('expires') < datetime.datetime.now().timestamp() and api_key.get('description') == 'auto maintained api key':
+            boto3.client('appsync').delete_api_key(apiId=graphql_api_id, id=api_key.get('id'))
 `),
       description: 'Rotates API Keys for AppSync - Maintain Metadata',
       handler: 'index.run',
@@ -147,17 +169,18 @@ def _save_secure_parameter(name: str, key_id: str) -> bool:
       environment: {
         GRAPHQL_API_ID_KEY_PATH: this.graphqlApiIdKeyPath,
         GRAPHQL_API_KEY_KEY_PATH: this.graphqlApiKeyKeyPath,
-        DAYS_FOR_KEY_TO_LAST: "2",
+        DAYS_FOR_KEY_TO_LAST: "7",
       },
       initialPolicy: [
         new PolicyStatement({
           effect: Effect.ALLOW,
           actions: [
             'appsync:CreateApiKey',
+            'appsync:DeleteApiKey',
+            'appsync:ListApiKeys',
           ],
           resources: [
             Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/v1/apis/') + api.apiId + '/apikeys',
-
           ],
         }),
         new PolicyStatement({
@@ -1266,6 +1289,29 @@ def _save_secure_parameter(name: str, key_id: str) -> bool:
 
         {}
       `),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'QueryGetFileResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'getFile',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($id = $ctx.args.id)
+        #set($id = $util.defaultIfNullOrBlank($id, ""))
+        #set($id = $util.str.toUpper($id))
+        #set($id = $util.str.toReplace($id, " ", ""))
+        #set($fullId = "FILE#$id")
+
+        {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson("FILE"),
+                "SK": $util.dynamodb.toDynamoDBJson($fullId),
+            }
+        }`),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 

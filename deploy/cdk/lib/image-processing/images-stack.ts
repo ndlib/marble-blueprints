@@ -2,6 +2,7 @@ import * as ecs from '@aws-cdk/aws-ecs'
 import { Rule, Schedule } from '@aws-cdk/aws-events'
 import { EcsTask } from '@aws-cdk/aws-events-targets'
 import * as iam from '@aws-cdk/aws-iam'
+import * as s3 from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
 import { Annotations } from '@aws-cdk/core'
 import fs = require('fs')
@@ -11,6 +12,7 @@ import { MaintainMetadataStack } from '../maintain-metadata'
 
 export interface ImagesStackProps extends cdk.StackProps {
   readonly dockerfilePath: string;
+  readonly rbscBucketName: string;
   readonly manifestPipelineStack: ManifestPipelineStack;
   readonly foundationStack: FoundationStack;
   readonly maintainMetadataStack: MaintainMetadataStack;
@@ -20,6 +22,8 @@ export class ImagesStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: ImagesStackProps) {
     super(scope, id, props)
 
+    const rbscBucketName = props.rbscBucketName
+    const rbscBucket = s3.Bucket.fromBucketName(this, 'RbscBucket', rbscBucketName)
     const imageBucket = props.foundationStack.publicBucket
     const graphqlApiUrlKeyPath = props.maintainMetadataStack.graphqlApiUrlKeyPath
     const graphqlApiKeyKeyPath = props.maintainMetadataStack.graphqlApiKeyKeyPath
@@ -46,6 +50,15 @@ export class ImagesStack extends cdk.Stack {
         cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/marble*'),
       ],
       actions: ["ssm:Get*"],
+    }))
+    taskRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      resources: [
+        rbscBucket.bucketArn + '/*',
+      ],
+      actions: [
+        "s3:GetObject",
+      ],
     }))
     taskRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,

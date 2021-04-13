@@ -111,7 +111,7 @@ export class FoundationStack extends Stack {
       accessControl: BucketAccessControl.LOG_DELIVERY_WRITE,
       versioned: true,
       removalPolicy: RemovalPolicy.DESTROY,
-      lifecycleRules: [{ enabled: true, expiration: Duration.days(365 * 10), noncurrentVersionExpiration: Duration.days(1) }],
+      lifecycleRules: [{ enabled: true, expiration: Duration.days(90), noncurrentVersionExpiration: Duration.days(1) }],
     })
 
     this.logGroup = new LogGroup(this, 'SharedLogGroup', {

@@ -45,6 +45,7 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly graphqlApiUrlKeyPath: string
   readonly graphqlApiKeyKeyPath: string
   readonly maintainMetadataKeyBase: string
+  readonly buildEnvirionment: string
 }
 
 export class PipelineS3Sync extends Construct {

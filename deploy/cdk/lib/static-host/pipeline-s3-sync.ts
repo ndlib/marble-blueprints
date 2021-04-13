@@ -45,7 +45,7 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly graphqlApiUrlKeyPath: string
   readonly graphqlApiKeyKeyPath: string
   readonly maintainMetadataKeyBase: string
-  readonly buildEnvirionment: string
+  readonly buildEnvironment: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -67,7 +67,7 @@ export class PipelineS3Sync extends Construct {
       },
       environmentVariables: {
         BUILD_ENVIRONMENT: {
-          value: props.buildEnvirionment,
+          value: props.buildEnvironment,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
         S3_DEST_BUCKET: {

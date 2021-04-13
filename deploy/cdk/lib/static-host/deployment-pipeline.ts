@@ -190,7 +190,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.testElasticStack.domainName,
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
-      buildEnvirionment: 'test',
+      buildEnvironment: 'test',
       maintainMetadataKeyBase: props.testMaintainMetadataStack.maintainMetadataKeyBase,
     }
     if (subAppSourceArtifact !== undefined) {
@@ -256,7 +256,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.prodElasticStack.domainName,
       graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
-      buildEnvirionment: 'production',
+      buildEnvironment: 'production',
       maintainMetadataKeyBase: props.prodMaintainMetadataStack.maintainMetadataKeyBase,
     }
     if (subAppSourceArtifact !== undefined) {

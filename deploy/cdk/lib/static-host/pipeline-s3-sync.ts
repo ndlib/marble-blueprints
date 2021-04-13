@@ -65,6 +65,10 @@ export class PipelineS3Sync extends Construct {
         privileged: true,
       },
       environmentVariables: {
+        BUILD_ENVIRONMENT: {
+          value: props.buildEnvirionment,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
         S3_DEST_BUCKET: {
           value: `${paramsPath}site-bucket-name`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,

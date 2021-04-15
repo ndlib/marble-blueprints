@@ -293,7 +293,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates InitManifestLambdaFunction', () => {
+    xtest('creates InitManifestLambdaFunction', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -318,7 +318,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates ProcessManifestLambdaFunction', () => {
+    xtest('creates ProcessManifestLambdaFunction', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -343,7 +343,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates FinalizeManifestLambdaFunction', () => {
+    xtest('creates FinalizeManifestLambdaFunction', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -368,7 +368,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates MuseumExportLambda', () => {
+    xtest('creates MuseumExportLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -393,7 +393,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates AlephExportLambda', () => {
+    xtest('creates AlephExportLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -418,7 +418,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates ArchivesSpaceExportLambda', () => {
+    xtest('creates ArchivesSpaceExportLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -443,7 +443,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates CurateExportLambda', () => {
+    xtest('creates CurateExportLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -468,7 +468,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates ExpandSubjectTermsLambda', () => {
+    xtest('creates ExpandSubjectTermsLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -493,7 +493,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates ObjectFilesApiLambda', () => {
+    xtest('creates ObjectFilesApiLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -523,7 +523,7 @@ describe('ManifestPipelineStack', () => {
 
 
 
-  describe('State Machines', () => {
+  xdescribe('State Machines', () => {
     test('creates SchemaStateMachine ', () => {
       const app = new cdk.App()
 
@@ -680,7 +680,7 @@ describe('ManifestPipelineStack', () => {
 
 
   describe('Rules', () => {
-    describe('when createEventRules is true', () => {
+    xdescribe('when createEventRules is true', () => {
       test('creates StartStdJsonHarvestRule ', () => {
         const app = new cdk.App()
 

@@ -19,11 +19,15 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: Change to the cdk directory
-      run: cd deploy/cdk
     - name: Run yarn install
-      run: yarn install
+      run: |
+        cd deploy/cdk
+        yarn install
     - name: Run Yarn Build
-      run: yarn build 
+      run: |
+        cd deploy/cdk
+        yarn build 
     - name: Run Unit Tests
-      run: yarn test
+      run: |
+        cd deploy/cdk
+        yarn test

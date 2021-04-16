@@ -9,6 +9,7 @@ import elasticsearch = require('../lib/elasticsearch')
 import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import maintainMetadata = require('../lib/maintain-metadata')
+import multimediaAssets = require('../lib/multimedia-assets')
 import { getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
@@ -109,6 +110,13 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...imageProcessingContext,
   })
 
+  const multimediaAssetsContext = getContextByNamespace('multimediaAssets')
+  const multimediaAssetsStack = new multimediaAssets.MultimediaAssetsStack(app, `${namespace}-multimedia-assets`, {
+    foundationStack,
+    ...commonProps,
+    ...multimediaAssetsContext,
+  })
+
   const services = {
     foundationStack,
     website,
@@ -121,6 +129,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     elasticSearchStack,
     manifestPipelineStack,
     maintainMetadataStack,
+    multimediaAssetsStack,
   }
 
   const slos = [

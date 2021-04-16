@@ -35,6 +35,7 @@ marble-foundation
 marble-image-processing
 marble-image-service
 marble-manifest
+marble-multimedia-assets
 marble-redbox
 marble-user-content
 marble-website

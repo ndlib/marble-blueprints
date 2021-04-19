@@ -60,7 +60,7 @@ export class PipelineS3Sync extends Construct {
 
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
-      timeout: Duration.minutes(20),
+      timeout: Duration.minutes(30),
       environment: {
         buildImage: LinuxBuildImage.STANDARD_4_0,
         privileged: true,

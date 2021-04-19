@@ -1,8 +1,3 @@
-input AddItemMetadataToWebsiteInput {
-	websiteId: String
-	itemMetadataId: String
-}
-
 type File {
 	id: String!
 	dateAddedToDynamo: String
@@ -80,6 +75,7 @@ type FilesToProcessConnection {
 
 type ItemMetadata {
 	id: String!
+	access: String
 	additionalNotes: String
 	childIds: [MetadataChildObject]
 	collectionId: String
@@ -123,7 +119,7 @@ type ItemMetadata {
 	TYPE: String
 	uniqueIdentifier: String
 	workType: String
-	children(limit: Int, nextToken: String): ItemMetadataConnection
+	children(limit: Int, nextToken: String): MinimumItemMetadataConnection
 	files: FilesConnection
 }
 
@@ -131,6 +127,16 @@ type ItemMetadataConnection {
 	items: [ItemMetadata]
 	limit: Int
 	nextToken: String
+}
+
+type ItemToHarvestRecord {
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
+	harvestItemId: String
+	PK: String
+	SK: String
+	sourceSystem: String
+	TYPE: String
 }
 
 type MetadataChildObject {
@@ -160,12 +166,23 @@ type MetadataSubject {
 	variants: [String]
 }
 
+type MinimumItemMetadata{
+	id: String
+	level: String
+	title: String
+	description: String
+}
+
+
+type MinimumItemMetadataConnection {
+	items: [MinimumItemMetadata]
+	limit: Int
+	nextToken: String
+}
+
 type Mutation {
-	addItemMetadataToWebsite(input: AddItemMetadataToWebsiteInput): WebsiteItems
-	replaceCopyrightStatement(input: ReplaceCopyrightStatementInput): ItemMetadata
-	replaceDefaultImage(input: ReplaceDefaultImageInput!): ItemMetadata
-	replacePartiallyDigitized(input: ReplacePartiallyDigitizedInput): ItemMetadata
 	addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
+	addItemToHarvest(harvestItemId: String!, sourceSystem: String!): ItemToHarvestRecord
 	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
 	saveAdditionalNotesForWebsite(itemId: String!, websiteId: String, additionalNotes: String!): ItemMetadata
 	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String!, inCopyright: Boolean!): ItemMetadata
@@ -186,6 +203,7 @@ type Query {
 	listFilesToProcess(dateLastProcessedBefore: String, limit: Int, nextToken: String): FilesToProcessConnection
 	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
 	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
+	listSupplementalDataRecords(id: String, websiteId: String): SupplementalDataConnection
 	listWebsites(filter: WebsiteFilterInput, limit: Int, nextToken: String): WebsiteConnection
 	showItemByWebsite(itemId: String!, websiteId: String): ItemMetadata
 }
@@ -207,75 +225,27 @@ input ReplacePartiallyDigitizedInput {
 	generalPartiallyDigitized: Boolean!
 }
 
-type SupplementalData {
-	itemId: String!
-	rowType: String!
-	collectionId: String
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	generalDefaultFilePath: String
-	generalDefaultImageId: String
-	generalObjectFileGroupId: String
-	generalPartiallyDigitized: Boolean
-	generalCopyrightStatement: String
-	generalCopyrightStatus: String
-	generalInCopyright: Boolean
+type SupplementalDataConnection {
+	items: [SupplementalDataRecord]
+	nextToken: String
 }
 
 type SupplementalDataRecord {
-	id: String!
-	childIds: [MetadataChildObject]
-	collectionId: String
-	collections: [MetadataObjectWithDisplayField]
-	contributors: [MetadataObjectWithDisplayField]
+	id: String
+	additionalNotes: String
 	copyrightStatement: String
 	copyrightStatus: String
 	copyrightUrl: String
-	createdDate: String
-	creators: [MetadataObjectWithDisplayField]
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
-	dedication: String
-	defaultFile: File
 	defaultFilePath: String
-	description: String
 	digitalAccess: String
-	dimensions: String
-	expireTime: Int
-	fileCreatedDate: String
-	format: String
-	geographicLocations: [MetadataObjectWithDisplayField]
-	iiifUri: String
 	inCopyright: Boolean
-	languages: [MetadataObjectWithDisplayField]
-	level: String
-	linkToSource: String
 	objectFileGroupId: String
-	parentId: String
-	parent: ItemMetadata
 	partiallyDigitized: Boolean
-	publishers: [MetadataObjectWithDisplayField]
-	relatedIds: [MetadataRelatedObject]
-	repository: String
-	sequence: Int
-	sourceSystem: String
-	subjects: [MetadataSubject]
 	title: String
-	treePath: String
 	TYPE: String
-	uniqueIdentifier: String
 	websiteId: String
-	workType: String
-}
-
-type SupplementalDataConnection {
-	items: [SupplementalData]
-	nextToken: String
-}
-
-type SupplementalDataRecordConnection {
-	items: [SupplementalDataRecord]
-	nextToken: String
 }
 
 input TableBooleanFilterInput {
@@ -355,18 +325,7 @@ type WebsiteItem {
 	ItemMetadata: ItemMetadata
 }
 
-type WebsiteItems {
-	itemMetadataId: String
-	websiteId: String
-	ItemMetadata: ItemMetadata
-}
-
 type WebsiteItemsConnection {
 	items: [WebsiteItem]
-	nextToken: String
-}
-
-type ItemRecordsForWebsiteConnection{
-	items: [SupplementalDataRecord]
 	nextToken: String
 }

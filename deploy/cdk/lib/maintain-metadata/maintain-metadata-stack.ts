@@ -444,7 +444,10 @@ def _delete_expired_api_keys(graphql_api_id: str):
         $!{args.put('GSI1PK', "SUPPLEMENTALDATA")}
         $!{args.put('GSI1SK', "ITEM#$id")}
         $!{args.put('id', $idNotUpper)}
-        $!{args.put('title', $idNotUpper)}
+        ## since $args.websiteId already exists, the next line will echo the output, which causes an error
+        ## $!{args.put('websiteId', $websiteIdNotUpper)}
+        ## I will attempt the following to suppress this echo behaviour
+        #set($args.websiteId = $websiteIdNotUpper)
 
         {
             "version" : "2017-02-28",
@@ -495,239 +498,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
                 ## Added next 2 lines in an attempt to insert dateAddedToDynamo on only the first insert
                 #set( $expression = "$expression, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo)")
                 $!{expValues.put(":dateAddedToDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
-            #end
-
-            ## Continue building the update expression, adding attributes we're going to ADD **
-            #if( !$expAdd.isEmpty() )
-                #set( $expression = "$expression ADD" )
-                #foreach( $entry in $expAdd.entrySet() )
-                    #set( $expression = "$expression $entry.key $entry.value" )
-                    #if ( $foreach.hasNext )
-                        #set( $expression = "$expression," )
-                    #end
-                #end
-            #end
-
-            ## Continue building the update expression, adding attributes we're going to REMOVE **
-            #if( !$expRemove.isEmpty() )
-                #set( $expression = "$expression REMOVE" )
-
-                #foreach( $entry in $expRemove )
-                    #set( $expression = "$expression $entry" )
-                    #if ( $foreach.hasNext )
-                        #set( $expression = "$expression," )
-                    #end
-                #end
-            #end
-
-            ## Finally, write the update expression into the document, along with any expressionNames and expressionValues **
-            "update" : {
-                "expression" : "$expression",
-                #if( !$expNames.isEmpty() )
-                    "expressionNames" : $utils.toJson($expNames),
-                #end
-                #if( !$expValues.isEmpty() )
-                    "expressionValues" : $utils.toJson($expValues),
-                #end
-            },
-          #if($args.expectedVersion)
-            "condition" : {
-                "expression"       : "version = :expectedVersion",
-                "expressionValues" : {
-                    ":expectedVersion" : $util.dynamodb.toDynamoDBJson($args.expectedVersion)
-                }
-            }
-            #end
-
-        }`),
-      responseMappingTemplate: MappingTemplate.fromString(`
-        ## Raise a GraphQL field error in case of a datasource invocation error
-        #if($ctx.error)
-            $util.error($ctx.error.message, $ctx.error.type)
-        #end
-        ## Pass back the result from DynamoDB. **
-        $util.toJson($ctx.result)`),
-    })
-
-
-    // Remove once Red Box is updated to use new save...ForWebsite mutations
-    const updateItemFunction = new AppsyncFunction(this, 'UpdateItemFunction', {
-      api: api,
-      dataSource: websiteMetadataDynamoDataSource,
-      name: 'updateItemFunction',
-      description: 'Used to update an Item record in DynamoDB.',
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($id = $ctx.stash.itemId)
-        #set($id = $util.defaultIfNullOrBlank($id, ""))
-        #set($id = $util.str.toUpper($id))
-        #set($id = $util.str.toReplace($id, " ", ""))
-        #set($pk = "ITEM#$id")
-        #set($sk = "ITEM#$id")
-        #set($args = $ctx.stash.itemArgs)
-        $!{args.put('TYPE', 'Item')}
-        $!{args.put('dateModifiedInDynamo', $util.time.nowISO8601())}
-
-        {
-            "version" : "2017-02-28",
-            "operation" : "UpdateItem",
-            "key" : {
-                "PK" : $util.dynamodb.toDynamoDBJson($pk),
-                "SK" : $util.dynamodb.toDynamoDBJson($sk),
-            },
-
-            ## Set up some space to keep track of things we're updating **
-            #set( $expNames  = {} )
-            #set( $expValues = {} )
-            #set( $expSet = {} )
-            #set( $expAdd = {} )
-            #set( $expRemove = [] )
-
-            ## Increment "version" by 1 **
-            ## $!{expAdd.put("version", ":one")}
-            ## $!{expValues.put(":one", $util.dynamodb.toDynamoDB(1))}
-
-            ## Iterate through each argument, skipping "id" and "expectedVersion" **
-            #foreach( $entry in $util.map.copyAndRemoveAllKeys($args, ["itemId","expectedVersion"]).entrySet() )
-                #if( $util.isNull($entry.value) )
-                    ## If the argument is set to "null", then remove that attribute from the item in DynamoDB **
-
-                    #set( $discard = $expRemove.add("#$entry.key") )
-                    $!{expNames.put("#$entry.key", "$entry.key")}
-                #else
-                    ## Otherwise set (or update) the attribute on the item in DynamoDB **
-
-                    $!{expSet.put("#$entry.key", ":$entry.key")}
-                    $!{expNames.put("#$entry.key", "$entry.key")}
-                    $!{expValues.put(":$entry.key", $util.dynamodb.toDynamoDB($entry.value))}
-                #end
-            #end
-
-            ## Start building the update expression, starting with attributes we're going to SET **
-            #set( $expression = "" )
-            #if( !$expSet.isEmpty() )
-                #set( $expression = "SET" )
-                #foreach( $entry in $expSet.entrySet() )
-                    #set( $expression = "$expression $entry.key = $entry.value" )
-                    #if ( $foreach.hasNext )
-                        #set( $expression = "$expression," )
-                    #end
-                #end
-            #end
-
-            ## Continue building the update expression, adding attributes we're going to ADD **
-            #if( !$expAdd.isEmpty() )
-                #set( $expression = "$expression ADD" )
-                #foreach( $entry in $expAdd.entrySet() )
-                    #set( $expression = "$expression $entry.key $entry.value" )
-                    #if ( $foreach.hasNext )
-                        #set( $expression = "$expression," )
-                    #end
-                #end
-            #end
-
-            ## Continue building the update expression, adding attributes we're going to REMOVE **
-            #if( !$expRemove.isEmpty() )
-                #set( $expression = "$expression REMOVE" )
-
-                #foreach( $entry in $expRemove )
-                    #set( $expression = "$expression $entry" )
-                    #if ( $foreach.hasNext )
-                        #set( $expression = "$expression," )
-                    #end
-                #end
-            #end
-
-            ## Finally, write the update expression into the document, along with any expressionNames and expressionValues **
-            "update" : {
-                "expression" : "$expression",
-                #if( !$expNames.isEmpty() )
-                    "expressionNames" : $utils.toJson($expNames),
-                #end
-                #if( !$expValues.isEmpty() )
-                    "expressionValues" : $utils.toJson($expValues),
-                #end
-            },
-          #if($args.expectedVersion)
-            "condition" : {
-                "expression"       : "version = :expectedVersion",
-                "expressionValues" : {
-                    ":expectedVersion" : $util.dynamodb.toDynamoDBJson($args.expectedVersion)
-                }
-            }
-            #end
-
-        }`),
-      responseMappingTemplate: MappingTemplate.fromString(`
-        ## Raise a GraphQL field error in case of a datasource invocation error
-        #if($ctx.error)
-            $util.error($ctx.error.message, $ctx.error.type)
-        #end
-        ## Pass back the result from DynamoDB. **
-        $util.toJson($ctx.result)`),
-    })
-
-    // Remove once Red Box is updated to use new save...ForWebsite mutations
-    const updateSupplementalDataFunction = new AppsyncFunction(this, 'UpdateSupplementalDataFunction', {
-      api: api,
-      dataSource: websiteMetadataDynamoDataSource,
-      name: 'updateSupplementalDataFunction',
-      description: 'Used to update a SupplementalData record in DynamoDB.',
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($id = $ctx.stash.itemId)
-        #set($id = $util.defaultIfNullOrBlank($id, ""))
-        #set($id = $util.str.toUpper($id))
-        #set($id = $util.str.toReplace($id, " ", ""))
-        #set($pk = "ITEM#$id")
-        #set($sk = "SUPPLEMENTALDATA#$id")
-        #set($args = $ctx.stash.supplementalDataArgs)
-        $!{args.put('TYPE', 'SupplementalData')}
-        $!{args.put('dateModifiedInDynamo', $util.time.nowISO8601())}
-
-        {
-            "version" : "2017-02-28",
-            "operation" : "UpdateItem",
-            "key" : {
-                "PK" : $util.dynamodb.toDynamoDBJson($pk),
-                "SK" : $util.dynamodb.toDynamoDBJson($sk),
-            },
-
-            ## Set up some space to keep track of things we're updating **
-            #set( $expNames  = {} )
-            #set( $expValues = {} )
-            #set( $expSet = {} )
-            #set( $expAdd = {} )
-            #set( $expRemove = [] )
-
-            ## Increment "version" by 1 **
-            ## $!{expAdd.put("version", ":one")}
-            ## $!{expValues.put(":one", $util.dynamodb.toDynamoDB(1))}
-
-            ## Iterate through each argument, skipping "id" and "expectedVersion" **
-            #foreach( $entry in $util.map.copyAndRemoveAllKeys($args, ["itemId","expectedVersion"]).entrySet() )
-                #if( $util.isNull($entry.value) )
-                    ## If the argument is set to "null", then remove that attribute from the item in DynamoDB **
-
-                    #set( $discard = $expRemove.add("#$entry.key") )
-                    $!{expNames.put("#$entry.key", "$entry.key")}
-                #else
-                    ## Otherwise set (or update) the attribute on the item in DynamoDB **
-
-                    $!{expSet.put("#$entry.key", ":$entry.key")}
-                    $!{expNames.put("#$entry.key", "$entry.key")}
-                    $!{expValues.put(":$entry.key", $util.dynamodb.toDynamoDB($entry.value))}
-                #end
-            #end
-
-            ## Start building the update expression, starting with attributes we're going to SET **
-            #set( $expression = "" )
-            #if( !$expSet.isEmpty() )
-                #set( $expression = "SET" )
-                #foreach( $entry in $expSet.entrySet() )
-                    #set( $expression = "$expression $entry.key = $entry.value" )
-                    #if ( $foreach.hasNext )
-                        #set( $expression = "$expression," )
-                    #end
-                #end
             #end
 
             ## Continue building the update expression, adding attributes we're going to ADD **
@@ -960,131 +730,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
         }`),
     })
 
-    // Remove corresponding AddItemMetadataToWebsiteInput and type WebsiteItems
-    // Remove this after Red Box is modified to use MutationAddItemToWebsite
-    new Resolver(this, 'MutationAddItemMetadataToWebsiteResolver', {
-      api: api,
-      typeName: 'Mutation',
-      fieldName: 'addItemMetadataToWebsite',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($websiteId = $ctx.args.input.websiteId)
-        #set($websiteId = $util.defaultIfNullOrBlank($websiteId, ""))
-        #set($websiteId = $util.str.toUpper($websiteId))
-        #set($websiteId = $util.str.toReplace($websiteId, " ", ""))
-        #set($itemMetadataId = $ctx.args.input.itemMetadataId)
-        #set($itemMetadataId = $util.defaultIfNullOrBlank($itemMetadataId, ""))
-        #set($itemMetadataId = $util.str.toUpper($itemMetadataId))
-        #set($itemMetadataId = $util.str.toReplace($itemMetadataId, " ", ""))
-        #set($pk = "WEBSITE#$websiteId")
-        #set($sk = "ITEM#$itemMetadataId")
-        #set($GSI1PK = $pk)
-        #set($GSI1SK = "ADDED#$util.time.nowISO8601()")
-
-        ## add stash values to enable us to eventually call GetMergedItemRecordFunction
-        $!{ctx.stash.put("itemId", $ctx.args.input.itemMetadataId)}
-        $!{ctx.stash.put("websiteId", $ctx.args.input.websiteId)}
-
-        {
-          "version": "2017-02-28",
-          "operation": "UpdateItem",
-          "key": {
-            "PK": $util.dynamodb.toDynamoDBJson($pk),
-            "SK": $util.dynamodb.toDynamoDBJson($sk),
-          },
-          "update": {
-            "expression": "SET itemMetadataId = :itemMetadataId, websiteId = :websiteId, #TYPE = :rowType, dateModifiedInDynamo = :dateModifiedInDynamo, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, id = :id, title = :title",
-            "expressionNames": {"#TYPE": "TYPE"},
-            "expressionValues": {
-              ":itemMetadataId": $util.dynamodb.toDynamoDBJson($ctx.args.input.itemMetadataId),
-              ":websiteId": $util.dynamodb.toDynamoDBJson($ctx.args.input.websiteId),
-              ":rowType": $util.dynamodb.toDynamoDBJson("WebSiteItem"),
-              ":dateModifiedInDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
-              ":GSI1PK": $util.dynamodb.toDynamoDBJson($GSI1PK),
-              ":GSI1SK": $util.dynamodb.toDynamoDBJson($GSI1SK),
-              ":id": $util.dynamodb.toDynamoDBJson($ctx.args.input.itemMetadataId),
-              ":title": $util.dynamodb.toDynamoDBJson($ctx.args.input.itemMetadataId),
-            }
-          }
-        }`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-    })
-
-    // Remove once Red Box is updated to use saveCopyrightForWebsite  also remove corresponding ReplaceCopyrightStatementInput from schema
-    new Resolver(this, 'MutationReplaceCopyrightStatement', {
-      api: api,
-      typeName: 'Mutation',
-      fieldName: 'replaceCopyrightStatement',
-      pipelineConfig: [updateSupplementalDataFunction, updateItemFunction],
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($supplementalDataArgs = {})
-        #set($itemArgs = {})
-
-        ## set generalCopyrightStatus based on generalInCopyright boolean
-        #set($generalCopyrightStatus = 'Copyright')
-        #if(!$ctx.args.input.generalInCopyright)
-          #set($generalCopyrightStatus = 'not in copyright')
-        #end
-
-        $!{supplementalDataArgs.put('generalInCopyright', $ctx.args.input.generalInCopyright)}
-        $!{supplementalDataArgs.put('generalCopyrightStatement', $ctx.args.input.generalCopyrightStatement)}
-        $!{supplementalDataArgs.put('generalCopyrightStatus', $generalCopyrightStatus)}
-        $!{itemArgs.put('copyrightStatement', $ctx.args.input.generalCopyrightStatement)}
-        $!{itemArgs.put('copyrightStatus', $generalCopyrightStatus)}
-
-        $!{ctx.stash.put("itemId", $ctx.args.input.id)}
-        $!{ctx.stash.put("supplementalDataArgs", $supplementalDataArgs)}
-        $!{ctx.stash.put("itemArgs", $itemArgs)}
-
-        {}`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-    })
-
-    // Remove once Red Box is updated to use saveDefaultImageForWebsite also remove corresponding ReplaceDefaultImageInput from schema
-    new Resolver(this, 'MutationReplaceDefaultImageResolver', {
-      api: api,
-      typeName: 'Mutation',
-      fieldName: 'replaceDefaultImage',
-      pipelineConfig: [updateSupplementalDataFunction, updateItemFunction],
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($supplementalDataArgs = {})
-        #set($itemArgs = {})
-
-        $!{supplementalDataArgs.put('generalDefaultFilePath', $ctx.args.input.generalDefaultFilePath)}
-        $!{supplementalDataArgs.put('generalObjectFileGroupId', $ctx.args.input.generalObjectFileGroupId)}
-        $!{itemArgs.put('defaultFilePath', $ctx.args.input.generalDefaultFilePath)}
-        $!{itemArgs.put('objectFileGroupId', $ctx.args.input.generalObjectFileGroupId)}
-
-        $!{ctx.stash.put("itemId", $ctx.args.input.id)}
-        $!{ctx.stash.put("supplementalDataArgs", $supplementalDataArgs)}
-        $!{ctx.stash.put("itemArgs", $itemArgs)}
-
-        {}`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-    })
-
-    // Remove once Red Box is updated to use savePartiallyDigitizedForWebsite also remove corresponding ReplacePartiallyDigitizedInput from schema
-    new Resolver(this, 'MutationReplacePartiallyDigitizedResolver', {
-      api: api,
-      typeName: 'Mutation',
-      fieldName: 'replacePartiallyDigitized',
-      pipelineConfig: [updateSupplementalDataFunction, updateItemFunction],
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($supplementalDataArgs = {})
-        #set($itemArgs = {})
-
-        $!{supplementalDataArgs.put('generalPartiallyDigitized', $ctx.args.input.generalPartiallyDigitized)}
-        $!{itemArgs.put('partiallyDigitized', $ctx.args.input.generalPartiallyDigitized)}
-
-        $!{ctx.stash.put("itemId", $ctx.args.input.id)}
-        $!{ctx.stash.put("supplementalDataArgs", $supplementalDataArgs)}
-        $!{ctx.stash.put("itemArgs", $itemArgs)}
-
-        {}`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-    })
-
-
     new Resolver(this, 'MutationAddItemToWebsiteResolver', {
       api: api,
       typeName: 'Mutation',
@@ -1116,7 +761,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
             "SK": $util.dynamodb.toDynamoDBJson($sk),
           },
           "update": {
-            "expression": "SET itemId = :itemId, websiteId = :websiteId, #TYPE = :rowType, dateModifiedInDynamo = :dateModifiedInDynamo, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, id = :id, title = :title",
+            "expression": "SET itemId = :itemId, websiteId = :websiteId, #TYPE = :rowType, dateModifiedInDynamo = :dateModifiedInDynamo, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, id = :id",
             "expressionNames": {"#TYPE": "TYPE"},
             "expressionValues": {
               ":itemId": $util.dynamodb.toDynamoDBJson($ctx.args.itemId),
@@ -1126,7 +771,45 @@ def _delete_expired_api_keys(graphql_api_id: str):
               ":GSI1PK": $util.dynamodb.toDynamoDBJson($GSI1PK),
               ":GSI1SK": $util.dynamodb.toDynamoDBJson($GSI1SK),
               ":id": $util.dynamodb.toDynamoDBJson($ctx.args.itemId),
-              ":title": $util.dynamodb.toDynamoDBJson($ctx.args.itemId),
+            }
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'MutationAddItemToHarvestResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'addItemToHarvest',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($harvestItemId = $ctx.args.harvestItemId)
+        #set($harvestItemId = $util.defaultIfNullOrBlank($harvestItemId, ""))
+        #set($harvestItemId = $util.str.toUpper($harvestItemId))
+        #set($harvestItemId = $util.str.toReplace($harvestItemId, " ", ""))
+        #set($sourceSystem = $ctx.args.sourceSystem)
+        #set($sourceSystem = $util.defaultIfNullOrBlank($sourceSystem, ""))
+        #set($sourceSystem = $util.str.toUpper($sourceSystem))
+        #set($sourceSystem = $util.str.toReplace($sourceSystem, " ", ""))
+        #set($pk = "ITEMTOHARVEST")
+        #set($sk = "SOURCESYSTEM#$sourceSystem#$harvestItemId")
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            "expression": "SET harvestItemId = :harvestItemId, sourceSystem = :sourceSystem, #TYPE = :rowType, dateModifiedInDynamo = :dateModifiedInDynamo, dateAddedToDynamo = :dateAddedToDynamo",
+            "expressionNames": {"#TYPE": "TYPE"},
+            "expressionValues": {
+              ":harvestItemId": $util.dynamodb.toDynamoDBJson($ctx.args.harvestItemId),
+              ":sourceSystem": $util.dynamodb.toDynamoDBJson($ctx.args.sourceSystem),
+              ":rowType": $util.dynamodb.toDynamoDBJson("ItemToHarvest"),
+              ":dateModifiedInDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
+              ":dateAddedToDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
             }
           }
         }`),
@@ -1523,6 +1206,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
         }`),
     })
 
+    // Note that id is really sourceSystem, which can be confusing
     new Resolver(this, 'QueryListItemsBySourceSystemResolver', {
       api: api,
       typeName: 'Query',
@@ -1583,6 +1267,65 @@ def _delete_expired_api_keys(graphql_api_id: str):
           "items": $util.toJson($context.result.items),
           "nextToken": $util.toJson($context.result.nextToken)
         }`),
+    })
+
+    new Resolver(this, 'QueryListSupplementalDataRecordsResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'listSupplementalDataRecords',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($id = $ctx.args.id)
+        #set($id = $util.defaultIfNullOrBlank($id, ""))
+        #set($websiteId = $ctx.args.websiteId)
+        #set($websiteId = $util.defaultIfNullOrBlank($websiteId, ""))
+        $!{ctx.stash.put("id", $id)}
+        $!{ctx.stash.put("websiteId", $websiteId)}
+
+        #set($pk = "SUPPLEMENTALDATA")
+        {
+          "version" : "2017-02-28",
+          "operation" : "Query",
+          "index" : "GSI1",
+          "query" : {
+              "expression": "GSI1PK = :pk",
+              "expressionValues" : {
+                  ":pk": $util.dynamodb.toDynamoDBJson($pk)
+              }
+          },
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        ## Raise a GraphQL field error in case of a datasource invocation error
+        #if($ctx.error)
+            $util.error($ctx.error.message, $ctx.error.type)
+        #end
+
+        #set($id = $util.str.toUpper($ctx.stash.id))
+        #set($websiteId = $util.str.toUpper($ctx.stash.websiteId))
+        #set($results = [])
+
+        #foreach($item in $context.result.items)
+            ## $util.qr($results.add($item))
+          #if( $id == "" && $websiteId == "")
+            $util.qr($results.add($item))
+          #elseif( $id != "" && $util.str.toUpper($item.id) == $id && $websiteId != "" && $util.str.toUpper($item.websiteId) == $websiteId)
+            $util.qr($results.add($item))
+          #elseif( $id != "" && $util.str.toUpper($item.id) == $id && $websiteId == "")
+            $util.qr($results.add($item))
+          #elseif( $websiteId != "" && $util.str.toUpper($item.websiteId) == $websiteId && $id == "")
+            $util.qr($results.add($item))
+          #end
+        #end
+
+
+        {
+          ## "items": $util.toJson($context.result.items),
+          "items": $util.toJson($results),
+          "nextToken": $util.toJson($context.result.nextToken)
+        }
+      `),
     })
 
     new Resolver(this, 'QueryListWebsitesResolver', {
@@ -1651,20 +1394,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
       pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
         $!{ctx.stash.put("itemId", $ctx.source.itemId)}
-        $!{ctx.stash.put("websiteId", $ctx.source.websiteId)}
-
-        {}`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-    })
-
-    // Remove after Red Box has been updated
-    new Resolver(this, 'WebsiteItemsItemMetadataResolver', {
-      api: api,
-      typeName: 'WebsiteItems',
-      fieldName: 'ItemMetadata',
-      pipelineConfig: [getMergedItemRecordFunction],
-      requestMappingTemplate: MappingTemplate.fromString(`
-        $!{ctx.stash.put("itemId", $ctx.source.itemMetadataId)}
         $!{ctx.stash.put("websiteId", $ctx.source.websiteId)}
 
         {}`),

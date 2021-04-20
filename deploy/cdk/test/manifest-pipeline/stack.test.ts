@@ -293,7 +293,7 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    xtest('creates InitManifestLambdaFunction', () => {
+    test('creates InitManifestLambdaFunction', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -309,16 +309,10 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Initializes the manifest pipeline step functions',
-        Role: {
-          "Fn::GetAtt": [
-            "InitManifestLambdaFunctionServiceRole2C465585",
-            "Arn",
-          ],
-        },
       }))
     })
 
-    xtest('creates ProcessManifestLambdaFunction', () => {
+    test('creates ProcessManifestLambdaFunction', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -334,16 +328,10 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates iiif Manifests',
-        Role: {
-          "Fn::GetAtt": [
-            "ProcessManifestLambdaFunctionServiceRoleEE75A7D5",
-            "Arn",
-          ],
-        },
       }))
     })
 
-    xtest('creates FinalizeManifestLambdaFunction', () => {
+    test('creates FinalizeManifestLambdaFunction', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -359,16 +347,10 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Copies Manifests and other artifacts to the process bucket',
-        Role: {
-          "Fn::GetAtt": [
-            "FinalizeManifestLambdaFunctionServiceRole4C013470",
-            "Arn",
-          ],
-        },
       }))
     })
 
-    xtest('creates MuseumExportLambda', () => {
+    test('creates MuseumExportLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -384,16 +366,10 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from web-enabled items from Web Kiosk.',
-        Role: {
-          "Fn::GetAtt": [
-            "MuseumExportLambdaServiceRoleA972C11B",
-            "Arn",
-          ],
-        },
       }))
     })
 
-    xtest('creates AlephExportLambda', () => {
+    test('creates AlephExportLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -409,16 +385,10 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from Aleph records with 500$a = MARBLE.',
-        Role: {
-          "Fn::GetAtt": [
-            "AlephExportLambdaServiceRoleFD64626C",
-            "Arn",
-          ],
-        },
       }))
     })
 
-    xtest('creates ArchivesSpaceExportLambda', () => {
+    test('creates ArchivesSpaceExportLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -434,16 +404,10 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from a list of ArchivesSpace urls.',
-        Role: {
-          "Fn::GetAtt": [
-            "ArchivesSpaceExportLambdaServiceRole15D7EF45",
-            "Arn",
-          ],
-        },
       }))
     })
 
-    xtest('creates CurateExportLambda', () => {
+    test('creates CurateExportLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -459,16 +423,10 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from a list of curate PIDs.',
-        Role: {
-          "Fn::GetAtt": [
-            "CurateExportLambdaServiceRoleEFD480E8",
-            "Arn",
-          ],
-        },
       }))
     })
 
-    xtest('creates ExpandSubjectTermsLambda', () => {
+    test('creates ExpandSubjectTermsLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -484,16 +442,10 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Cycles through subject term URIs stored in dynamo, and expands those subject terms using the appropriate online authority.',
-        Role: {
-          "Fn::GetAtt": [
-            "ExpandSubjectTermsLambdaServiceRole9D8A83E3",
-            "Arn",
-          ],
-        },
       }))
     })
 
-    xtest('creates ObjectFilesApiLambda', () => {
+    test('creates ObjectFilesApiLambda', () => {
       const app = new cdk.App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
@@ -509,12 +461,6 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates json representations files to be used by Red Box.',
-        Role: {
-          "Fn::GetAtt": [
-            "ObjectFilesApiLambdaServiceRoleD6E8D461",
-            "Arn",
-          ],
-        },
       }))
     })
 

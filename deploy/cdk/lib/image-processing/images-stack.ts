@@ -9,6 +9,8 @@ import fs = require('fs')
 import { FoundationStack } from '../foundation'
 import { ManifestPipelineStack } from '../manifest-pipeline'
 import { MaintainMetadataStack } from '../maintain-metadata'
+import { AssetCode } from '@aws-cdk/aws-lambda'
+import { AssetHelpers } from '../asset-helpers'
 
 export interface ImagesStackProps extends cdk.StackProps {
   readonly dockerfilePath: string;
@@ -69,18 +71,13 @@ export class ImagesStack extends cdk.Stack {
       actions: ["ssm:Get*"],
     }))
 
-    if(!fs.existsSync(props.dockerfilePath)) {
-      Annotations.of(this).addError(`Cannot deploy this stack. Asset path not found ${props.dockerfilePath}`)
-      return
-    }
-
     const taskDef = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       taskRole: taskRole,
       memoryLimitMiB: 4096,
       cpu: 2048,
     })
     taskDef.addContainer("AppContainer", {
-      image: ecs.ContainerImage.fromAsset(props.dockerfilePath),
+      image: AssetHelpers.containerFromDockerfile(this, 'DockerImageAsset', { directory: props.dockerfilePath }),
       logging: new ecs.AwsLogDriver({
         logGroup: props.foundationStack.logGroup,
         streamPrefix: `${this.stackName}-AppContainer`,

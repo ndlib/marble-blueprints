@@ -15,6 +15,7 @@ import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../foundation'
 import { CnameRecord } from '@aws-cdk/aws-route53'
 import { Certificate, ICertificate } from '@aws-cdk/aws-certificatemanager'
+import { AssetHelpers } from '../asset-helpers'
 
 export interface IStaticHostStackProps extends cdk.StackProps {
   readonly contextEnvName: string
@@ -58,7 +59,7 @@ export class StaticHostStack extends cdk.Stack {
     super(scope, id, props)
 
     this.spaRedirectionLambda = new lambda.Function(this, 'SPARedirectionLambda', {
-      code: lambda.Code.fromAsset(props.lambdaCodePath),
+      code: AssetHelpers.codeFromAsset(this, props.lambdaCodePath),
       description: 'Basic rewrite rule to send directory requests to appropriate locations in the SPA.',
       handler: 'handler.handler',
       runtime: lambda.Runtime.NODEJS_12_X,

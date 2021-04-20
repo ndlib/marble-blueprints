@@ -7,6 +7,7 @@ import cdk = require('@aws-cdk/core')
 import fs = require('fs')
 import { FoundationStack } from '../foundation'
 import { StringParameter } from '@aws-cdk/aws-ssm'
+import { AssetHelpers } from '../asset-helpers'
 
 export interface UserContentStackProps extends cdk.StackProps {
   readonly lambdaCodePath: string;
@@ -26,11 +27,6 @@ export class UserContentStack extends cdk.Stack {
     super(scope, id, props)
 
     this.apiName = `${props.namespace}-user-content`
-
-    if(!fs.existsSync(props.lambdaCodePath)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodePath}`)
-      return
-    }
 
     // Dynamo Tables
     const userDynamoTable = new dynamodb.Table(this, 'UsersTable', {
@@ -79,7 +75,7 @@ export class UserContentStack extends cdk.Stack {
     })
 
     // Lambda Functions
-    const codeAsset = lambda.Code.fromAsset(props.lambdaCodePath)
+    const codeAsset = AssetHelpers.codeFromAsset(this, props.lambdaCodePath)
     const userContentLambda = new lambda.Function(this, 'userContentFunction', {
       code: codeAsset,
       handler: 'lambda.handler',

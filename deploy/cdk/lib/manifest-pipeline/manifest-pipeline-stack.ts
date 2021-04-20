@@ -1,7 +1,7 @@
 import { CloudFrontAllowedMethods, CloudFrontWebDistribution, HttpVersion, LambdaEdgeEventType, OriginAccessIdentity, PriceClass, ViewerCertificate } from '@aws-cdk/aws-cloudfront'
 import { SfnStateMachine } from "@aws-cdk/aws-events-targets"
 import { CanonicalUserPrincipal, Effect, PolicyStatement } from '@aws-cdk/aws-iam'
-import { Code, Function, Runtime, Version } from "@aws-cdk/aws-lambda"
+import { AssetCode, Code, Function, Runtime, Version } from "@aws-cdk/aws-lambda"
 import { CnameRecord } from "@aws-cdk/aws-route53"
 import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
@@ -13,6 +13,7 @@ import path = require('path')
 import { FoundationStack } from '../foundation'
 import { Rule, Schedule } from "@aws-cdk/aws-events"
 import dynamodb = require('@aws-cdk/aws-dynamodb')
+import { AssetHelpers } from '../asset-helpers'
 
 export interface IBaseStackProps extends StackProps {
 
@@ -399,13 +400,9 @@ export class ManifestPipelineStack extends Stack {
         ttl: Duration.minutes(15),
       })
     }
-    
-    if (!fs.existsSync(props.lambdaCodeRootPath)) {
-      Annotations.of(this).addError(`Cannot deploy this stack. Asset path not found ${props.lambdaCodeRootPath}`)
-      return
-    }
+
     const initManifestLambda = new Function(this, 'InitManifestLambdaFunction', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'init/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'init/')),
       description: 'Initializes the manifest pipeline step functions',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
@@ -425,7 +422,7 @@ export class ManifestPipelineStack extends Stack {
 
     
     const processManifestLambda = new Function(this, 'ProcessManifestLambdaFunction', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'process_manifest/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'process_manifest/')),
       description: 'Creates iiif Manifests',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
@@ -444,7 +441,7 @@ export class ManifestPipelineStack extends Stack {
 
 
     const finalizeManifestLambda = new Function(this, 'FinalizeManifestLambdaFunction', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'finalize/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'finalize/')),
       description: 'Copies Manifests and other artifacts to the process bucket',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
@@ -530,7 +527,7 @@ export class ManifestPipelineStack extends Stack {
 
 
     const museumExportLambda = new Function(this, 'MuseumExportLambda', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'museum_export/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'museum_export/')),
       description: 'Creates standard json from web-enabled items from Web Kiosk.',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
@@ -559,7 +556,7 @@ export class ManifestPipelineStack extends Stack {
     this.websiteMetadataDynamoTable.grantReadWriteData(museumExportLambda)
 
     const alephExportLambda = new Function(this, 'AlephExportLambda', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'aleph_export/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'aleph_export/')),
       description: 'Creates standard json from Aleph records with 500$a = MARBLE.',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
@@ -588,7 +585,7 @@ export class ManifestPipelineStack extends Stack {
 
 
     const curateExportLambda = new Function(this, 'CurateExportLambda', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'curate_export/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'curate_export/')),
       description: 'Creates standard json from a list of curate PIDs.',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
@@ -618,7 +615,7 @@ export class ManifestPipelineStack extends Stack {
 
 
     const archivesSpaceExportLambda = new Function(this, 'ArchivesSpaceExportLambda', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'archivesspace_export/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'archivesspace_export/')),
       description: 'Creates standard json from a list of ArchivesSpace urls.',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
@@ -647,7 +644,7 @@ export class ManifestPipelineStack extends Stack {
 
 
     const objectFilesApiLambda = new Function(this, 'ObjectFilesApiLambda', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'object_files_api/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'object_files_api/')),
       description: 'Creates json representations files to be used by Red Box.',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,
@@ -672,7 +669,7 @@ export class ManifestPipelineStack extends Stack {
 
 
     const expandSubjectTermsLambda = new Function(this, 'ExpandSubjectTermsLambda', {
-      code: Code.fromAsset(path.join(props.lambdaCodeRootPath, 'expand_subject_terms_lambda/')),
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'expand_subject_terms_lambda/')),
       description: 'Cycles through subject term URIs stored in dynamo, and expands those subject terms using the appropriate online authority.',
       handler: 'handler.run',
       runtime: Runtime.PYTHON_3_8,

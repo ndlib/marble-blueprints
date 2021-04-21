@@ -10,6 +10,7 @@ import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import maintainMetadata = require('../lib/maintain-metadata')
 import multimediaAssets = require('../lib/multimedia-assets')
+import manifestLambda = require('../lib/manifest-lambda')
 import { getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
@@ -117,6 +118,14 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...multimediaAssetsContext,
   })
 
+  const manifestLambdaContext = getContextByNamespace('manifestLambda')
+  const manfiestLambdaStack = new manifestLambda.ManifestLambdaStack(app, `${namespace}-manifest-lambda`, {
+    foundationStack,
+    maintainMetadataStack,
+    ...commonProps,
+    ...manifestLambdaContext,
+  })
+
   const services = {
     foundationStack,
     website,
@@ -130,6 +139,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     manifestPipelineStack,
     maintainMetadataStack,
     multimediaAssetsStack,
+    manfiestLambdaStack,
   }
 
   const slos = [

@@ -469,7 +469,7 @@ describe('ManifestPipelineStack', () => {
 
 
 
-  xdescribe('State Machines', () => {
+  describe('State Machines', () => {
     test('creates SchemaStateMachine ', () => {
       const app = new cdk.App()
 
@@ -626,7 +626,7 @@ describe('ManifestPipelineStack', () => {
 
 
   describe('Rules', () => {
-    xdescribe('when createEventRules is true', () => {
+    describe('when createEventRules is true', () => {
       test('creates StartStdJsonHarvestRule ', () => {
         const app = new cdk.App()
 

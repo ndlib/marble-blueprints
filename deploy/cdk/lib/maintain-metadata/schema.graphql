@@ -1,3 +1,12 @@
+type CreationPlaceObject{
+	city: String
+	continent: String
+	country: String
+	county: String
+	historic: String
+	state: String
+}
+
 type File {
 	id: String!
 	dateAddedToDynamo: String
@@ -85,6 +94,7 @@ type ItemMetadata {
 	copyrightStatus: String
 	copyrightUrl: String
 	createdDate: String
+	creationPlace: CreationPlaceObject
 	creators: [MetadataObjectWithDisplayField]
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String

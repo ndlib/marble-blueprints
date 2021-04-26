@@ -117,6 +117,7 @@ type ItemMetadata {
 	parentId: String
 	parent: ItemMetadata
 	partiallyDigitized: Boolean
+	physicalAccess: String
 	publishers: [MetadataObjectWithDisplayField]
 	relatedIds: [MetadataRelatedObject]
 	repository: String
@@ -194,6 +195,7 @@ type Mutation {
 	addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
 	addItemToHarvest(harvestItemId: String!, sourceSystem: String!): ItemToHarvestRecord
 	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
+	removeDefaultImageForWebsite(itemId: String!, websiteId: String): ItemMetadata
 	saveAdditionalNotesForWebsite(itemId: String!, websiteId: String, additionalNotes: String!): ItemMetadata
 	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String!, inCopyright: Boolean!): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String!): ItemMetadata

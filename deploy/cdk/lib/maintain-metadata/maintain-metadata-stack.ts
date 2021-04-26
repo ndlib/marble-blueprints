@@ -844,6 +844,41 @@ def _delete_expired_api_keys(graphql_api_id: str):
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'MutationRemoveDefaultImageForWebsiteResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'removeDefaultImageForWebsite',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($itemId = $ctx.args.itemId)
+        #set($itemId = $util.defaultIfNullOrBlank($itemId, ""))
+        #set($itemId = $util.str.toUpper($itemId))
+        #set($itemId = $util.str.toReplace($itemId, " ", ""))
+
+        #set($websiteId = $ctx.args.websiteId)
+        #set($websiteId = $util.defaultIfNullOrBlank($websiteId, "All"))
+        #set($websiteId = $util.str.toUpper($websiteId))
+        #set($websiteId = $util.str.toReplace($websiteId, " ", ""))
+
+
+        #set($pk = "ITEM#$itemId")
+        #set($sk = "SUPPLEMENTALDATA#$websiteId")
+
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            "expression": "Remove defaultFilePath, objectFileGroupId",
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'MutationSaveAdditionalNotesForWebsiteResolver', {
       api: api,
       typeName: 'Mutation',

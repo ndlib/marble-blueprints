@@ -490,6 +490,30 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
+    test('creates MutationRemoveDefaultImageForWebsiteResolver', () => {
+      const app = new cdk.App()
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+        foundationStack,
+        ...manifestPipelineContext,
+      })
+
+      // WHEN
+      const stack = new MaintainMetadataStack(app, 'MyTestStack', {
+        foundationStack,
+        manifestPipelineStack,
+        ...maintainMetadataContext,
+      })
+
+      // THEN
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "removeDefaultImageForWebsite",
+      }))
+    })
+
     test('creates MutationSaveAdditionalNotesForWebsiteResolver', () => {
       const app = new cdk.App()
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {

@@ -107,7 +107,6 @@ export class ManifestLambdaStack extends Stack {
       timeout: Duration.seconds(90),
     })
 
-    // new API gateway created for testing purposes
     const api = new apigateway.RestApi(this, 'IIIFApiGateway', {
       restApiName: apiName,
       defaultCorsPreflightOptions: {

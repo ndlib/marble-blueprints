@@ -87,7 +87,7 @@ export class ManifestLambdaStack extends Stack {
       environment: {
         GRAPHQL_API_URL_KEY_PATH: graphqlApiUrlKeyPath,
         GRAPHQL_API_KEY_KEY_PATH: graphqlApiKeyKeyPath,
-        IIIF_API_BASE_URL: iiifApiBaseUrl,
+        IIIF_API_BASE_URL: 'https://' + iiifApiBaseUrl,
         SENTRY_DSN: props.sentryDsn,
       },
       initialPolicy: [

@@ -12,6 +12,7 @@ import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
 import { PipelineFoundationStack } from '../lib/foundation'
 import maintainMetadata = require('../lib/maintain-metadata')
+import manifestLambda = require('../lib/manifest-lambda')
 
 export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv, testStacks: Stacks, prodStacks: Stacks): void => {
   const pipelineFoundationStack = new PipelineFoundationStack(app, `${namespace}-deployment-foundation`, {
@@ -96,4 +97,11 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...commonProps,
     ...maintainMetadataContext,
   })
+
+  const manifestLambdaContext = getContextByNamespace('manifestLambda')
+  new manifestLambda.DeploymentPipelineStack(app, `${namespace}-manifest-lambda-deployment`, {
+    ...commonProps,
+    ...manifestLambdaContext,
+  })
+
 }

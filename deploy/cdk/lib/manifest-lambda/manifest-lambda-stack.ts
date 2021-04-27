@@ -50,17 +50,6 @@ export interface IBaseStackProps extends StackProps {
 
 export class ManifestLambdaStack extends Stack {
 
-  private static ssmPolicy(keyPath: string): PolicyStatement {
-    return new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["ssm:GetParametersByPath"],
-      resources: [
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + keyPath + '/*'),
-      ],
-    })
-  }
-
-
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 

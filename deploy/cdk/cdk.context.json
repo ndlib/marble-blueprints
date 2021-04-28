@@ -135,6 +135,13 @@
 
   "maintainMetadata:openIdConnectProvider": "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
 
+  "manifestLambda:hostnamePrefix": "iiif-manifest",
+  "manfiestLambda:sentryDsn": "https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199",
+  "manifestLambda:lambdaCodeRootPath": "../../../marble-manifest-lambda",
+  "manifestLambda:appRepoOwner": "ndlib",
+  "manifestLambda:appRepoName": "marble-manifest-lambda",
+  "manifestLambda:appSourceBranch": "master",
+
   "multimediaAssets:cacheTtl": 86400,
 
   "slos:emailSubscriber": "rfox2@nd.edu",

@@ -1,14 +1,13 @@
 import { CloudFrontAllowedMethods, CloudFrontWebDistribution, HttpVersion, LambdaEdgeEventType, OriginAccessIdentity, PriceClass, ViewerCertificate } from '@aws-cdk/aws-cloudfront'
 import { SfnStateMachine } from "@aws-cdk/aws-events-targets"
 import { CanonicalUserPrincipal, Effect, PolicyStatement } from '@aws-cdk/aws-iam'
-import { AssetCode, Code, Function, Runtime, Version } from "@aws-cdk/aws-lambda"
+import { Code, Function, Runtime, Version } from "@aws-cdk/aws-lambda"
 import { CnameRecord } from "@aws-cdk/aws-route53"
 import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { Choice, Condition, Errors, Fail, JsonPath, LogLevel, Parallel, Pass, Result, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
 import * as tasks from '@aws-cdk/aws-stepfunctions-tasks'
 import { Construct, Duration, Fn, Stack, StackProps, CfnOutput, Annotations } from "@aws-cdk/core"
-import fs = require('fs')
 import path = require('path')
 import { FoundationStack } from '../foundation'
 import { Rule, Schedule } from "@aws-cdk/aws-events"
@@ -401,130 +400,6 @@ export class ManifestPipelineStack extends Stack {
       })
     }
 
-    const initManifestLambda = new Function(this, 'InitManifestLambdaFunction', {
-      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'init/')),
-      description: 'Initializes the manifest pipeline step functions',
-      handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
-      environment: {
-        SSM_KEY_BASE: props.appConfigPath,
-        SENTRY_DSN: props.sentryDsn,
-      },
-      initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
-        ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
-      ],
-      timeout: Duration.seconds(90),
-    })
-
-    processBucket.grantReadWrite(initManifestLambda)
-    this.manifestBucket.grantReadWrite(initManifestLambda)
-
-    
-    const processManifestLambda = new Function(this, 'ProcessManifestLambdaFunction', {
-      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'process_manifest/')),
-      description: 'Creates iiif Manifests',
-      handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
-      environment: {
-        SENTRY_DSN: props.sentryDsn,
-      },
-      initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
-        ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
-      ],
-      timeout: Duration.seconds(900),
-    })
-
-    processBucket.grantReadWrite(processManifestLambda)
-    this.manifestBucket.grantReadWrite(processManifestLambda)
-
-
-    const finalizeManifestLambda = new Function(this, 'FinalizeManifestLambdaFunction', {
-      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'finalize/')),
-      description: 'Copies Manifests and other artifacts to the process bucket',
-      handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
-      environment: {
-        SENTRY_DSN: props.sentryDsn,
-        PROCESS_BUCKET: processBucket.bucketArn,
-      },
-      initialPolicy: [
-        ManifestPipelineStack.ssmPolicy(props.appConfigPath),
-        ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ["ses:SendEmail"],
-          resources: ["*"],
-        }),
-      ],
-      timeout: Duration.seconds(900),
-    })
-
-    this.manifestBucket.grantReadWrite(finalizeManifestLambda)
-    processBucket.grantReadWrite(finalizeManifestLambda)
-    props.foundationStack.publicBucket.grantReadWrite(finalizeManifestLambda)
-
-    
-    // Create tasks for state machine
-    const initManifestTask = new tasks.LambdaInvoke(this, 'InitManifestTask', {
-      lambdaFunction: initManifestLambda,
-      outputPath: '$.Payload', /* GOTCHA:  Lambda output is in $.Payload.  Use this to save to the root to chain to subsequent steps. */
-    })
-
-    const processManifestTask = new tasks.LambdaInvoke(this, 'ProcessManifestTask', {
-      lambdaFunction: processManifestLambda,
-      outputPath: '$.Payload',
-    })
-
-    const finalizeManifestTask = new tasks.LambdaInvoke(this, 'FinalizeManifestTask', {
-      lambdaFunction: finalizeManifestLambda,
-      outputPath: '$.Payload',
-    })
-
-    const successState = new Succeed(this, 'Succeed')
-    const failureState = new Fail(this, "Fail")
-
-    const denoteErrorChoice = new Choice(this, 'DenoteErrorChoice')
-          .when(Condition.booleanEquals('$.error_found', true), failureState)
-      .otherwise(successState)
-
-    const restartFinalizeManifestChoice = (new Choice(this, 'restartFinalizeManifestChoice')
-      .when(Condition.booleanEquals('$.finalize_complete', false), finalizeManifestTask)
-      .when(Condition.booleanEquals('$.finalize_complete', true), denoteErrorChoice)
-      .otherwise(denoteErrorChoice)
-    )
-
-    const restartProcessManifestChoice = (new Choice(this, 'RestartProcessManifestChoice')
-      .when(Condition.booleanEquals('$.process_manifest_complete', false), processManifestTask)
-      .when(Condition.booleanEquals('$.process_manifest_complete', true), finalizeManifestTask)
-      .otherwise(finalizeManifestTask)
-      )
-
-    initManifestTask.addCatch(processManifestTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(processManifestTask, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(processManifestTask, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(processManifestTask)
-
-    processManifestTask.addCatch(restartProcessManifestChoice, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(restartProcessManifestChoice, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(restartProcessManifestChoice, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(restartProcessManifestChoice)
-    
-    finalizeManifestTask.addCatch(restartFinalizeManifestChoice, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })
-      .addCatch(restartFinalizeManifestChoice, { errors: [Errors.TASKS_FAILED], resultPath: '$.unexpected' })
-      .addCatch(restartFinalizeManifestChoice, { errors: [Errors.ALL], resultPath: '$.unexpected' })
-      .next(restartFinalizeManifestChoice)
-    
-    const schemaStateMachine = new StateMachine(this, `${this.stackName}-SchemaStateMachine`, {
-      definition: initManifestTask,
-      logs: {
-        destination: props.foundationStack.logGroup,
-        level: LogLevel.ALL,
-        includeExecutionData: true,
-      },
-    })
-
 
     const museumExportLambda = new Function(this, 'MuseumExportLambda', {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'museum_export/')),
@@ -833,13 +708,6 @@ export class ManifestPipelineStack extends Stack {
         schedule: Schedule.cron({ minute: '0', hour: '6' }),
         targets: [new SfnStateMachine(harvestStateMachine)],
         description: 'Start State Machine harvest of source systems to create standard json.',
-      })
-
-
-      new Rule(this, 'StartManifestPipelineRule', {
-        schedule: Schedule.cron({ minute: '0', hour: '8' }),
-        targets: [new SfnStateMachine(schemaStateMachine)],
-        description: 'Start State Machine to create manifests.',
       })
     }
 

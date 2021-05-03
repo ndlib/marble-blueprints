@@ -112,9 +112,6 @@ describe('ManifestPipelineStack', () => {
       // THEN
       expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
         Type: "String",
-        Value: {
-          Ref: "SSMImageServerHostnameParameter",
-        },
         Description: "Image server base url",
         Name: `${manifestPipelineContext.appConfigPath}/image-server-base-url`,
       }))
@@ -293,63 +290,6 @@ describe('ManifestPipelineStack', () => {
       }))
     })
 
-    test('creates InitManifestLambdaFunction', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
-        Description: 'Initializes the manifest pipeline step functions',
-      }))
-    })
-
-    test('creates ProcessManifestLambdaFunction', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
-        Description: 'Creates iiif Manifests',
-      }))
-    })
-
-    test('creates FinalizeManifestLambdaFunction', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
-        Description: 'Copies Manifests and other artifacts to the process bucket',
-      }))
-    })
-
     test('creates MuseumExportLambda', () => {
       const app = new cdk.App()
 
@@ -470,65 +410,6 @@ describe('ManifestPipelineStack', () => {
 
 
   describe('State Machines', () => {
-    test('creates SchemaStateMachine ', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
-      expectCDK(stack).to(haveResourceLike('AWS::StepFunctions::StateMachine', {
-        "DefinitionString": {
-          "Fn::Join": [
-            "",
-            [
-              "{\"StartAt\":\"InitManifestTask\",\"States\":{\"InitManifestTask\":{\"Next\":\"ProcessManifestTask\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"ProcessManifestTask\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
-              {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
-              {
-                "Fn::GetAtt": [
-                  "InitManifestLambdaFunctionF2D2228A",
-                  "Arn",
-                ],
-              },
-              "\",\"Payload.$\":\"$\"}},\"ProcessManifestTask\":{\"Next\":\"RestartProcessManifestChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"RestartProcessManifestChoice\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
-              {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
-              {
-                "Fn::GetAtt": [
-                  "ProcessManifestLambdaFunction1C2E58FB",
-                  "Arn",
-                ],
-              },
-              "\",\"Payload.$\":\"$\"}},\"RestartProcessManifestChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.process_manifest_complete\",\"BooleanEquals\":false,\"Next\":\"ProcessManifestTask\"},{\"Variable\":\"$.process_manifest_complete\",\"BooleanEquals\":true,\"Next\":\"FinalizeManifestTask\"}],\"Default\":\"FinalizeManifestTask\"},\"FinalizeManifestTask\":{\"Next\":\"restartFinalizeManifestChoice\",\"Retry\":[{\"ErrorEquals\":[\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Catch\":[{\"ErrorEquals\":[\"Lambda.Unknown\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"},{\"ErrorEquals\":[\"States.TaskFailed\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"},{\"ErrorEquals\":[\"States.ALL\"],\"ResultPath\":\"$.unexpected\",\"Next\":\"restartFinalizeManifestChoice\"}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
-              {
-                "Ref": "AWS::Partition",
-              },
-              ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
-              {
-                "Fn::GetAtt": [
-                  "FinalizeManifestLambdaFunction5590627E",
-                  "Arn",
-                ],
-              },
-              "\",\"Payload.$\":\"$\"}},\"restartFinalizeManifestChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.finalize_complete\",\"BooleanEquals\":false,\"Next\":\"FinalizeManifestTask\"},{\"Variable\":\"$.finalize_complete\",\"BooleanEquals\":true,\"Next\":\"DenoteErrorChoice\"}],\"Default\":\"DenoteErrorChoice\"},\"DenoteErrorChoice\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.error_found\",\"BooleanEquals\":true,\"Next\":\"Fail\"}],\"Default\":\"Succeed\"},\"Succeed\":{\"Type\":\"Succeed\"},\"Fail\":{\"Type\":\"Fail\"}}}",
-            ],
-          ],
-        },
-      }))
-    })
-
     test('creates HarvestStateMachine ', () => {
       const app = new cdk.App()
 
@@ -647,27 +528,6 @@ describe('ManifestPipelineStack', () => {
           ScheduleExpression: "cron(0 6 * * ? *)",
         }))
       })
-
-      test('creates StartManifestPipelineRule ', () => {
-        const app = new cdk.App()
-
-        const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-          domainName,
-        })
-
-        // WHEN
-        manifestPipelineContext.createEventRules = true
-        const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-          foundationStack,
-          ...manifestPipelineContext,
-        })
-
-        // THEN
-        expectCDK(stack).to(haveResourceLike('AWS::Events::Rule', {
-          Description: "Start State Machine to create manifests.",
-          ScheduleExpression: "cron(0 8 * * ? *)",
-        }))
-      })
     }) /* end of describe when createEventRules is true */
 
     describe('when createEventRules is false', () => {
@@ -689,27 +549,6 @@ describe('ManifestPipelineStack', () => {
         expectCDK(stack).notTo(haveResourceLike('AWS::Events::Rule', {
           Description: "Start State Machine harvest of source systems to create standard json.",
           ScheduleExpression: "cron(0 6 * * ? *)",
-        }))
-      })
-
-      test('creates StartManifestPipelineRule ', () => {
-        const app = new cdk.App()
-
-        const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-          domainName,
-        })
-
-        // WHEN
-        manifestPipelineContext.createEventRules = false
-        const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-          foundationStack,
-          ...manifestPipelineContext,
-        })
-
-        // THEN
-        expectCDK(stack).notTo(haveResourceLike('AWS::Events::Rule', {
-          Description: "Start State Machine to create manifests.",
-          ScheduleExpression: "cron(0 8 * * ? *)",
         }))
       })
     }) /* end of describe when createEventRules is false */

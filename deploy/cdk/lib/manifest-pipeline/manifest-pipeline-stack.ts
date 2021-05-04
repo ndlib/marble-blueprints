@@ -53,6 +53,11 @@ export interface IBaseStackProps extends StackProps {
   readonly rBSCS3ImageBucketName: string;
 
   /**
+   * S3 bucket where multimedia assets are stored (created by multimedia-assets stack)
+   */
+  readonly multimediaBucket: Bucket;
+
+  /**
    * The ssm path to look for the google team drive credentials and drive-id
    */
   readonly googleKeyPath: string;
@@ -82,8 +87,8 @@ export interface IBaseStackProps extends StackProps {
    */
   readonly createEventRules: boolean;
 
-  /** 
-   * The filesystem root where we can find the source code for all our lambdas.  
+  /**
+   * The filesystem root where we can find the source code for all our lambdas.
    * e.g.  /user/me/source/marble-manifest-pipeline/
    * The path for each individual lambda will be appended to this.
    */
@@ -125,8 +130,8 @@ export class ManifestPipelineStack extends Stack {
       effect: Effect.ALLOW,
       actions: ["s3:ListObjects", "s3:ListBucket"],
       resources: [
-        Fn.sub(`arn:aws:s3:::${bucketName}`),
-        Fn.sub(`arn:aws:s3:::${bucketName}/*`),
+        `arn:aws:s3:::${bucketName}`,
+        `arn:aws:s3:::${bucketName}/*`,
       ],
     })
   }
@@ -147,7 +152,7 @@ export class ManifestPipelineStack extends Stack {
    */
   public readonly distribution: CloudFrontWebDistribution
 
-  /** The DynamoDB table to hold all WebsiteMetadata for MARBLE content and all related websites. 
+  /** The DynamoDB table to hold all WebsiteMetadata for MARBLE content and all related websites.
    * This will be used by Red Box to maintain supplimentary metadata and will also be used as a source to build MARBLE and related websites.
   */
   public readonly websiteMetadataDynamoTable: dynamodb.Table
@@ -160,7 +165,7 @@ export class ManifestPipelineStack extends Stack {
     if (props.hostnamePrefix.length > 63) {
       Annotations.of(this).addError(`Max length of hostnamePrefix is 63.  "${props.hostnamePrefix}" is too long.}`)
     }
-    
+
     if (!RegExp('^$|(?!-)[a-zA-Z0-9-.]{1,63}(?<!-)').test(props.hostnamePrefix)) {
       Annotations.of(this).addError(`hostnamePrefix does not match legal pattern.`)
     }
@@ -323,7 +328,7 @@ export class ManifestPipelineStack extends Stack {
       stringValue: props.rBSCS3ImageBucketName,
       description: 'Name of the RBSC Image Bucket',
     })
-    
+
     const sPARedirectionLambda = new Function(this, 'SPARedirectionLambda', {
       code: Code.fromInline(`'use strict';
         exports.handler = (event, context, callback) => {
@@ -533,6 +538,7 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
+        ManifestPipelineStack.allowListBucketPolicy(props.multimediaBucket.bucketName),
       ],
       timeout: Duration.seconds(900),
     })

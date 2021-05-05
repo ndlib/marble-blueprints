@@ -1,4 +1,4 @@
-type CreationPlaceObject{
+type CreationPlaceObject @aws_oidc @aws_api_key {
 	city: String
 	continent: String
 	country: String
@@ -7,7 +7,7 @@ type CreationPlaceObject{
 	state: String
 }
 
-type File {
+type File @aws_oidc @aws_api_key {
 	id: String!
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
@@ -34,7 +34,7 @@ type File {
 	TYPE: String
 }
 
-type FileToProcess {
+type FileToProcess @aws_oidc @aws_api_key {
 	id: String
 	copyrightStatus: String
 	dateAddedToDynamo: String
@@ -57,7 +57,7 @@ type FileToProcess {
 	TYPE: String
 }
 
-type FileGroup {
+type FileGroup @aws_oidc @aws_api_key {
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
 	id: String
@@ -67,22 +67,22 @@ type FileGroup {
 	files: FilesConnection
 }
 
-type FileGroupsConnection {
+type FileGroupsConnection @aws_oidc @aws_api_key {
 	items: [FileGroup]
 	nextToken: String
 }
 
-type FilesConnection {
+type FilesConnection @aws_oidc @aws_api_key {
 	items: [File]
 	nextToken: String
 }
 
-type FilesToProcessConnection {
+type FilesToProcessConnection @aws_oidc @aws_api_key {
 	items: [FileToProcess]
 	nextToken: String
 }
 
-type ItemMetadata {
+type ItemMetadata @aws_oidc @aws_api_key {
 	id: String!
 	access: String
 	additionalNotes: String
@@ -109,6 +109,7 @@ type ItemMetadata {
 	fileCreatedDate: String
 	format: String
 	geographicLocations: [MetadataObjectWithDisplayField]
+	iiifResourceId: String
 	iiifUri: String
 	languages: [MetadataObjectWithDisplayField]
 	level: String
@@ -134,13 +135,13 @@ type ItemMetadata {
 	files: FilesConnection
 }
 
-type ItemMetadataConnection {
+type ItemMetadataConnection @aws_oidc @aws_api_key {
 	items: [ItemMetadata]
 	limit: Int
 	nextToken: String
 }
 
-type ItemToHarvestRecord {
+type ItemToHarvestRecord @aws_oidc @aws_api_key {
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
 	harvestItemId: String
@@ -150,23 +151,23 @@ type ItemToHarvestRecord {
 	TYPE: String
 }
 
-type MetadataChildObject {
+type MetadataChildObject @aws_oidc @aws_api_key {
 	id: String
 	sequence: Int
 	item: ItemMetadata
 }
 
-type MetadataObjectWithDisplayField {
+type MetadataObjectWithDisplayField @aws_oidc @aws_api_key {
 	display: String
 }
 
-type MetadataRelatedObject {
+type MetadataRelatedObject @aws_oidc @aws_api_key {
 	id: String
 	sequence: Int
 	item: ItemMetadata
 }
 
-type MetadataSubject {
+type MetadataSubject @aws_oidc @aws_api_key {
 	term: String
 	uri: String
 	authority: String
@@ -177,7 +178,7 @@ type MetadataSubject {
 	variants: [String]
 }
 
-type MinimumItemMetadata{
+type MinimumItemMetadata @aws_oidc @aws_api_key {
 	id: String
 	level: String
 	title: String
@@ -185,13 +186,13 @@ type MinimumItemMetadata{
 }
 
 
-type MinimumItemMetadataConnection {
+type MinimumItemMetadataConnection @aws_oidc @aws_api_key {
 	items: [MinimumItemMetadata]
 	limit: Int
 	nextToken: String
 }
 
-type Mutation {
+type Mutation @aws_oidc @aws_api_key {
 	addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
 	addItemToHarvest(harvestItemId: String!, sourceSystem: String!): ItemToHarvestRecord
 	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
@@ -203,7 +204,7 @@ type Mutation {
 	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
 }
 
-type Query {
+type Query @aws_oidc @aws_api_key {
 	getWebsite(id: String!): Website
 	getItem(id: String!, websiteId: String): ItemMetadata
 	getFile(id: String!): File
@@ -220,29 +221,29 @@ type Query {
 	showItemByWebsite(itemId: String!, websiteId: String): ItemMetadata
 }
 
-input ReplaceCopyrightStatementInput {
+input ReplaceCopyrightStatementInput @aws_oidc @aws_api_key {
 	id: String!
 	generalCopyrightStatement: String!
 	generalInCopyright: Boolean!
 }
 
-input ReplaceDefaultImageInput {
+input ReplaceDefaultImageInput @aws_oidc @aws_api_key {
 	id: String!
 	generalDefaultFilePath: String!
 	generalObjectFileGroupId: String!
 }
 
-input ReplacePartiallyDigitizedInput {
+input ReplacePartiallyDigitizedInput @aws_oidc @aws_api_key {
 	id: String!
 	generalPartiallyDigitized: Boolean!
 }
 
-type SupplementalDataConnection {
+type SupplementalDataConnection @aws_oidc @aws_api_key {
 	items: [SupplementalDataRecord]
 	nextToken: String
 }
 
-type SupplementalDataRecord {
+type SupplementalDataRecord @aws_oidc @aws_api_key {
 	id: String
 	additionalNotes: String
 	copyrightStatement: String
@@ -315,14 +316,14 @@ input TableStringFilterInput {
 	beginsWith: String
 }
 
-type Website {
+type Website @aws_oidc @aws_api_key {
 	id: String
 	title: String
 	TYPE: String
 	websiteItems(limit: Int, nextToken: String): WebsiteItemsConnection
 }
 
-type WebsiteConnection {
+type WebsiteConnection @aws_oidc @aws_api_key {
 	items: [Website]
 	nextToken: String
 }
@@ -331,13 +332,13 @@ input WebsiteFilterInput {
 	title: String
 }
 
-type WebsiteItem {
+type WebsiteItem @aws_oidc @aws_api_key {
 	itemId: String
 	websiteId: String
 	ItemMetadata: ItemMetadata
 }
 
-type WebsiteItemsConnection {
+type WebsiteItemsConnection @aws_oidc @aws_api_key {
 	items: [WebsiteItem]
 	nextToken: String
 }

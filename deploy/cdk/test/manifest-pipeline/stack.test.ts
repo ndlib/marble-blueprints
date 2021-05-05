@@ -1,4 +1,5 @@
 import { expect as expectCDK, haveResourceLike } from '@aws-cdk/assert'
+import { Bucket } from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
 import { ManifestPipelineStack } from '../../lib/manifest-pipeline'
@@ -29,22 +30,32 @@ const manifestPipelineContext = {
   filesTimeToLiveDays: "365",
 }
 
+const setup = (context: any) => {
+  const app = new cdk.App()
+
+  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+    domainName,
+  })
+  const multimediaStack = new cdk.Stack(app, 'MultimediaStack')
+  const multimediaBucket = new Bucket(multimediaStack, 'MultimediaBucket')
+  const stack = new ManifestPipelineStack(app, 'MyTestStack', {
+    foundationStack,
+    multimediaBucket,
+    ...context,
+  })
+  return stack
+}
+
 describe('ManifestPipelineStack', () => {
+  let stack: cdk.Stack
+
+  // Only synthesize once since we are only using one set of props
+  beforeAll(() => {
+    stack = setup(manifestPipelineContext)
+  })
+
   describe('Buckets', () => {
     test('creates a Process Bucket', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::S3::Bucket', {
         LoggingConfiguration: {
           DestinationBucketName: {
@@ -56,19 +67,6 @@ describe('ManifestPipelineStack', () => {
     })
 
     test('creates a Manifest Bucket', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::S3::Bucket', {
         CorsConfiguration: {
           CorsRules: [
@@ -97,19 +95,6 @@ describe('ManifestPipelineStack', () => {
 
   describe('SSM Parameters', () => {
     test('creates SSMImageServerBaseUrl', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
         Type: "String",
         Description: "Image server base url",
@@ -118,19 +103,6 @@ describe('ManifestPipelineStack', () => {
     })
 
     test('creates SSMImageSourceBucket', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
         Type: "String",
         Value: {
@@ -142,19 +114,6 @@ describe('ManifestPipelineStack', () => {
     })
 
     test('creates SSMManifestServerBaseUrl', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
         Type: "String",
         Value: "presentation-iiif.test.edu",
@@ -164,19 +123,6 @@ describe('ManifestPipelineStack', () => {
     })
 
     test('creates SSMManifestBucket', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
         Type: "String",
         Value: {
@@ -188,19 +134,6 @@ describe('ManifestPipelineStack', () => {
     })
 
     test('creates SSMProcessBucket', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
         Type: "String",
         Value: {
@@ -212,19 +145,6 @@ describe('ManifestPipelineStack', () => {
     })
 
     test('creates SSMRBSCS3ImageBucketName', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
         Type: "String",
         Value: "libnd-smb-rbsc",
@@ -237,19 +157,6 @@ describe('ManifestPipelineStack', () => {
 
   describe('Edge Lambda', () => {
     test('creates a Service Roll for the Edge Lambda ', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::IAM::Role', {
         AssumeRolePolicyDocument: {
           Statement: [
@@ -270,19 +177,6 @@ describe('ManifestPipelineStack', () => {
 
   describe('Lambdas', () => {
     test('creates an SPA Redirection Edge Lambda ', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Handler: "index.handler",
         Description: `This Lambda will take incoming web requests and adjust the request URI as appropriate.
@@ -291,114 +185,36 @@ describe('ManifestPipelineStack', () => {
     })
 
     test('creates MuseumExportLambda', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from web-enabled items from Web Kiosk.',
       }))
     })
 
     test('creates AlephExportLambda', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from Aleph records with 500$a = MARBLE.',
       }))
     })
 
     test('creates ArchivesSpaceExportLambda', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from a list of ArchivesSpace urls.',
       }))
     })
 
     test('creates CurateExportLambda', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from a list of curate PIDs.',
       }))
     })
 
     test('creates ExpandSubjectTermsLambda', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Cycles through subject term URIs stored in dynamo, and expands those subject terms using the appropriate online authority.',
       }))
     })
 
     test('creates ObjectFilesApiLambda', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates json representations files to be used by Red Box.',
       }))
@@ -411,19 +227,6 @@ describe('ManifestPipelineStack', () => {
 
   describe('State Machines', () => {
     test('creates HarvestStateMachine ', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::StepFunctions::StateMachine', {
         "DefinitionString": {
           "Fn::Join": [
@@ -508,21 +311,14 @@ describe('ManifestPipelineStack', () => {
 
   describe('Rules', () => {
     describe('when createEventRules is true', () => {
-      test('creates StartStdJsonHarvestRule ', () => {
-        const app = new cdk.App()
-
-        const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-          domainName,
-        })
-
-        // WHEN
-        manifestPipelineContext.createEventRules = true
-        const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-          foundationStack,
+      beforeAll(() => {
+        stack = setup({
           ...manifestPipelineContext,
+          createEventRules: true,
         })
+      })
 
-        // THEN
+      test('creates StartStdJsonHarvestRule ', () => {
         expectCDK(stack).to(haveResourceLike('AWS::Events::Rule', {
           Description: "Start State Machine harvest of source systems to create standard json.",
           ScheduleExpression: "cron(0 6 * * ? *)",
@@ -531,21 +327,14 @@ describe('ManifestPipelineStack', () => {
     }) /* end of describe when createEventRules is true */
 
     describe('when createEventRules is false', () => {
-      test('creates StartStdJsonHarvestRule ', () => {
-        const app = new cdk.App()
-
-        const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-          domainName,
-        })
-
-        // WHEN
-        manifestPipelineContext.createEventRules = false
-        const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-          foundationStack,
+      beforeAll(() => {
+        stack = setup({
           ...manifestPipelineContext,
+          createEventRules: false,
         })
+      })
 
-        // THEN
+      test('creates StartStdJsonHarvestRule ', () => {
         expectCDK(stack).notTo(haveResourceLike('AWS::Events::Rule', {
           Description: "Start State Machine harvest of source systems to create standard json.",
           ScheduleExpression: "cron(0 6 * * ? *)",
@@ -560,19 +349,6 @@ describe('ManifestPipelineStack', () => {
 
   describe('dynamoDB tables', () => {
     test('creates websiteMetadataDynamoTable ', () => {
-      const app = new cdk.App()
-
-      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-        domainName,
-      })
-
-      // WHEN
-      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
-        foundationStack,
-        ...manifestPipelineContext,
-      })
-
-      // THEN
       expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
         "KeySchema": [
           {
@@ -653,7 +429,7 @@ describe('ManifestPipelineStack', () => {
           "Enabled": true,
         },
       }))
-    }) 
+    })
 
   }) /* end of describe dynamoDB tables */
 

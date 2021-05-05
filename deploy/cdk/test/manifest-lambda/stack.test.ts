@@ -1,5 +1,5 @@
 import { expect as expectCDK, haveResourceLike } from '@aws-cdk/assert'
-import { StackSynthesizer } from '@aws-cdk/core'
+import { Bucket } from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
 import { MaintainMetadataStack } from '../../lib/maintain-metadata'
@@ -41,90 +41,56 @@ const manifestLambdaContext = {
   createDns: true,
   hostnamePrefix: 'test-iiif-manifest',
   lambdaCodeRootPath: "../../../marble-manifest-lambda",
+}
 
+const setup = (props: { manifestPipelineContext: any, maintainMetadataContext: any, manifestLambdaContext: any }) => {
+  const app = new cdk.App()
+
+  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+    domainName,
+  })
+  const multimediaStack = new cdk.Stack(app, 'MultimediaStack')
+  const multimediaBucket = new Bucket(multimediaStack, 'MultimediaBucket')
+
+  const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
+    foundationStack,
+    multimediaBucket,
+    ...props.manifestPipelineContext,
+  })
+  const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
+    foundationStack,
+    manifestPipelineStack,
+    ...props.maintainMetadataContext,
+  })
+  const stack = new ManifestLambdaStack(app, 'MyTestStack', {
+    foundationStack,
+    maintainMetadataStack,
+    ...props.manifestLambdaContext,
+  })
+  return stack
 }
 
 describe('ManifestLambdaStack', () => {
+  let stack: cdk.Stack
+
+  // Only synthesize once since we are only using one set of props
+  stack = setup({
+    manifestPipelineContext,
+    maintainMetadataContext,
+    manifestLambdaContext,
+  })
+
   test('creates a Lambda', () => {
-    const app = new cdk.App()
-
-    const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-      domainName,
-    })
-    const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-      foundationStack,
-      ...manifestPipelineContext,
-    })
-    const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-      foundationStack,
-      manifestPipelineStack,
-      ...maintainMetadataContext,
-    })
-
-    // WHEN
-    const stack = new ManifestLambdaStack(app, 'MyTestStack', {
-      foundationStack,
-      maintainMetadataStack,
-      ...manifestLambdaContext,
-    })
-
-    // THEN
     expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
     }))
   })
 
   test('creates an API Gateway', () => {
-    const app = new cdk.App()
-
-    const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-      domainName,
-    })
-    const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-      foundationStack,
-      ...manifestPipelineContext,
-    })
-    const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-      foundationStack,
-      manifestPipelineStack,
-      ...maintainMetadataContext,
-    })
-
-    // WHEN
-    const stack = new ManifestLambdaStack(app, 'MyTestStack', {
-      foundationStack,
-      maintainMetadataStack,
-      ...manifestLambdaContext,
-    })
-
-    // THEN
     expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Deployment', {
     }))
   })
 
   test('creates an API Gateway Resource (manifest)', () => {
-    const app = new cdk.App()
-
-    const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-      domainName,
-    })
-    const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-      foundationStack,
-      ...manifestPipelineContext,
-    })
-    const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-      foundationStack,
-      manifestPipelineStack,
-      ...maintainMetadataContext,
-    })
-
-    // WHEN
-    const stack = new ManifestLambdaStack(app, 'MyTestStack', {
-      foundationStack,
-      maintainMetadataStack,
-      ...manifestLambdaContext,
-    })
-
-    // THEN
     expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
       "PathPart": "manifest",
     }))
@@ -132,149 +98,39 @@ describe('ManifestLambdaStack', () => {
 
 
   test('creates an API Gateway Resource (canvas)', () => {
-    const app = new cdk.App()
-
-    const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-      domainName,
-    })
-    const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-      foundationStack,
-      ...manifestPipelineContext,
-    })
-    const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-      foundationStack,
-      manifestPipelineStack,
-      ...maintainMetadataContext,
-    })
-
-    // WHEN
-    const stack = new ManifestLambdaStack(app, 'MyTestStack', {
-      foundationStack,
-      maintainMetadataStack,
-      ...manifestLambdaContext,
-    })
-
-    // THEN
     expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
       "PathPart": "canvas",
     }))
   })
 
   test('creates an API Gateway Resource (annotation_page)', () => {
-    const app = new cdk.App()
-
-    const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-      domainName,
-    })
-    const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-      foundationStack,
-      ...manifestPipelineContext,
-    })
-    const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-      foundationStack,
-      manifestPipelineStack,
-      ...maintainMetadataContext,
-    })
-
-    // WHEN
-    const stack = new ManifestLambdaStack(app, 'MyTestStack', {
-      foundationStack,
-      maintainMetadataStack,
-      ...manifestLambdaContext,
-    })
-
-    // THEN
     expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
       "PathPart": "annotation_page",
     }))
   })
 
   test('creates an API Gateway Resource (annotation)', () => {
-    const app = new cdk.App()
-
-    const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-      domainName,
-    })
-    const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-      foundationStack,
-      ...manifestPipelineContext,
-    })
-    const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-      foundationStack,
-      manifestPipelineStack,
-      ...maintainMetadataContext,
-    })
-
-    // WHEN
-    const stack = new ManifestLambdaStack(app, 'MyTestStack', {
-      foundationStack,
-      maintainMetadataStack,
-      ...manifestLambdaContext,
-    })
-
-    // THEN
     expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
       "PathPart": "annotation",
     }))
   })
 
   test('creates an Route53 Recordset', () => {
-    const app = new cdk.App()
-
-    const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-      domainName,
-    })
-    const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-      foundationStack,
-      ...manifestPipelineContext,
-    })
-    const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-      foundationStack,
-      manifestPipelineStack,
-      ...maintainMetadataContext,
-    })
-
-    // WHEN
-    const stack = new ManifestLambdaStack(app, 'MyTestStack', {
-      foundationStack,
-      maintainMetadataStack,
-      ...manifestLambdaContext,
-    })
-
-    // THEN
     expectCDK(stack).to(haveResourceLike('AWS::Route53::RecordSet', {
       "Name": "test-iiif-manifest.test.edu.",
     }))
   })
 
-  test('does not create an Route53 Recordset', () => {
-    const app = new cdk.App()
-
-    const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-      domainName,
+  test('does not create an Route53 Recordset when createDns is false', () => {
+    const testStack = setup({
+      manifestPipelineContext,
+      maintainMetadataContext,
+      manifestLambdaContext: {
+        ...manifestLambdaContext,
+        createDns: false,
+      },
     })
-    const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
-      foundationStack,
-      ...manifestPipelineContext,
-    })
-    const maintainMetadataStack = new MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-      foundationStack,
-      manifestPipelineStack,
-      ...maintainMetadataContext,
-    })
-
-    // WHEN
-    const stack = new ManifestLambdaStack(app, 'MyTestStack', {
-      foundationStack,
-      maintainMetadataStack,
-      ...manifestLambdaContext,
-      createDns: false,
-    })
-
-    // THEN
-    expectCDK(stack).notTo(haveResourceLike('AWS::Route53::RecordSet', {
-      "Name": "test-iiif-manifest.test.edu.",
-    }))
+    expectCDK(testStack).notTo(haveResourceLike('AWS::Route53::RecordSet'))
   })
 
 }) /* end of describe ManifestPipelineStack */

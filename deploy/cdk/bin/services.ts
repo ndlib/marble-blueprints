@@ -81,6 +81,12 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...elasticsearchContext,
   })
 
+  const multimediaAssetsContext = getContextByNamespace('multimediaAssets')
+  const multimediaAssetsStack = new multimediaAssets.MultimediaAssetsStack(app, `${namespace}-multimedia-assets`, {
+    foundationStack,
+    ...commonProps,
+    ...multimediaAssetsContext,
+  })
 
   const manifestPipelineContext = getContextByNamespace('manifestPipeline')
   const manifestPipelineStack = new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, {
@@ -89,6 +95,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     createEventRules: app.node.tryGetContext('manifestPipeline:createEventRules') === "true" ? true : false,
     appConfigPath: app.node.tryGetContext('manifestPipeline:appConfigPath') ? app.node.tryGetContext('manifestPipeline:appConfigPath') : `/all/stacks/${namespace}-manifest`,
     rBSCS3ImageBucketName: contextEnv.rBSCS3ImageBucketName,
+    multimediaBucket: multimediaAssetsStack.multimediaBucket,
     ...commonProps,
     ...manifestPipelineContext,
   })
@@ -109,13 +116,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     maintainMetadataStack,
     ...commonProps,
     ...imageProcessingContext,
-  })
-
-  const multimediaAssetsContext = getContextByNamespace('multimediaAssets')
-  const multimediaAssetsStack = new multimediaAssets.MultimediaAssetsStack(app, `${namespace}-multimedia-assets`, {
-    foundationStack,
-    ...commonProps,
-    ...multimediaAssetsContext,
   })
 
   const manifestLambdaContext = getContextByNamespace('manifestLambda')

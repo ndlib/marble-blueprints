@@ -329,6 +329,13 @@ export class ManifestPipelineStack extends Stack {
       description: 'Name of the RBSC Image Bucket',
     })
 
+    new StringParameter(this, 'sSMMultimediaBucketName', {
+      type: ParameterType.STRING,
+      parameterName: `${props.appConfigPath}/multimedia-bucket`,
+      stringValue: props.multimediaBucket.bucketName,
+      description: 'Name of the Multimedia Assets Bucket',
+    })
+
     const sPARedirectionLambda = new Function(this, 'SPARedirectionLambda', {
       code: Code.fromInline(`'use strict';
         exports.handler = (event, context, callback) => {

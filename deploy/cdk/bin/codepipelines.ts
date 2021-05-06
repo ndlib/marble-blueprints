@@ -13,6 +13,7 @@ import { Stacks } from '../lib/types'
 import { PipelineFoundationStack } from '../lib/foundation'
 import maintainMetadata = require('../lib/maintain-metadata')
 import manifestLambda = require('../lib/manifest-lambda')
+import multimediaAssets = require('../lib/multimedia-assets')
 
 export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv, testStacks: Stacks, prodStacks: Stacks): void => {
   const pipelineFoundationStack = new PipelineFoundationStack(app, `${namespace}-deployment-foundation`, {
@@ -102,6 +103,12 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   new manifestLambda.DeploymentPipelineStack(app, `${namespace}-manifest-lambda-deployment`, {
     ...commonProps,
     ...manifestLambdaContext,
+  })
+
+  const multimediaAssetsContext = getContextByNamespace('multimediaAssets')
+  new multimediaAssets.DeploymentPipelineStack(app, `${namespace}-multimedia-assets-deployment`, {
+    ...commonProps,
+    ...multimediaAssetsContext,
   })
 
 }

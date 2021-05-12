@@ -22,7 +22,7 @@ export interface IBaseStackProps extends StackProps {
   readonly manifestPipelineStack: ManifestPipelineStack;
 
   /**
-   * 
+   *
    * OpenID Connect provider
    */
   readonly openIdConnectProvider: string
@@ -63,16 +63,16 @@ export class MaintainMetadataStack extends Stack {
       schema: apiSchema,
       authorizationConfig: {
         defaultAuthorization: {
-          authorizationType: AuthorizationType.API_KEY,
-          apiKeyConfig: {
-            expires: Expiration.after(Duration.days(daysForKeyToLast)),
+          authorizationType: AuthorizationType.OIDC,
+          openIdConnectConfig: {
+            oidcProvider: props.openIdConnectProvider,
           },
         },
         additionalAuthorizationModes: [
           {
-            authorizationType: AuthorizationType.OIDC,
-            openIdConnectConfig: {
-              oidcProvider: props.openIdConnectProvider,
+            authorizationType: AuthorizationType.API_KEY,
+            apiKeyConfig: {
+              expires: Expiration.after(Duration.days(daysForKeyToLast)),
             },
           },
         ],
@@ -93,7 +93,7 @@ export class MaintainMetadataStack extends Stack {
       stringValue: api.graphqlUrl,
       description: 'AppSync GraphQL base url',
     })
-    
+
     this.graphqlApiKeyKeyPath = `/all/stacks/${this.stackName}/graphql-api-key`
 
     this.graphqlApiIdKeyPath = `/all/stacks/${this.stackName}/graphql-api-id`
@@ -227,7 +227,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
         #######################################
         ## This function returns the requested item record enhanced by ALL website overrides and the overrides for the specific website requested (if any)
         ## itemId cannot be null, websiteId may be null
-        ## itemId will be pulled from 
+        ## itemId will be pulled from
         ##    1. stash ($ctx.stash.itemId)
         ##    2. source itemId ($ctx.source.itemId)
         ##    3. source id ($ctx.source.id)
@@ -237,9 +237,9 @@ def _delete_expired_api_keys(graphql_api_id: str):
         ##    2 if not found in stash, from source.suppliedWebsiteId
         #######################################
 
-        #set($id = $util.defaultIfNullOrBlank($ctx.stash.itemId, $ctx.source.itemId))  
+        #set($id = $util.defaultIfNullOrBlank($ctx.stash.itemId, $ctx.source.itemId))
         #set($id = $util.defaultIfNullOrBlank($id, $ctx.source.id))
-        #set($id = $util.defaultIfNullOrBlank($is, $ctx.source.itemMetadataId))  
+        #set($id = $util.defaultIfNullOrBlank($is, $ctx.source.itemMetadataId))
 
         #set($id = $util.defaultIfNullOrBlank($id, ""))
         #set($suppliedWebsiteId = $util.defaultIfNullOrBlank($ctx.stash.websiteId, $ctx.source.suppliedWebsiteId))
@@ -272,7 +272,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
         ### Add extra processing here to try to generate a single record of output
         #set($results = {})
         #set($suppliedWebsiteId = $util.str.toUpper($util.defaultIfNullOrBlank($ctx.stash.suppliedWebsiteId, "")))
-        
+
         #foreach($item in $context.result.items)
           #set($websiteInRecord = $util.str.toUpper($util.defaultIfNullOrBlank($item.websiteId, "")))
           #if( $item.TYPE == "Item" )
@@ -355,7 +355,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
         #end
         ## Pass back the result from DynamoDB. **
         ### Add extra processing here to try to generate a single record of output
-        
+
         #set($subjectsAfter = [])
         ## First, add subjects from database query - only if we actually queried something
         #if ( $ctx.stash.queryAttempted == 1)
@@ -1205,7 +1205,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
               }
           },
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end        
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {

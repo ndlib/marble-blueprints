@@ -62,7 +62,12 @@ describe('MaintainMetadataStack', () => {
   describe('GraphQL', () => {
     test('creates a GraphQL API', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::GraphQLApi', {
-        AuthenticationType: "API_KEY",
+        AuthenticationType: "OPENID_CONNECT",
+        AdditionalAuthenticationProviders: [
+          {
+            AuthenticationType: "API_KEY",
+          },
+        ],
         Name: "MyTestStack-api",
         XrayEnabled: true,
       }))

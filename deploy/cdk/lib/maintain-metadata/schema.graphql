@@ -15,9 +15,6 @@ type File @aws_oidc @aws_api_key {
 	digitalAccess: String
 	eTag: String
 	filePath: String
-	iiifImageServiceUri: String
-	iiifImageUri: String
-	iiifUri: String
 	lastModified: String
 	mediaResourceId: String
 	mediaServer: String
@@ -110,10 +107,10 @@ type ItemMetadata @aws_oidc @aws_api_key {
 	format: String
 	geographicLocations: [MetadataObjectWithDisplayField]
 	iiifResourceId: String
-	iiifUri: String
 	languages: [MetadataObjectWithDisplayField]
 	level: String
 	linkToSource: String
+	medium: String
 	objectFileGroupId: String
 	parentId: String
 	parent: ItemMetadata
@@ -197,25 +194,108 @@ type Mutation @aws_oidc @aws_api_key {
 	addItemToHarvest(harvestItemId: String!, sourceSystem: String!): ItemToHarvestRecord
 	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
 	removeDefaultImageForWebsite(itemId: String!, websiteId: String): ItemMetadata
+	removePortfolioCollection(portfolioCollectionId: String!): RecordsDeleted @aws_oidc
+	removePortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): RecordsDeleted @aws_oidc
+	removePortfolioUser: RecordsDeleted @aws_oidc
 	saveAdditionalNotesForWebsite(itemId: String!, websiteId: String, additionalNotes: String!): ItemMetadata
 	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String!, inCopyright: Boolean!): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String!): ItemMetadata
 	saveFileLastProcessedDate(itemId: String!): FileToProcess
 	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
+	savePortfolioCollection(portfolioCollectionId: String, description: String, imageUri: String, layout: String, privacy: PortfolioPrivacy, highlightedCollection: Boolean, featuredCollection: Boolean): PortfolioCollection @aws_oidc
+	savePortfolioItem(portfolioItemId: String, portfolioCollectionId: String!, annotation: String, description: String,	imageUri: String,	internalItemId: String,	itemType: PortfolioItemType, sequence: Int,	title: String): PortfolioItem @aws_oidc
+	savePortfolioUser(bio: String, fullName: String, email: String): PortfolioUser @aws_oidc
 }
 
+type RecordsDeleted @aws_oidc @aws_api_key {
+	recordsDeleted: Int
+}
+
+type PortfolioCollection @aws_oidc @aws_api_key {
+	portfolioCollectionId: String
+	portfolioUserId: String
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
+	description: String
+	imageUri: String
+	featuredCollection: Boolean
+	highlightedCollection: Boolean
+	layout: String
+	privacy: PortfolioPrivacy
+	portfolioItems: PortfolioItemsConnection
+}	
+
+type PortfolioCollectionsConnection @aws_oidc @aws_api_key {
+	items: [PortfolioCollection]
+	limit: Int
+	nextToken: String
+}
+
+type PortfolioItem @aws_oidc @aws_api_key {
+	portfolioItemId: String
+	portfolioCollectionId: String
+	portfolioUserId: String
+	annotation: String
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
+	description: String
+	imageUri: String
+	internalItemId: String
+	itemType: PortfolioItemType
+	sequence: Int
+	title: String
+	uri: String
+}	
+
+type PortfolioItemsConnection @aws_oidc @aws_api_key {
+	items: [PortfolioItem]
+	limit: Int
+	nextToken: String
+}
+
+enum PortfolioItemType @aws_oidc @aws_api_key {
+	internal
+	iiif
+	uri
+}
+
+enum PortfolioPrivacy @aws_oidc @aws_api_key {
+	private
+	public
+	shared
+}
+
+type PortfolioUser @aws_oidc @aws_api_key {
+	portfolioUserId: String
+	bio: String
+	dateAddedToDynamo: String
+	dateModifiedInDynamo: String
+	department: String
+	fullName: String
+	email: String
+	primaryAffiliation: String
+	portfolioCollections: PortfolioCollectionsConnection
+}	
+
 type Query @aws_oidc @aws_api_key {
-	getWebsite(id: String!): Website
-	getItem(id: String!, websiteId: String): ItemMetadata
+	getExposedPortfolioCollection(portfolioCollectionId: String!): PortfolioCollection
 	getFile(id: String!): File
 	getFileGroup(id: String!): FileGroup
 	getFileToProcessRecord(filePath: String!): FileToProcess
+	getItem(id: String!, websiteId: String): ItemMetadata
+	getPortfolioCollection(portfolioCollectionId: String!): PortfolioCollection  @aws_oidc
+	getPortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): PortfolioItem  @aws_oidc
+	getPortfolioUser(portfolioUserId: String): PortfolioUser  @aws_oidc
+	getWebsite(id: String!): Website
 	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsByStorageSystem(storageSystem: String!, typeOfData: String!, limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsForS3(limit: Int, nextToken: String): FileGroupsConnection
 	listFilesToProcess(dateLastProcessedBefore: String, limit: Int, nextToken: String): FilesToProcessConnection
 	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
 	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
+	listPublicFeaturedPortfolioCollections: PortfolioCollectionsConnection
+	listPublicHighlightedPortfolioCollections: PortfolioCollectionsConnection
+	listPublicPortfolioCollections: PortfolioCollectionsConnection
 	listSupplementalDataRecords(id: String, websiteId: String): SupplementalDataConnection
 	listWebsites(filter: WebsiteFilterInput, limit: Int, nextToken: String): WebsiteConnection
 	showItemByWebsite(itemId: String!, websiteId: String): ItemMetadata

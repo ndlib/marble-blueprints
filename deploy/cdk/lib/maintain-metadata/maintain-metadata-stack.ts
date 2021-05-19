@@ -396,6 +396,113 @@ def _delete_expired_api_keys(graphql_api_id: str):
       `),
     })
 
+    const findPortfolioContentForUserFunction = new AppsyncFunction(this, 'FindPortfolioContentForUserFunction', {
+      api: api,
+      dataSource: websiteMetadataDynamoDataSource,
+      name: 'findPortfolioContentForUserFunction',
+      description: 'Used to find all Portfolio-related content for a user (or user collection) from DynamoDB.',
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #######################################
+        ## This function accepts a stashed portfolioUserId and portfolioCollectionId
+        ## It do a execute a Dynamo query to find all matching items.  A subsequent step will be used to delete those matching items.
+        #######################################
+
+        #set($portfolioUserId = $ctx.stash.portfolioUserId)
+        #set($portfolioUserId = $util.defaultIfNullOrBlank($portfolioUserId, ""))
+        #set($portfolioUserId = $util.str.toUpper($portfolioUserId))
+        #set($portfolioUserId = $util.str.toReplace($portfolioUserId, " ", ""))
+        #set($portfolioCollectionId = $ctx.stash.portfolioCollectionId)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+        #set($pk = "PORTFOLIO")
+        #if( $portfolioCollectionId == "" )
+          #set($sk = "USER#$portfolioUserId")
+        #else
+          #set($sk = "USER#$portfolioUserId#$portfolioCollectionId")
+        #end
+        ## Query all records based on the primary key
+
+        $!{ctx.stash.put("findPortfolioContentForUserFunctionPk", $pk)}
+        $!{ctx.stash.put("findPortfolioContentForUserFunctionSk", $sk)}
+
+        ## Note:  This may eventually cause a problem if more than 1MB  is returned.  I wanted to use a projectionExpression, but this is not supported in AppSync.  https://github.com/aws/aws-appsync-community/issues/138
+        {
+            "version" : "2017-02-28",
+            "operation" : "Query",
+            "query": {
+              "expression": "PK = :pk and begins_with(SK, :beginsWith)",
+              "expressionValues": {
+                ":pk": $util.dynamodb.toDynamoDBJson($pk),
+                ":beginsWith": $util.dynamodb.toDynamoDBJson($sk),
+              },
+            },
+        }`),
+
+      responseMappingTemplate: MappingTemplate.fromString(`
+        ## Raise a GraphQL field error in case of a datasource invocation error
+        #if($ctx.error)
+            $util.error($ctx.error.message, $ctx.error.type)
+        #end
+        $!{ctx.stash.put("portfolioRecordsToDelete", $ctx.result.items)}
+        {
+          "items": $util.toJson($ctx.result.items),
+        }`),
+    })
+    const deletePortfolioContentForUserFunction = new AppsyncFunction(this, 'DeletePortfolioContentForUserFunction', {
+      api: api,
+      dataSource: websiteMetadataDynamoDataSource,
+      name: 'deletePortfolioContentForUserFunction',
+      description: 'Used to delete all Portfolio-related content for a user (or user collection) that was found in findPortfolioContentForUserFunction',
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #######################################
+        ## This function accepts a stashed portfolioRecordsToDelete, and then deletes each entry from DynamoDB
+        #######################################
+
+        #set($portfolioRecordsToDelete = $ctx.stash.portfolioRecordsToDelete)
+        #set($keys = [])
+        #set($recordsCountToDelete = 0)
+
+        #foreach( $entry in $portfolioRecordsToDelete )
+          #set($map = {})
+          $util.qr($map.put("PK", $util.dynamodb.toString($entry.PK)))
+          $util.qr($map.put("SK", $util.dynamodb.toString($entry.SK)))
+          $util.qr($keys.add($map))
+          #set($recordsCountToDelete = $recordsCountToDelete + 1)
+        #end
+
+        $!{ctx.stash.put("recordsCountToDelete", $recordsCountToDelete)}
+
+        ## This is stupid, but I can't figure how else to skip the query and not error
+        #if ( $keys != [] )
+          $!{ctx.stash.put("queryAttempted", 1)}
+        #else
+          $!{ctx.stash.put("queryAttempted", 0)}
+          #set($map = {})
+          $util.qr($map.put("PK", $util.dynamodb.toString("NoKeyToFind")))
+          $util.qr($map.put("SK", $util.dynamodb.toString("YieldEmptyResultSet")))
+          $util.qr($keys.add($map))
+        #end
+
+        $!{ctx.stash.put("deletePortfolioContentForUserFunctionKeys", $keys)}
+
+        {
+          "version" : "2017-02-28",
+          "operation" : "BatchDeleteItem",
+          "tables": {
+            "${websiteMetadataTable.tableName}": $util.toJson($keys)
+          },
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        ## Raise a GraphQL field error in case of a datasource invocation error
+        #if($ctx.error)
+            $util.error($ctx.error.message, $ctx.error.type)
+        #end
+        {
+          "recordsDeleted": $util.toJson($ctx.stash.recordsCountToDelete),
+        }`),
+    })
+
     new Resolver(this, 'QueryShowItemByWebsite', {
       api: api,
       typeName: 'Query',
@@ -879,6 +986,72 @@ def _delete_expired_api_keys(graphql_api_id: str):
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'MutationRemovePortfolioCollectionResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'removePortfolioCollection',
+      // dataSource: websiteMetadataDynamoDataSource,
+      pipelineConfig: [findPortfolioContentForUserFunction, deletePortfolioContentForUserFunction],
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($ctx.args.portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+
+        $!{ctx.stash.put("identity", $ctx.identity)}
+        $!{ctx.stash.put("portfolioUserId", $portfolioUserId)}
+        $!{ctx.stash.put("portfolioCollectionId", $portfolioCollectionId)}
+        {}
+        `),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'MutationRemovePortfolioItemResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'removePortfolioItem',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($ctx.args.portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+        #set($portfolioItemId = $util.defaultIfNullOrBlank($ctx.args.portfolioItemId, ""))
+        #set($portfolioItemId = $util.str.toUpper($portfolioItemId))
+        #set($portfolioItemId = $util.str.toReplace($portfolioItemId, " ", ""))
+
+        #set($pk = "PORTFOLIO")
+        #set($sk = "USER#$util.str.toUpper($portfolioUserId)#$portfolioCollectionId#$portfolioItemId")
+        ## We may eventually need to do a BatchGetItem to get all items for a collection, then delete those along with a collection
+
+        {
+          "version": "2017-02-28",
+          "operation": "DeleteItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'MutationRemovePortfolioUserResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'removePortfolioUser',
+      // dataSource: websiteMetadataDynamoDataSource,
+      pipelineConfig: [findPortfolioContentForUserFunction, deletePortfolioContentForUserFunction],
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+
+        $!{ctx.stash.put("identity", $ctx.identity)}
+        $!{ctx.stash.put("portfolioUserId", $portfolioUserId)}
+        $!{ctx.stash.put("portfolioCollectionId", "")}
+        {}
+        `),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'MutationSaveAdditionalNotesForWebsiteResolver', {
       api: api,
       typeName: 'Mutation',
@@ -1012,6 +1185,328 @@ def _delete_expired_api_keys(graphql_api_id: str):
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'MutationSavePortfolioCollectionResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'savePortfolioCollection',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($ctx.args.portfolioCollectionId, $util.autoId()))
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+
+        #set($privacy = $util.defaultIfNullOrBlank($ctx.args.privacy, "private"))
+        #if( $util.isBoolean($ctx.args.featuredCollection) )
+          #set($featuredCollection = $ctx.args.featuredCollection)
+        #else
+          #set($featuredCollection = false)
+        #end
+        #if( $util.isBoolean($ctx.args.highlightedCollection) )
+          #set($highlightedCollection = $ctx.args.highlightedCollection)
+        #else
+          #set($highlightedCollection = false)
+        #end
+
+        #if( $privacy != "public")
+          #set($featuredCollection = false)
+          #set($highlightedCollection = false)
+        #end
+
+        #set($layout = $util.defaultIfNullOrBlank($ctx.args.layout, "default"))
+
+        #set($pk = "PORTFOLIO")
+        #set($sk = $util.str.toUpper("USER#$portfolioUserId#$portfolioCollectionId"))
+
+        #set( $expValues = {})
+        $!{expValues.put(":portfolioCollectionId", $util.dynamodb.toDynamoDB($portfolioCollectionId))}
+        $!{expValues.put(":portfolioUserId", $util.dynamodb.toDynamoDB($portfolioUserId))}
+        $!{expValues.put(":rowType", $util.dynamodb.toDynamoDB("PortfolioCollection"))}
+        $!{expValues.put(":dateAddedToDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
+        $!{expValues.put(":dateModifiedInDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
+        $!{expValues.put(":description", $util.dynamodb.toDynamoDB($ctx.args.description))}
+        $!{expValues.put(":imageUri", $util.dynamodb.toDynamoDB($ctx.args.imageUri))}
+        $!{expValues.put(":featuredCollection", $util.dynamodb.toDynamoDB($featuredCollection))}
+        $!{expValues.put(":highlightedCollection", $util.dynamodb.toDynamoDB($highlightedCollection))}
+        $!{expValues.put(":layout", $util.dynamodb.toDynamoDB($layout))}
+        $!{expValues.put(":privacy", $util.dynamodb.toDynamoDB($privacy))}
+
+        #if( $privacy == "private" )
+          #set($GSI1PK = "")
+          #set($GSI1SK = "")
+          #set($GSI2PK = "")
+          #set($GSI2SK = "")
+        #else
+          #set($GSI1PK = "PORTFOLIOCOLLECTION")
+          #set($GSI1SK = "PORTFOLIOCOLLECTION#$util.str.toUpper($portfolioCollectionId)")
+          #set($GSI2PK = "PORTFOLIOCOLLECTION")
+          #set($GSI2SK = $util.str.toUpper("$privacy#$portfolioCollectionId"))
+          
+          $!{expValues.put(":GSI1PK", $util.dynamodb.toDynamoDB($GSI1PK))}
+          $!{expValues.put(":GSI1SK", $util.dynamodb.toDynamoDB($GSI1SK))}
+          $!{expValues.put(":GSI2PK", $util.dynamodb.toDynamoDB($GSI2PK))}
+          $!{expValues.put(":GSI2SK", $util.dynamodb.toDynamoDB($GSI2SK))}
+        #end
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            #if( $privacy == "private" )
+              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy REMOVE GSI1PK, GSI1SK, GSI2PK, GSI2SK",
+            #else
+              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
+            #end
+            "expressionNames": {"#TYPE": "TYPE"},
+            "expressionValues": $util.toJson($expValues)
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'MutationSavePortfolioItemResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'savePortfolioItem',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+        #set($portfolioCollectionId = $ctx.args.portfolioCollectionId)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+
+        #set($portfolioItemId = $util.defaultIfNullOrBlank($ctx.args.portfolioItemId, $ctx.args.internalItemId))
+        #set($originalPortfolioItemId = $portfolioItemId)
+        #set($portfolioItemId = $util.defaultIfNullOrBlank($portfolioItemId, $ctx.args.uri))
+        #set($portfolioItemId = $util.defaultIfNullOrBlank($portfolioItemId, $util.autoId()))
+
+        #set($itemType = $util.defaultIfNullOrBlank($ctx.args.itemType, "internal"))
+
+        #set($pk = "PORTFOLIO")
+        #set($sk = $util.str.toUpper("USER#$portfolioUserId#$portfolioCollectionId#$portfolioItemId"))
+
+        #set( $expValues = {})
+        $!{expValues.put(":portfolioItemId", $util.dynamodb.toDynamoDB($originalPortfolioItemId))}
+        $!{expValues.put(":portfolioCollectionId", $util.dynamodb.toDynamoDB($portfolioCollectionId))}
+        $!{expValues.put(":portfolioUserId", $util.dynamodb.toDynamoDB($portfolioUserId))}
+        $!{expValues.put(":rowType", $util.dynamodb.toDynamoDB("PortfolioItem"))}
+        $!{expValues.put(":annotation", $util.dynamodb.toDynamoDB($ctx.args.annotation))}
+        $!{expValues.put(":dateAddedToDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
+        $!{expValues.put(":dateModifiedInDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
+        $!{expValues.put(":description", $util.dynamodb.toDynamoDB($ctx.args.description))}
+        $!{expValues.put(":imageUri", $util.dynamodb.toDynamoDB($ctx.args.imageUri))}
+        $!{expValues.put(":internalItemId", $util.dynamodb.toDynamoDB($ctx.args.internalItemId))}
+        $!{expValues.put(":sequence", $util.dynamodb.toDynamoDB($ctx.args.sequence))}
+        $!{expValues.put(":title", $util.dynamodb.toDynamoDB($ctx.args.title))}
+        $!{expValues.put(":uri", $util.dynamodb.toDynamoDB($ctx.args.uri))}
+
+        #if( !$util.defaultIfNullOrBlank($ctx.args.internalItemId, ""))
+          #set($GSI1PK = $null)
+          #set($GSI1SK = $null)
+        #else
+          #set($GSI1PK = "PORTFOLIOITEM")
+          #set($GSI1SK = $util.str.toUpper("INTERNALITEM#$portfolioItemId"))
+          $!{expValues.put(":GSI1PK", $util.dynamodb.toDynamoDB($GSI1PK))}
+          $!{expValues.put(":GSI1SK", $util.dynamodb.toDynamoDB($GSI1SK))}
+          #set($itemType = "internal")
+        #end
+        $!{expValues.put(":itemType", $util.dynamodb.toDynamoDB($itemType))}
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            #if( !$util.defaultIfNullOrBlank($ctx.args.internalItemId, ""))
+              "expression": "SET portfolioItemId = :portfolioItemId, portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, annotation = :annotation, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, internalItemId = :internalItemId, itemType = :itemType, #sequence = :sequence, title = :title, uri = :uri REMOVE GSI1PK, GSI1SK",
+            #else
+              "expression": "SET portfolioItemId = :portfolioItemId, portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, annotation = :annotation, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, internalItemId = :internalItemId, itemType = :itemType, #sequence = :sequence, title = :title, uri = :uri, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK",
+            #end
+            "expressionNames": {"#TYPE": "TYPE", "#sequence": "sequence"},
+            "expressionValues": $util.toJson($expValues)
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'MutationSavePortfolioUserResolver', {
+      api: api,
+      typeName: 'Mutation',
+      fieldName: 'savePortfolioUser',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+        #set($fullName = $util.defaultIfNullOrBlank($ctx.args.fullName, $ctx.identity.claims.name))
+        #set($email = $util.defaultIfNullOrBlank($ctx.args.email, $ctx.identity.claims.email))
+        #set($primaryAffiliation = $ctx.identity.claims.primary_affiliation)
+        #set($department = $ctx.identity.claims.department)
+
+        $!{ctx.stash.put("identity", $ctx.identity)}
+        $!{ctx.stash.put("portfolioUserId", $portfolioUserId)}
+        $!{ctx.stash.put("fullName", $fullName)}
+        $!{ctx.stash.put("email", $email)}
+        $!{ctx.stash.put("primaryAffiliation", $primaryAffiliation)}
+        $!{ctx.stash.put("department", $department)}
+
+        #set($pk = "PORTFOLIO")
+        #set($sk = "USER#$util.str.toUpper($portfolioUserId)")
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            "expression": "SET portfolioUserId = :portfolioUserId, bio = :bio, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, department = :department, email = :email, fullName = :fullName, primaryAffiliation = :primaryAffiliation",
+            "expressionNames": {"#TYPE": "TYPE"},
+            "expressionValues": {
+              ":portfolioUserId": $util.dynamodb.toDynamoDBJson($portfolioUserId),
+              ":bio": $util.dynamodb.toDynamoDBJson($ctx.args.bio),
+              ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioUser"),
+              ":dateAddedToDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
+              ":dateModifiedInDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
+              ":department": $util.dynamodb.toDynamoDBJson($department),
+              ":email": $util.dynamodb.toDynamoDBJson($email),
+              ":fullName": $util.dynamodb.toDynamoDBJson($fullName),
+              ":primaryAffiliation": $util.dynamodb.toDynamoDBJson($primaryAffiliation),
+            }
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'PortfolioUserPortfolioCollectionsResolver', {
+      api: api,
+      typeName: 'PortfolioUser',
+      fieldName: 'portfolioCollections',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.source.portfolioUserId)
+        #set($portfolioUserId = $util.defaultIfNullOrBlank($portfolioUserId, ""))
+        #set($portfolioUserId = $util.str.toUpper($portfolioUserId))
+        #set($portfolioUserId = $util.str.toReplace($portfolioUserId, " ", ""))
+
+        {
+            "version" : "2017-02-28",
+            "operation" : "Query",
+            "query" : {
+              "expression": "PK = :pk and begins_with(SK, :beginsWith)",
+              "expressionValues" : {
+                ":pk": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+                ":beginsWith": $util.dynamodb.toDynamoDBJson("USER#$portfolioUserId#"),
+              },
+			      },
+            "filter": {
+              "expression": "#TYPE = :rowType",
+              "expressionValues": {
+                ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+              },
+              "expressionNames": {"#TYPE": "TYPE"},
+      			},
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+            "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+            "items": $util.toJson($ctx.result.items),
+            "nextToken": $util.toJson($util.defaultIfNullOrBlank($context.result.nextToken, null))
+        }`),
+    })
+
+    new Resolver(this, 'PortfolioCollectionPortfolioItemsResolver', {
+      api: api,
+      typeName: 'PortfolioCollection',
+      fieldName: 'portfolioItems',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.source.portfolioUserId)
+        #set($portfolioUserId = $util.defaultIfNullOrBlank($portfolioUserId, ""))
+        #set($portfolioUserId = $util.str.toUpper($portfolioUserId))
+        #set($portfolioUserId = $util.str.toReplace($portfolioUserId, " ", ""))
+        #set($portfolioCollectionId = $ctx.source.portfolioCollectionId)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+
+        {
+            "version" : "2017-02-28",
+            "operation" : "Query",
+            "query" : {
+              "expression": "PK = :pk and begins_with(SK, :beginsWith)",
+              "expressionValues" : {
+                ":pk": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+                ":beginsWith": $util.dynamodb.toDynamoDBJson("USER#$portfolioUserId#$portfolioCollectionId#"),
+              },
+			      },
+            "filter": {
+              "expression": "#TYPE = :rowType",
+              "expressionValues": {
+                ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioItem"),
+              },
+              "expressionNames": {"#TYPE": "TYPE"},
+      			},
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+            "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+            "items": $util.toJson($ctx.result.items),
+            "nextToken": $util.toJson($util.defaultIfNullOrBlank($context.result.nextToken, null))
+        }`),
+    })
+
+    new Resolver(this, 'QueryGetExposedPortfolioCollectionResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'getExposedPortfolioCollection',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioCollectionId = $ctx.args.portfolioCollectionId)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+
+        {
+          "version": "2017-02-28",
+          "operation": "Query",
+          "index": "GSI1",
+          "query" : {
+            "expression": "GSI1PK = :GSI1PK and begins_with(GSI1SK, :beginsWith)",
+            "expressionValues" : {
+            ":GSI1PK": $util.dynamodb.toDynamoDBJson("PORTFOLIOCOLLECTION"),
+              ":beginsWith": $util.dynamodb.toDynamoDBJson($util.str.toUpper("PORTFOLIOCOLLECTION#$portfolioCollectionId")),
+                }
+            },
+          "filter": {
+            "expression": "#TYPE = :rowType",
+              "expressionValues": {
+              ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+                },
+            "expressionNames": { "#TYPE": "TYPE" },
+          },
+        }`),
+      // responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        #set($result = {})
+        #if( $ctx.result.items.size() > 0 )
+          #set($result = $ctx.result.items[0])
+        #end
+
+        $util.toJson($result)
+        `),
+    })
+
     new Resolver(this, 'QueryGetFileResolver', {
       api: api,
       typeName: 'Query',
@@ -1092,6 +1587,96 @@ def _delete_expired_api_keys(graphql_api_id: str):
         $!{ctx.stash.put("websiteId", $util.defaultIfNullOrBlank($ctx.args.websiteId, ""))}
 
         {}`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'QueryGetPortfolioCollectionResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'getPortfolioCollection',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+        #set($portfolioCollectionId = $ctx.args.portfolioCollectionId)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+
+        {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId#$portfolioCollectionId")),
+            }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'QueryGetPortfolioItemResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'getPortfolioItem',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+        #set($portfolioCollectionId = $ctx.args.portfolioCollectionId)
+        #set($portfolioCollectionId = $util.defaultIfNullOrBlank($portfolioCollectionId, ""))
+        #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+        #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+
+        #set($portfolioItemId = $ctx.args.portfolioItemId)
+        #set($portfolioItemId = $util.defaultIfNullOrBlank($portfolioItemId, ""))
+        #set($portfolioItemId = $util.str.toUpper($portfolioItemId))
+        #set($portfolioItemId = $util.str.toReplace($portfolioItemId, " ", ""))
+
+        {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId#$portfolioCollectionId#$portfolioItemId")),
+            }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'QueryGetPortfolioUserResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'getPortfolioUser',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+
+        {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId")),
+            }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+    new Resolver(this, 'QueryGetPortfolioUserPassingIdResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'getPortfolioUserPassingId',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        ## #set($portfolioUserId = $ctx.args.portfolioUserId)
+        #set($portfolioUserId = $ctx.identity.claims.netid)
+
+        {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId")),
+            }
+        }`),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
@@ -1303,6 +1888,111 @@ def _delete_expired_api_keys(graphql_api_id: str):
           "nextToken": $util.toJson($context.result.nextToken)
         }`),
     })
+
+    new Resolver(this, 'QueryListPublicPortfolioCollectionsResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'listPublicPortfolioCollections',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+
+        {
+          "version": "2017-02-28",
+          "operation": "Query",
+          "index": "GSI2",
+          "query" : {
+            "expression": "GSI2PK = :GSI2PK and begins_with(GSI2SK, :beginsWith)",
+            "expressionValues" : {
+              ":GSI2PK": $util.dynamodb.toDynamoDBJson("PORTFOLIOCOLLECTION"),
+              ":beginsWith": $util.dynamodb.toDynamoDBJson($util.str.toUpper("PUBLIC#")),
+              }
+          },
+          "filter": {
+            "expression": "#TYPE = :rowType and privacy = :privacy",
+            "expressionValues": {
+              ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+              ":privacy": $util.dynamodb.toDynamoDBJson("public"),
+            },
+            "expressionNames": {"#TYPE": "TYPE"},
+          },
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+          "items": $util.toJson($context.result.items),
+          "nextToken": $util.toJson($context.result.nextToken)
+        }`),
+    })
+
+    new Resolver(this, 'QueryListPublicHighlightedPortfolioCollectionsResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'listPublicHighlightedPortfolioCollections',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+
+        {
+          "version": "2017-02-28",
+          "operation": "Query",
+          "index": "GSI2",
+          "query" : {
+            "expression": "GSI2PK = :GSI2PK and begins_with(GSI2SK, :beginsWith)",
+            "expressionValues" : {
+              ":GSI2PK": $util.dynamodb.toDynamoDBJson("PORTFOLIOCOLLECTION"),
+              ":beginsWith": $util.dynamodb.toDynamoDBJson($util.str.toUpper("PUBLIC#")),
+              }
+          },
+          "filter": {
+            "expression": "#TYPE = :rowType and privacy = :privacy and highlightedCollection = :highlightedCollection",
+            "expressionValues": {
+              ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+              ":privacy": $util.dynamodb.toDynamoDBJson("public"),
+              ":highlightedCollection": $util.dynamodb.toDynamoDBJson(true),
+            },
+            "expressionNames": {"#TYPE": "TYPE"},
+          },
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+          "items": $util.toJson($context.result.items),
+          "nextToken": $util.toJson($context.result.nextToken)
+        }`),
+    })
+
+    new Resolver(this, 'QueryListPublicFeaturedPortfolioCollectionsResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'listPublicFeaturedPortfolioCollections',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+
+        {
+          "version": "2017-02-28",
+          "operation": "Query",
+          "index": "GSI2",
+          "query" : {
+            "expression": "GSI2PK = :GSI2PK and begins_with(GSI2SK, :beginsWith)",
+            "expressionValues" : {
+              ":GSI2PK": $util.dynamodb.toDynamoDBJson("PORTFOLIOCOLLECTION"),
+              ":beginsWith": $util.dynamodb.toDynamoDBJson($util.str.toUpper("PUBLIC#")),
+              }
+            },
+            "filter": {
+            "expression": "#TYPE = :rowType and privacy = :privacy and featuredCollection = :featuredCollection",
+            "expressionValues": {
+              ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+              ":privacy": $util.dynamodb.toDynamoDBJson("public"),
+              ":featuredCollection": $util.dynamodb.toDynamoDBJson(true),
+            },
+            "expressionNames": {"#TYPE": "TYPE"},
+          },
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+          "items": $util.toJson($context.result.items),
+          "nextToken": $util.toJson($context.result.nextToken)
+        }`),
+    })
+
 
     new Resolver(this, 'QueryListSupplementalDataRecordsResolver', {
       api: api,

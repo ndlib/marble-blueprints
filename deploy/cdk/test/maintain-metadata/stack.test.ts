@@ -199,6 +199,44 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
+    test('creates MutationRemovePortfolioCollectionResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "removePortfolioCollection",
+      }))
+    })
+    test('creates MutationRemovePortfolioItemResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "removePortfolioItem",
+      }))
+    })
+    test('creates MutationgetRemovePortfolioUserResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "removePortfolioUser",
+      }))
+    })
+    test('creates MutationSavePortfolioCollectionResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "savePortfolioCollection",
+      }))
+    })
+    test('creates MutationSavePortfolioItemResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "savePortfolioItem",
+      }))
+    })
+    test('creates MutationsavePortfolioUserResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "savePortfolioUser",
+      }))
+    })
+
+
     test('creates MutationAddItemToHarvestResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Mutation",
@@ -261,6 +299,43 @@ describe('MaintainMetadataStack', () => {
         FieldName: "ItemMetadata",
       }))
     })
+    test('creates QueryGetPortfolioCollectionResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getPortfolioCollection",
+      }))
+    })
+    test('creates QueryGetPortfolioItemResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getPortfolioItem",
+      }))
+    })
+    test('creates QueryGetPortfolioUserResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getPortfolioUser",
+      }))
+    })
+    test('creates QueryListPublicFeaturedPortfolioCollectionsResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listPublicFeaturedPortfolioCollections",
+      }))
+    })
+    test('creates QueryListPublicHighlightedPortfolioCollectionsResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listPublicHighlightedPortfolioCollections",
+      }))
+    })
+    test('creates QueryListPublicPortfolioCollectionsResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listPublicPortfolioCollections",
+      }))
+    })
+
 
     test('creates QueryGetFileGroupResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {

@@ -1660,26 +1660,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    new Resolver(this, 'QueryGetPortfolioUserPassingIdResolver', {
-      api: api,
-      typeName: 'Query',
-      fieldName: 'getPortfolioUserPassingId',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        ## #set($portfolioUserId = $ctx.args.portfolioUserId)
-        #set($portfolioUserId = $ctx.identity.claims.netid)
-
-        {
-            "version": "2017-02-28",
-            "operation": "GetItem",
-            "key": {
-              "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
-              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId")),
-            }
-        }`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-    })
-
     new Resolver(this, 'QueryGetWebsiteResolver', {
       api: api,
       typeName: 'Query',

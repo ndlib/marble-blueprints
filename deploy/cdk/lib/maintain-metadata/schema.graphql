@@ -285,7 +285,7 @@ type Query @aws_oidc @aws_api_key {
 	getItem(id: String!, websiteId: String): ItemMetadata
 	getPortfolioCollection(portfolioCollectionId: String!): PortfolioCollection  @aws_oidc
 	getPortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): PortfolioItem  @aws_oidc
-	getPortfolioUser(portfolioUserId: String): PortfolioUser  @aws_oidc
+	getPortfolioUser: PortfolioUser  @aws_oidc
 	getWebsite(id: String!): Website
 	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection
 	listFileGroupsByStorageSystem(storageSystem: String!, typeOfData: String!, limit: Int, nextToken: String): FileGroupsConnection

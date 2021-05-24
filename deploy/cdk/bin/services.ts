@@ -201,6 +201,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       apiName: userContentStack.apiName,
       sloThreshold: 0.95,
       latencyThreshold: 500,
+      "alarmsEnabled": {
+        "High": false,
+        "Low": false,
+      },
     },
     {
       title: "User Content API",
@@ -208,6 +212,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       apiName: userContentStack .apiName,
       sloThreshold: 0.99,
       latencyThreshold: 2000,
+      "alarmsEnabled": {
+        "High": false,
+        "Low": false,
+      },
     },
     {
       title: "Search API",

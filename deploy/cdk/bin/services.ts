@@ -184,7 +184,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     },
     {
       title: "IIIF Manifest CDN",
-      type: "CloudfrontAvailability",
+      type: "CloudfrontLatency",
       distributionId: manifestPipelineStack.distribution.distributionId,
       sloThreshold: 0.95,
       latencyThreshold: 750,

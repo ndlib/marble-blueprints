@@ -190,6 +190,19 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       latencyThreshold: 750,
     },
     {
+      title: "IIIF Manifest API",
+      type: "ApiAvailability",
+      apiName: manfiestLambdaStack.apiName,
+      sloThreshold: 0.999,
+    },
+    {
+      title: "IIIF Manifest API",
+      type: "ApiLatency",
+      apiName: manfiestLambdaStack.apiName,
+      sloThreshold: 0.95,
+      latencyThreshold: 750,
+    },
+    {
       title: "User Content API",
       type: "ApiAvailability",
       apiName: userContentStack.apiName,

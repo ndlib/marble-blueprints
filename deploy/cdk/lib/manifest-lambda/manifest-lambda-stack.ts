@@ -49,10 +49,12 @@ export interface IBaseStackProps extends StackProps {
 }
 
 export class ManifestLambdaStack extends Stack {
+  readonly apiName: string
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
+    this.apiName = props.hostnamePrefix
 
     if (props.hostnamePrefix.length > 63) {
       Annotations.of(this).addError(`Max length of hostnamePrefix is 63.  "${props.hostnamePrefix}" is too long.}`)
@@ -65,8 +67,7 @@ export class ManifestLambdaStack extends Stack {
     const graphqlApiUrlKeyPath = props.maintainMetadataStack.graphqlApiUrlKeyPath
     const graphqlApiKeyKeyPath = props.maintainMetadataStack.graphqlApiKeyKeyPath
 
-    const apiName = props.hostnamePrefix
-    const iiifApiBaseUrl = apiName + '.' + props.foundationStack.hostedZone.zoneName
+    const iiifApiBaseUrl = props.hostnamePrefix + '.' + props.foundationStack.hostedZone.zoneName
 
     const iiifManifestLambda = new Function(this, 'IiifManifestLambdaFunction', {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'manifest_lambda/')),
@@ -97,7 +98,7 @@ export class ManifestLambdaStack extends Stack {
     })
 
     const api = new apigateway.RestApi(this, 'IIIFApiGateway', {
-      restApiName: apiName,
+      restApiName: this.apiName,
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
         allowCredentials: false,

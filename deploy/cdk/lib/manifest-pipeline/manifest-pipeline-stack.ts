@@ -53,6 +53,11 @@ export interface IBaseStackProps extends StackProps {
   readonly rBSCS3ImageBucketName: string;
 
   /**
+   * The name of the bucket that contains marble content
+   */
+  readonly marbleContentBucketName: string;
+
+  /**
    * S3 bucket where multimedia assets are stored (created by multimedia-assets stack)
    */
   readonly multimediaBucket: Bucket;
@@ -329,6 +334,13 @@ export class ManifestPipelineStack extends Stack {
       description: 'Name of the RBSC Image Bucket',
     })
 
+    new StringParameter(this, 'sSMMarbleContentBucketName', {
+      type: ParameterType.STRING,
+      parameterName: `${props.appConfigPath}/marble-content-bucket`,
+      stringValue: props.marbleContentBucketName,
+      description: 'Name of the Bucket containing marble content',
+    })
+
     new StringParameter(this, 'sSMMultimediaBucketName', {
       type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/multimedia-bucket`,
@@ -456,6 +468,7 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
+        ManifestPipelineStack.allowListBucketPolicy(props.marbleContentBucketName),
         new PolicyStatement({
           effect: Effect.ALLOW,
           actions: ["ses:SendEmail"],
@@ -515,6 +528,7 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
+        ManifestPipelineStack.allowListBucketPolicy(props.marbleContentBucketName),
         new PolicyStatement({
           effect: Effect.ALLOW,
           actions: ["ses:SendEmail"],
@@ -545,6 +559,7 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
+        ManifestPipelineStack.allowListBucketPolicy(props.marbleContentBucketName),
         ManifestPipelineStack.allowListBucketPolicy(props.multimediaBucket.bucketName),
       ],
       timeout: Duration.seconds(900),
@@ -571,6 +586,7 @@ export class ManifestPipelineStack extends Stack {
         ManifestPipelineStack.ssmPolicy(props.appConfigPath),
         ManifestPipelineStack.ssmPolicy(props.marbleProcessingKeyPath),
         ManifestPipelineStack.allowListBucketPolicy(props.rBSCS3ImageBucketName),
+        ManifestPipelineStack.allowListBucketPolicy(props.marbleContentBucketName),
       ],
       timeout: Duration.seconds(900),
     })

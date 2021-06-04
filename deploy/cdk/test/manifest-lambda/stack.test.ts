@@ -10,6 +10,7 @@ const domainName = 'test.edu'
 const namespace = 'marble'
 const sentryDsn = 'https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199'
 const rBSCS3ImageBucketName = 'libnd-smb-rbsc'
+const marbleContentBucketName = 'libnd-smb-marble'
 
 
 const manifestPipelineContext = {
@@ -26,6 +27,7 @@ const manifestPipelineContext = {
   domainName,
   sentryDsn,
   rBSCS3ImageBucketName,
+  marbleContentBucketName,
   appConfigPath: "/all/test-marble",
   metadataTimeToLiveDays: "365",
   filesTimeToLiveDays: "365",

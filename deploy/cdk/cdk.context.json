@@ -9,7 +9,8 @@
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "rBSCS3ImageBucketName": "rbsc-test-files",
-      "createGithubWebhooks": false
+      "createGithubWebhooks": false,
+      "marbleContentBucketName": "testlibnd-smb-test"
     },
     "prod": {
       "account": "230391840102",
@@ -21,7 +22,8 @@
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
       "notificationReceivers": "hl-mellon-deployment-approvers-list@nd.edu",
       "rBSCS3ImageBucketName": "libnd-smb-rbsc",
-      "createGithubWebhooks": true
+      "createGithubWebhooks": true,
+      "marbleContentBucketName": "libnd-smb-marble"
     }
   },
 

@@ -84,6 +84,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const multimediaAssetsContext = getContextByNamespace('multimediaAssets')
   const multimediaAssetsStack = new multimediaAssets.MultimediaAssetsStack(app, `${namespace}-multimedia-assets`, {
     foundationStack,
+    marbleContentBucketName: contextEnv.marbleContentBucketName,
     ...commonProps,
     ...multimediaAssetsContext,
   })
@@ -95,6 +96,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     createEventRules: app.node.tryGetContext('manifestPipeline:createEventRules') === "true" ? true : false,
     appConfigPath: app.node.tryGetContext('manifestPipeline:appConfigPath') ? app.node.tryGetContext('manifestPipeline:appConfigPath') : `/all/stacks/${namespace}-manifest`,
     rBSCS3ImageBucketName: contextEnv.rBSCS3ImageBucketName,
+    marbleContentBucketName: contextEnv.marbleContentBucketName,
     multimediaBucket: multimediaAssetsStack.multimediaBucket,
     ...commonProps,
     ...manifestPipelineContext,
@@ -112,6 +114,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const imageProcessingStack = new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, {
     foundationStack,
     rbscBucketName: contextEnv.rBSCS3ImageBucketName,
+    marbleContentBucketName: contextEnv.marbleContentBucketName,
     manifestPipelineStack,
     maintainMetadataStack,
     ...commonProps,
@@ -194,6 +197,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       type: "ApiAvailability",
       apiName: manfiestLambdaStack.apiName,
       sloThreshold: 0.999,
+      "alarmsEnabled": {
+        "High": false,
+        "Low": false,
+      },
     },
     {
       title: "IIIF Manifest API",
@@ -201,6 +208,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       apiName: manfiestLambdaStack.apiName,
       sloThreshold: 0.95,
       latencyThreshold: 750,
+      "alarmsEnabled": {
+        "High": false,
+        "Low": false,
+      },
     },
     {
       title: "User Content API",

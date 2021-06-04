@@ -14,6 +14,7 @@ export class ContextEnv {
   readonly rBSCS3ImageBucketName: string
   readonly createGithubWebhooks: boolean
   readonly alarmsEmail: string
+  readonly marbleContentBucketName: string
 
   static fromContext = (node: ConstructNode, name: string): ContextEnv => {
     const contextEnv = getRequiredContext(node, 'environments')[name]

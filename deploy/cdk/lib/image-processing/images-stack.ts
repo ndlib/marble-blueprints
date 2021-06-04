@@ -4,17 +4,15 @@ import { EcsTask } from '@aws-cdk/aws-events-targets'
 import * as iam from '@aws-cdk/aws-iam'
 import * as s3 from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
-import { Annotations } from '@aws-cdk/core'
-import fs = require('fs')
 import { FoundationStack } from '../foundation'
 import { ManifestPipelineStack } from '../manifest-pipeline'
 import { MaintainMetadataStack } from '../maintain-metadata'
-import { AssetCode } from '@aws-cdk/aws-lambda'
 import { AssetHelpers } from '../asset-helpers'
 
 export interface ImagesStackProps extends cdk.StackProps {
   readonly dockerfilePath: string;
   readonly rbscBucketName: string;
+  readonly marbleContentBucketName: string;
   readonly manifestPipelineStack: ManifestPipelineStack;
   readonly foundationStack: FoundationStack;
   readonly maintainMetadataStack: MaintainMetadataStack;
@@ -26,6 +24,7 @@ export class ImagesStack extends cdk.Stack {
 
     const rbscBucketName = props.rbscBucketName
     const rbscBucket = s3.Bucket.fromBucketName(this, 'RbscBucket', rbscBucketName)
+    const marbleContentBucket = s3.Bucket.fromBucketName(this, 'MarbleContentBucket', props.marbleContentBucketName)
     const imageBucket = props.foundationStack.publicBucket
     const graphqlApiUrlKeyPath = props.maintainMetadataStack.graphqlApiUrlKeyPath
     const graphqlApiKeyKeyPath = props.maintainMetadataStack.graphqlApiKeyKeyPath
@@ -57,6 +56,7 @@ export class ImagesStack extends cdk.Stack {
       effect: iam.Effect.ALLOW,
       resources: [
         rbscBucket.bucketArn + '/*',
+        marbleContentBucket.bucketArn + '/*',
       ],
       actions: [
         "s3:GetObject",

@@ -41,6 +41,11 @@ export interface IMultimediaAssetsStackProps extends cdk.StackProps {
    * How long to cache origin responses (in seconds).
    */
   readonly cacheTtl: number
+
+  /**
+   * Bucket to hold marble-content to be exposed using this API
+   */
+  readonly marbleContentBucketName: string
 }
 
 export class MultimediaAssetsStack extends cdk.Stack {
@@ -66,6 +71,7 @@ export class MultimediaAssetsStack extends cdk.Stack {
     const prefix = props.hostnamePrefix || `${props.namespace}-multimedia`
     this.hostname = `${prefix}.${props.foundationStack.hostedZone.zoneName}`
 
+    // TODO:  Once we have made the transition to using the MarbleContentBucket, the MultimediaBucket will need to be removed.
     this.multimediaBucket = new Bucket(this, 'MultimediaBucket', {
       bucketName: `${prefix}-${this.account}`, // Bucket names must be unique, so account id helps ensure that
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
@@ -95,6 +101,19 @@ export class MultimediaAssetsStack extends cdk.Stack {
       }),
     )
 
+    const marbleContentBucket = Bucket.fromBucketName(this, 'MarbleContentBucket', props.marbleContentBucketName)
+    // Note: We need cors and serverAccessLogs added
+    
+    // This doesn't do anything.  I need to read the existing policy on the bucket and add to it.
+    marbleContentBucket.addToResourcePolicy(
+      new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: ['s3:GetBucket*', 's3:List*', 's3:GetObject*'],
+        resources: [marbleContentBucket.bucketArn, marbleContentBucket.bucketArn + '/*'],
+        principals: [new CanonicalUserPrincipal(oai.cloudFrontOriginAccessIdentityS3CanonicalUserId)],
+      }),
+    )
+
     this.cloudfront = new CloudFrontWebDistribution(this, 'Distribution', {
       comment: this.hostname,
       loggingConfig: {
@@ -105,8 +124,9 @@ export class MultimediaAssetsStack extends cdk.Stack {
       originConfigs: [
         {
           s3OriginSource: {
-            s3BucketSource: this.multimediaBucket,
+            s3BucketSource: marbleContentBucket,
             originAccessIdentity: oai,
+            originPath: '/public-access',  // This will only share content in the folder named "public-access"
           },
           behaviors: [
             {

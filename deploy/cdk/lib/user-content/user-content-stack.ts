@@ -4,7 +4,6 @@ import lambda = require('@aws-cdk/aws-lambda')
 import { CnameRecord } from '@aws-cdk/aws-route53'
 import ssm = require('@aws-cdk/aws-ssm')
 import cdk = require('@aws-cdk/core')
-import fs = require('fs')
 import { FoundationStack } from '../foundation'
 import { StringParameter } from '@aws-cdk/aws-ssm'
 import { AssetHelpers } from '../asset-helpers'

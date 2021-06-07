@@ -102,17 +102,18 @@ export class MultimediaAssetsStack extends cdk.Stack {
     )
 
     const marbleContentBucket = Bucket.fromBucketName(this, 'MarbleContentBucket', props.marbleContentBucketName)
-    // Note: We need cors and serverAccessLogs added
-    
-    // This doesn't do anything.  I need to read the existing policy on the bucket and add to it.
-    marbleContentBucket.addToResourcePolicy(
-      new PolicyStatement({
-        effect: Effect.ALLOW,
-        actions: ['s3:GetBucket*', 's3:List*', 's3:GetObject*'],
-        resources: [marbleContentBucket.bucketArn, marbleContentBucket.bucketArn + '/*'],
-        principals: [new CanonicalUserPrincipal(oai.cloudFrontOriginAccessIdentityS3CanonicalUserId)],
-      }),
-    )
+    // Note:  The following code doesn't do anything.  What we really need is to be able to read the existing bucket policy and add to it.
+    // Unfortunately, CDK doesn't permit that.  In fact, according to https://github.com/aws/aws-cdk/issues/6548, CDK doesn't permit changes to buckets not created within the same cdk stack.
+    // I am leaving this code here in case CDK eventually adds this functionality.
+    // Note: For now, need CORS and policies added manually
+    // marbleContentBucket.addToResourcePolicy(
+    //   new PolicyStatement({
+    //     effect: Effect.ALLOW,
+    //     actions: ['s3:GetBucket*', 's3:List*', 's3:GetObject*'],
+    //     resources: [marbleContentBucket.bucketArn, marbleContentBucket.bucketArn + '/*'],
+    //     principals: [new CanonicalUserPrincipal(oai.cloudFrontOriginAccessIdentityS3CanonicalUserId)],
+    //   }),
+    // )
 
     this.cloudfront = new CloudFrontWebDistribution(this, 'Distribution', {
       comment: this.hostname,
@@ -134,7 +135,7 @@ export class MultimediaAssetsStack extends cdk.Stack {
               allowedMethods: CloudFrontAllowedMethods.GET_HEAD_OPTIONS,
               compress: true,
               defaultTtl: cdk.Duration.seconds(props.cacheTtl),
-            }
+            },
           ],
         },
       ],

@@ -10,6 +10,7 @@ const domainName = 'test.edu'
 const namespace = 'marble'
 const sentryDsn = 'https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199'
 const rBSCS3ImageBucketName = 'libnd-smb-rbsc'
+const marbleContentBucketName = 'libnd-smb-marble'
 
 
 const manifestPipelineContext = {
@@ -26,6 +27,7 @@ const manifestPipelineContext = {
   domainName,
   sentryDsn,
   rBSCS3ImageBucketName,
+  marbleContentBucketName,
   appConfigPath: "/all/test-marble",
   metadataTimeToLiveDays: "365",
   filesTimeToLiveDays: "365",
@@ -164,10 +166,59 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
+    test('creates ImageGroupImagesResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "ImageGroup",
+        FieldName: "images",
+      }))
+    })
+
+    test('creates ImageImageGroupResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Image",
+        FieldName: "imageGroup",
+      }))
+    })
+
     test('creates ItemMetadataDefaultFileResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "ItemMetadata",
         FieldName: "defaultFile",
+      }))
+    })
+
+    test('creates ItemMetadataDefaultImageResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "ItemMetadata",
+        FieldName: "defaultImage",
+      }))
+    })
+
+    test('creates ItemMetadataImagesResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "ItemMetadata",
+        FieldName: "images",
+      }))
+    })
+
+    test('creates ItemMetadataMediaResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "ItemMetadata",
+        FieldName: "media",
+      }))
+    })
+
+    test('creates MediaGroupMediaResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "MediaGroup",
+        FieldName: "media",
+      }))
+    })
+
+    test('creates MediaMediaGroupResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Media",
+        FieldName: "mediaGroup",
       }))
     })
 
@@ -196,6 +247,13 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Mutation",
         FieldName: "addItemToWebsite",
+      }))
+    })
+
+    test('creates MutationRemoveMediaGroupForWebsiteResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "removeMediaGroupForWebsite",
       }))
     })
 
@@ -293,6 +351,13 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
+    test('creates MutationSaveMediaGroupForWebsiteResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "saveMediaGroupForWebsite",
+      }))
+    })
+
     test('creates WebsiteItemItemMetadataResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "WebsiteItem",
@@ -317,6 +382,44 @@ describe('MaintainMetadataStack', () => {
         FieldName: "getPortfolioUser",
       }))
     })
+    test('creates QueryListImageGroupsResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listImageGroups",
+      }))
+    })
+    test('creates QueryListImageGroupsByStorageSystemResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listImageGroupsByStorageSystem",
+      }))
+    })
+    test('creates QueryListImageGroupsForS3Resolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listImageGroupsForS3",
+      }))
+    })
+
+    test('creates QueryListMediaGroupsResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listMediaGroups",
+      }))
+    })
+    test('creates QueryListMediaGroupsByStorageSystemResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listMediaGroupsByStorageSystem",
+      }))
+    })
+    test('creates QueryListMediaGroupsForS3Resolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listMediaGroupsForS3",
+      }))
+    })
+
     test('creates QueryListPublicFeaturedPortfolioCollectionsResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",

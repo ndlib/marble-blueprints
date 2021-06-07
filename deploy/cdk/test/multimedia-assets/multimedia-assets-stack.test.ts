@@ -23,6 +23,7 @@ describe('MultimediaAssetsStack', () => {
     namespace: 'my-happy-place',
     cacheTtl: 9001,
     stackName: 'test-stack-name',
+    marbleContentBucketName: 'libnd-smb-marble',
   })
 
   test('creates an s3 bucket for assets', () => {

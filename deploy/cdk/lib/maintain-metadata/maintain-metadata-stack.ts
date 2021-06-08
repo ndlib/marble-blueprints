@@ -2011,10 +2011,10 @@ def _delete_expired_api_keys(graphql_api_id: str):
           "operation" : "Query",
           "index": "GSI2",
           "query" : {
-              "expression": "GSI2PK = :pk",
+              "expression": "GSI2PK = :pk and begins_with(GSI2SK, :sk)",
               "expressionValues" : {
                   ":pk": $util.dynamodb.toDynamoDBJson($fullId),
-                  ":sk": $util.dynamodb.toDynamoDbJson("FILEGROUP#")
+                  ":sk": $util.dynamodb.toDynamoDBJson("FILEGROUP#")
               }
           },
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),
@@ -2073,10 +2073,10 @@ def _delete_expired_api_keys(graphql_api_id: str):
           "operation" : "Query",
           "index": "GSI2",
           "query" : {
-              "expression": "GSI2PK = :pk",
+              "expression": "GSI2PK = :pk and begins_with(GSI2SK, :sk)",
               "expressionValues" : {
                   ":pk": $util.dynamodb.toDynamoDBJson($fullId),
-                  ":sk": $util.dynamodb.toDynamoDbJson("FILEGROUP#")
+                  ":sk": $util.dynamodb.toDynamoDBJson("FILEGROUP#")
               }
           },
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),
@@ -2139,7 +2139,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
               "expression": "GSI2PK = :pk and begins_with(GSI2SK, :sk)",
               "expressionValues" : {
                   ":pk": $util.dynamodb.toDynamoDBJson($fullId),
-                  ":sk": $util.dynamodb.toDynamoDbJson("IMAGEGROUP#")
+                  ":sk": $util.dynamodb.toDynamoDBJson("IMAGEGROUP#")
               }
           },
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),
@@ -2167,7 +2167,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
               "expression": "GSI2PK = :pk and begins_with(GSI2SK, :sk)",
               "expressionValues" : {
                   ":pk": $util.dynamodb.toDynamoDBJson($fullId),
-                  ":sk": $util.dynamodb.toDynamoDbJson("IMAGEGROUP#")
+                  ":sk": $util.dynamodb.toDynamoDBJson("IMAGEGROUP#")
               }
           },
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),
@@ -2293,7 +2293,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
               "expression": "GSI2PK = :pk and begins_with(GSI2SK, :sk)",
               "expressionValues" : {
                   ":pk": $util.dynamodb.toDynamoDBJson($fullId),
-                  ":sk": $util.dynamodb.toDynamoDbJson("MEDIAGROUP#")
+                  ":sk": $util.dynamodb.toDynamoDBJson("MEDIAGROUP#")
               }
           },
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),
@@ -2321,7 +2321,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
               "expression": "GSI2PK = :pk and begins_with(GSI2SK, :sk)",
               "expressionValues" : {
                   ":pk": $util.dynamodb.toDynamoDBJson($fullId),
-                  ":sk": $util.dynamodb.toDynamoDbJson(MEDIAGROUP#")
+                  ":sk": $util.dynamodb.toDynamoDBJson(MEDIAGROUP#")
               }
           },
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),

@@ -2321,7 +2321,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
               "expression": "GSI2PK = :pk and begins_with(GSI2SK, :sk)",
               "expressionValues" : {
                   ":pk": $util.dynamodb.toDynamoDBJson($fullId),
-                  ":sk": $util.dynamodb.toDynamoDBJson(MEDIAGROUP#")
+                  ":sk": $util.dynamodb.toDynamoDBJson("MEDIAGROUP#")
               }
           },
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),

@@ -400,6 +400,12 @@ describe('MaintainMetadataStack', () => {
         FieldName: "listImageGroupsForS3",
       }))
     })
+    test('creates QueryListImageGroupsReferencedResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listImageGroupsReferenced",
+      }))
+    })
 
     test('creates QueryListMediaGroupsResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
@@ -417,6 +423,12 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
         FieldName: "listMediaGroupsForS3",
+      }))
+    })
+    test('creates QueryListMediaGroupsReferencedResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "listMediaGroupsReferenced",
       }))
     })
 

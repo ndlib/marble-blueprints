@@ -211,6 +211,17 @@ export class ManifestPipelineStack extends Stack {
         type: dynamodb.AttributeType.STRING,
       },
     })
+    this.websiteMetadataDynamoTable.addGlobalSecondaryIndex({
+      indexName: 'GSI3',
+      partitionKey: {
+        name: 'GSI3PK',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'GSI3SK',
+        type: dynamodb.AttributeType.STRING,
+      },
+    })
     new StringParameter(this, 'WebsiteMetadataTableNameParam', {
       parameterName: `/all/stacks/${this.stackName}/website-metadata-tablename`,
       stringValue: this.websiteMetadataDynamoTable.tableName,

@@ -389,11 +389,13 @@ type Query @aws_oidc @aws_api_key {
 	listImageGroups(limit: Int, nextToken: String): ImageGroupsConnection
 	listImageGroupsByStorageSystem(storageSystem: StorageSystem!, typeOfData: String!, limit: Int, nextToken: String): ImageGroupsConnection
 	listImageGroupsForS3(limit: Int, nextToken: String): ImageGroupsConnection
+	listImageGroupsReferenced(limit: Int, nextToken: String): ImageGroupsConnection
 	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
 	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
 	listMediaGroups(limit: Int, nextToken: String): MediaGroupsConnection
 	listMediaGroupsByStorageSystem(storageSystem: StorageSystem!, typeOfData: String!, limit: Int, nextToken: String): MediaGroupsConnection
 	listMediaGroupsForS3(limit: Int, nextToken: String): MediaGroupsConnection
+	listMediaGroupsReferenced(limit: Int, nextToken: String): MediaGroupsConnection
 	listPublicFeaturedPortfolioCollections: PortfolioCollectionsConnection
 	listPublicHighlightedPortfolioCollections: PortfolioCollectionsConnection
 	listPublicPortfolioCollections: PortfolioCollectionsConnection

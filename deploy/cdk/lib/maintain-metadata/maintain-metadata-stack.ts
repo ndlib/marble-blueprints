@@ -2180,6 +2180,34 @@ def _delete_expired_api_keys(graphql_api_id: str):
         }`),
     })
 
+    new Resolver(this, 'QueryListImageGroupsReferencedResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'listImageGroupsReferenced',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        {
+          "version" : "2017-02-28",
+          "operation" : "Query",
+          "index": "GSI2",
+          "query" : {
+              ## Provide a query expression. **
+              "expression": "GSI2PK = :id",
+              "expressionValues" : {
+                  ":id" : $util.dynamodb.toDynamoDBJson("SUPPLEMENTALDATA")
+              }
+            },
+            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+            "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+            "items": $util.toJson($ctx.result.items),
+            "nextToken": $util.toJson($util.defaultIfNullOrBlank($context.result.nextToken, null))
+        }`),
+    })
+
+
     // Note that id is really sourceSystem, which can be confusing
     new Resolver(this, 'QueryListItemsBySourceSystemResolver', {
       api: api,
@@ -2331,6 +2359,33 @@ def _delete_expired_api_keys(graphql_api_id: str):
         {
           "items": $util.toJson($context.result.items),
           "nextToken": $util.toJson($context.result.nextToken)
+        }`),
+    })
+
+    new Resolver(this, 'QueryListMediaGroupsReferencedResolver', {
+      api: api,
+      typeName: 'Query',
+      fieldName: 'listMediaGroupsReferenced',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        {
+          "version" : "2017-02-28",
+          "operation" : "Query",
+          "index": "GSI3",
+          "query" : {
+              ## Provide a query expression. **
+              "expression": "GSI3PK = :id",
+              "expressionValues" : {
+                  ":id" : $util.dynamodb.toDynamoDBJson("SUPPLEMENTALDATA")
+              }
+          },
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        {
+            "items": $util.toJson($ctx.result.items),
+            "nextToken": $util.toJson($util.defaultIfNullOrBlank($context.result.nextToken, null))
         }`),
     })
 

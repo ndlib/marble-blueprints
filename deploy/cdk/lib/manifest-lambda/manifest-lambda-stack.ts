@@ -95,6 +95,7 @@ export class ManifestLambdaStack extends Stack {
         }),
       ],
       timeout: Duration.seconds(90),
+      memorySize: 1024,
     })
 
     const api = new apigateway.RestApi(this, 'IIIFApiGateway', {

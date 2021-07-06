@@ -316,13 +316,6 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
-    test('creates MutationSaveAdditionalNotesForWebsiteResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "Mutation",
-        FieldName: "saveAdditionalNotesForWebsite",
-      }))
-    })
-
     test('creates MutationSaveCopyrightForWebsiteResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Mutation",
@@ -388,12 +381,6 @@ describe('MaintainMetadataStack', () => {
         FieldName: "listImageGroups",
       }))
     })
-    test('creates QueryListImageGroupsByStorageSystemResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "Query",
-        FieldName: "listImageGroupsByStorageSystem",
-      }))
-    })
     test('creates QueryListImageGroupsForS3Resolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
@@ -411,12 +398,6 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
         FieldName: "listMediaGroups",
-      }))
-    })
-    test('creates QueryListMediaGroupsByStorageSystemResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "Query",
-        FieldName: "listMediaGroupsByStorageSystem",
       }))
     })
     test('creates QueryListMediaGroupsForS3Resolver', () => {
@@ -474,10 +455,38 @@ describe('MaintainMetadataStack', () => {
     })
 
 
+    test('creates QueryGetImageResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getImage",
+      }))
+    })
+
+    test('creates QueryGetImageGroupResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getImageGroup",
+      }))
+    })
+
     test('creates QueryGetItemResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
         FieldName: "getItem",
+      }))
+    })
+
+    test('creates QueryGetMediaResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getMedia",
+      }))
+    })
+
+    test('creates QueryGetMediaGroupResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "Query",
+        FieldName: "getMediaGroup",
       }))
     })
 
@@ -499,13 +508,6 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
         FieldName: "listFileGroups",
-      }))
-    })
-
-    test('creates QueryListFileGroupsByStorageSystemResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "Query",
-        FieldName: "listFileGroupsByStorageSystem",
       }))
     })
 

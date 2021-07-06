@@ -58,6 +58,8 @@ type FileGroup @aws_oidc @aws_api_key {
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
 	objectFileGroupId: String
+	storageSystem: String
+	typeOfData: String
 	TYPE: String
 	files: FilesConnection
 }
@@ -93,18 +95,21 @@ type Image @aws_oidc @aws_api_key {
 	imageGroup: ImageGroup
 	sequence: Int
 	size: Int
-	source: String
+	sourceSystem: String
 	sourceType: String
 	sourceUri: String
 	title: String
 	treePath: String
 	TYPE: String
+	typeOfData: String
 }
 
 type ImageGroup @aws_oidc @aws_api_key {
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
 	imageGroupId: String
+	storageSystem: String
+	typeOfData: String
 	TYPE: String
 	images: ImagesConnection
 }
@@ -210,18 +215,21 @@ type Media @aws_oidc @aws_api_key {
 	mimeType: String
 	sequence: Int
 	size: Int
-	source: String
+	sourceSystem: String
 	sourceType: String
 	sourceUri: String
 	title: String
 	treePath: String
 	TYPE: String
+	typeOfData: String
 }
 
 type MediaGroup @aws_oidc @aws_api_key {
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
 	mediaGroupId: String
+	storageSystem: String
+	typeOfData: String
 	TYPE: String
 	media: MediaConnection
 }
@@ -287,8 +295,7 @@ type Mutation @aws_oidc @aws_api_key {
 	removePortfolioCollection(portfolioCollectionId: String!): RecordsDeleted @aws_oidc
 	removePortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): RecordsDeleted @aws_oidc
 	removePortfolioUser: RecordsDeleted @aws_oidc
-	saveAdditionalNotesForWebsite(itemId: String!, websiteId: String, additionalNotes: String!): ItemMetadata
-	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String!, inCopyright: Boolean!): ItemMetadata
+	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String, additionalNotes: String inCopyright: Boolean!): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String, imageGroupId: String): ItemMetadata
 	saveFileLastProcessedDate(itemId: String!): FileToProcess
 	saveMediaGroupForWebsite(itemId: String!, websiteId: String, mediaGroupId: String!): ItemMetadata
@@ -382,18 +389,15 @@ type Query @aws_oidc @aws_api_key {
 	getPortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): PortfolioItem  @aws_oidc
 	getPortfolioUser: PortfolioUser  @aws_oidc
 	getWebsite(id: String!): Website
-	listFileGroups(limit: Int, nextToken: String): FileGroupsConnection
-	listFileGroupsByStorageSystem(storageSystem: StorageSystem!, typeOfData: String!, limit: Int, nextToken: String): FileGroupsConnection
+	listFileGroups(limit: Int, nextToken: String, storageSystem: StorageSystem): FileGroupsConnection
 	listFileGroupsForS3(limit: Int, nextToken: String): FileGroupsConnection
 	listFilesToProcess(dateLastProcessedBefore: String, limit: Int, nextToken: String): FilesToProcessConnection
-	listImageGroups(limit: Int, nextToken: String): ImageGroupsConnection
-	listImageGroupsByStorageSystem(storageSystem: StorageSystem!, typeOfData: String!, limit: Int, nextToken: String): ImageGroupsConnection
+	listImageGroups(limit: Int, nextToken: String, storageSystem: StorageSystem): ImageGroupsConnection
 	listImageGroupsForS3(limit: Int, nextToken: String): ImageGroupsConnection
 	listImageGroupsReferenced(limit: Int, nextToken: String): ImageGroupsConnection
 	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
 	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
-	listMediaGroups(limit: Int, nextToken: String): MediaGroupsConnection
-	listMediaGroupsByStorageSystem(storageSystem: StorageSystem!, typeOfData: String!, limit: Int, nextToken: String): MediaGroupsConnection
+	listMediaGroups(limit: Int, nextToken: String, storageSystem: StorageSystem): MediaGroupsConnection
 	listMediaGroupsForS3(limit: Int, nextToken: String): MediaGroupsConnection
 	listMediaGroupsReferenced(limit: Int, nextToken: String): MediaGroupsConnection
 	listPublicFeaturedPortfolioCollections: PortfolioCollectionsConnection

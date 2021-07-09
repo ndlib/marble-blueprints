@@ -117,7 +117,6 @@ export interface IBaseStackProps extends StackProps {
 
   /**
    * This will create the CopyMediaContentLambda if true, otherwise it won't.
-   * Note that any non-empty string will be truthy, so the pipeline must pass an empty string for false.
    */
   readonly createCopyMediaContentLambda?: boolean;
 
@@ -457,7 +456,7 @@ export class ManifestPipelineStack extends Stack {
         runtime: Runtime.PYTHON_3_8,
         environment: {
           SENTRY_DSN: props.sentryDsn,
-          FILE_SHARE_ARN: fileShareArn
+          FILE_SHARE_ARN: fileShareArn,
         },
         timeout: Duration.seconds(900),
         initialPolicy: [

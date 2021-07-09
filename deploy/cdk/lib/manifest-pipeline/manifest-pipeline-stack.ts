@@ -13,6 +13,7 @@ import { FoundationStack } from '../foundation'
 import { Rule, Schedule } from "@aws-cdk/aws-events"
 import dynamodb = require('@aws-cdk/aws-dynamodb')
 import { AssetHelpers } from '../asset-helpers'
+import { S3NotificationToLambdaCustomResource } from './s3ToLambda'
 
 export interface IBaseStackProps extends StackProps {
 
@@ -114,6 +115,16 @@ export interface IBaseStackProps extends StackProps {
    */
   readonly filesTimeToLiveDays: string;
 
+  /**
+   * This will create the CopyMediaContentLambda if true, otherwise it won't.
+   * Note that any non-empty string will be truthy, so the pipeline must pass an empty string for false.
+   */
+  readonly createCopyMediaContentLambda?: boolean;
+
+  /**
+   * The fileShareId for the Marble Content Storage Gateway.  This will be used to create the File Share ARN to pass to the CopyMediaLambda
+   */
+  readonly marbleContentFileShareId: string;
 
 }
 
@@ -435,6 +446,36 @@ export class ManifestPipelineStack extends Stack {
       })
     }
 
+    if ((props.createCopyMediaContentLambda !== undefined) && props.createCopyMediaContentLambda) {
+
+      const marbleContentBucket = Bucket.fromBucketName(this, 'MarbleContentBucket', props.marbleContentBucketName)
+      const fileShareArn = Fn.sub('arn:aws:storagegateway:${AWS::Region}:${AWS::AccountId}:share/') + props.marbleContentFileShareId
+      const copyMediaContentLambda = new Function(this, 'CopyMediaContentLambda', {
+        code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'copy_media_content/')),
+        description: 'Copies media files from other folders to /public-access/media folder to be served by CDN',
+        handler: 'handler.run',
+        runtime: Runtime.PYTHON_3_8,
+        environment: {
+          SENTRY_DSN: props.sentryDsn,
+          FILE_SHARE_ARN: fileShareArn
+        },
+        timeout: Duration.seconds(900),
+        initialPolicy: [
+          new PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: ["storagegateway:RefreshCache"],
+            resources: [fileShareArn],
+          }),
+        ],
+      })
+
+      // Grants
+      marbleContentBucket.grantReadWrite(copyMediaContentLambda)
+
+      // Attach s3 event to lambda  (but we can't do it directly using the Function.event construct because of https://github.com/aws/aws-cdk/issues/2004)
+      new S3NotificationToLambdaCustomResource(this, id, marbleContentBucket, copyMediaContentLambda)
+
+    }
 
     const museumExportLambda = new Function(this, 'MuseumExportLambda', {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'museum_export/')),

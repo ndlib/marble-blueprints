@@ -295,12 +295,12 @@ type Mutation @aws_oidc @aws_api_key {
 	removePortfolioCollection(portfolioCollectionId: String!): RecordsDeleted @aws_oidc
 	removePortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): RecordsDeleted @aws_oidc
 	removePortfolioUser: RecordsDeleted @aws_oidc
-	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String, additionalNotes: String inCopyright: Boolean!): ItemMetadata
+	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String, additionalNotes: String inCopyright: Boolean, copyrightUrl: String, copyrightStatus: String): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String, imageGroupId: String): ItemMetadata
 	saveFileLastProcessedDate(itemId: String!): FileToProcess
 	saveMediaGroupForWebsite(itemId: String!, websiteId: String, mediaGroupId: String!): ItemMetadata
 	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
-	savePortfolioCollection(portfolioCollectionId: String, description: String, imageUri: String, layout: String, privacy: PortfolioPrivacy, highlightedCollection: Boolean, featuredCollection: Boolean): PortfolioCollection @aws_oidc
+	savePortfolioCollection(portfolioCollectionId: String, description: String, imageUri: String, layout: String, privacy: PortfolioPrivacy, highlightedCollection: Boolean, featuredCollection: Boolean, title: String): PortfolioCollection @aws_oidc
 	savePortfolioItem(portfolioItemId: String, portfolioCollectionId: String!, annotation: String, description: String,	imageUri: String,	internalItemId: String,	itemType: PortfolioItemType, sequence: Int,	title: String): PortfolioItem @aws_oidc
 	savePortfolioUser(bio: String, fullName: String, email: String): PortfolioUser @aws_oidc
 }
@@ -321,6 +321,7 @@ type PortfolioCollection @aws_oidc @aws_api_key {
 	layout: String
 	privacy: PortfolioPrivacy
 	portfolioItems: PortfolioItemsConnection
+	title: String
 }	
 
 type PortfolioCollectionsConnection @aws_oidc @aws_api_key {

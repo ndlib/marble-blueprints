@@ -47,7 +47,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-manifest`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean, metadataTimeToLiveDays: string, filesTimeToLiveDays: string) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean, metadataTimeToLiveDays: string, filesTimeToLiveDays: string, createCopyMediaContentLambda: boolean) => {
 
       const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
         targetStack,
@@ -79,10 +79,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
           "manifestPipeline:appConfigPath": `/all/stacks/${targetStack}`,
           "manifestPipeline:lambdaCodeRootPath": `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`,
           "manifestPipeline:hostnamePrefix": hostnamePrefix,
-          "manifestPipeline:createEventRules": createEventRules ? "true" : "false",
+          "manifestPipeline:createEventRules": createEventRules ? "true" : "",  // Note that any non-empty string will be evaluated as truthy when converting to boolean
           "manifestPipeline:metadataTimeToLiveDays": metadataTimeToLiveDays,
           "manifestPipeline:filesTimeToLiveDays": filesTimeToLiveDays,
-
+          "manifestPipeline:createCopyMediaContentLambda": createCopyMediaContentLambda ? "true" : "",  // Note that any non-empty string will be evaluated as truthy when converting to boolean
         },
         additionalRuntimeEnvironments: {
           python: '3.8',
@@ -248,7 +248,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays, false)
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -267,7 +267,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true, props.prodMetadataTimeToLiveDays, props.prodFilesTimeToLiveDays)
+    const createCopyMediaContentLambda = props.contextEnvName === 'prod' ? true : false  // only deploy copy lambda to prod stage in prod environment
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true, props.prodMetadataTimeToLiveDays, props.prodFilesTimeToLiveDays, createCopyMediaContentLambda)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

@@ -1325,13 +1325,21 @@ def _delete_expired_api_keys(graphql_api_id: str):
         ## note:  $null is an undefined variable, which has the effect of assigning null to our variable
         #set($copyrightStatemnt = $util.defaultIfNullOrBlank($ctx.args.copyrightStatement, $null))
         $!{supplementalDataArgs.put('copyrightStatement', $copyrightStatemnt)}
+
+        ## removed when I made inCopyright optional
         ## set copyrightStatus based on inCopyright boolean
-        #set($copyrightStatus = 'Copyright')
-        #if(!$ctx.args.inCopyright)
-          #set($copyrightStatus = 'not in copyright')
-        #end
+        ## #set($copyrightStatus = 'Copyright')
+        ## #if(!$ctx.args.inCopyright)
+        ##   #set($copyrightStatus = 'not in copyright')
+        ## #end
+
+        ## note: I added copyrightStatus as a parameter when I made inCopyright optional
+        #set($copyrightStatus = $util.defaultIfNullOrBlank($ctx.args.copyrightStatus, 'not in copyright'))
+
         #set($additionalNotes = $util.defaultIfNullOrBlank($ctx.args.additionalNotes, $null))
         $!{supplementalDataArgs.put('additionalNotes', $additionalNotes)}
+        #set($copyrightUrl = $util.defaultIfNullOrBlank($ctx.args.copyrightUrl, $null))
+        $!{supplementalDataArgs.put('copyrightUrl', $copyrightUrl)}
 
 
         $!{supplementalDataArgs.put('copyrightStatus', $copyrightStatus)}
@@ -1478,6 +1486,8 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
         #set($layout = $util.defaultIfNullOrBlank($ctx.args.layout, "default"))
 
+        #set($title = $util.defaultIfNullOrBlank($ctx.args.title, $null))
+
         #set($pk = "PORTFOLIO")
         #set($sk = $util.str.toUpper("USER#$portfolioUserId#$portfolioCollectionId"))
 
@@ -1492,6 +1502,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
         $!{expValues.put(":featuredCollection", $util.dynamodb.toDynamoDB($featuredCollection))}
         $!{expValues.put(":highlightedCollection", $util.dynamodb.toDynamoDB($highlightedCollection))}
         $!{expValues.put(":layout", $util.dynamodb.toDynamoDB($layout))}
+        $!{expValues.put(":title", $util.dynamodb.toDynamoDB($title))}
         $!{expValues.put(":privacy", $util.dynamodb.toDynamoDB($privacy))}
 
         #if( $privacy == "private" )
@@ -1520,9 +1531,9 @@ def _delete_expired_api_keys(graphql_api_id: str):
           },
           "update": {
             #if( $privacy == "private" )
-              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy REMOVE GSI1PK, GSI1SK, GSI2PK, GSI2SK",
+              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title REMOVE GSI1PK, GSI1SK, GSI2PK, GSI2SK",
             #else
-              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
+              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
             #end
             "expressionNames": {"#TYPE": "TYPE"},
             "expressionValues": $util.toJson($expValues)

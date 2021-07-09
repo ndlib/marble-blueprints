@@ -10,7 +10,8 @@
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "rBSCS3ImageBucketName": "rbsc-test-files",
       "createGithubWebhooks": false,
-      "marbleContentBucketName": "testlibnd-smb-test"
+      "marbleContentBucketName": "testlibnd-smb-test",
+      "marbleContentFileShareId": "share-1112707B"
     },
     "prod": {
       "account": "230391840102",
@@ -23,7 +24,8 @@
       "notificationReceivers": "hl-mellon-deployment-approvers-list@nd.edu",
       "rBSCS3ImageBucketName": "libnd-smb-rbsc",
       "createGithubWebhooks": true,
-      "marbleContentBucketName": "libnd-smb-marble"
+      "marbleContentBucketName": "libnd-smb-marble",
+      "marbleContentFileShareId": "share-3CDC3057"
     }
   },
 

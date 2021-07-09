@@ -30,6 +30,8 @@ const manifestPipelineContext = {
   appConfigPath: "/all/test-marble",
   metadataTimeToLiveDays: "365",
   filesTimeToLiveDays: "365",
+  createCopyMediaContentLambda: true,
+  marbleContentFileShareId: "some fake arn",
 }
 
 const setup = (context: any) => {
@@ -189,6 +191,12 @@ describe('ManifestPipelineStack', () => {
     test('creates MuseumExportLambda', () => {
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from web-enabled items from Web Kiosk.',
+      }))
+    })
+
+    test('creates CopyMediaContentLambda', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+        Description: 'Copies media files from other folders to /public-access/media folder to be served by CDN',
       }))
     })
 

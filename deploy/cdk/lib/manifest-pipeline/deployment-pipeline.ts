@@ -79,10 +79,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
           "manifestPipeline:appConfigPath": `/all/stacks/${targetStack}`,
           "manifestPipeline:lambdaCodeRootPath": `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`,
           "manifestPipeline:hostnamePrefix": hostnamePrefix,
-          "manifestPipeline:createEventRules": createEventRules ? "true" : "",  // Note that any non-empty string will be evaluated as truthy when converting to boolean
+          "manifestPipeline:createEventRules": createEventRules ? "true" : "false",
           "manifestPipeline:metadataTimeToLiveDays": metadataTimeToLiveDays,
           "manifestPipeline:filesTimeToLiveDays": filesTimeToLiveDays,
-          "manifestPipeline:createCopyMediaContentLambda": createCopyMediaContentLambda ? "true" : "",  // Note that any non-empty string will be evaluated as truthy when converting to boolean
+          "manifestPipeline:createCopyMediaContentLambda": createCopyMediaContentLambda ? "true" : "false",
         },
         additionalRuntimeEnvironments: {
           python: '3.8',

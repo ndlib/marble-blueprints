@@ -121,6 +121,11 @@ export interface IBaseStackProps extends StackProps {
    */
   readonly createCopyMediaContentLambda?: boolean;
 
+  /**
+   * The fileShareId for the Marble Content Storage Gateway.  This will be used to create the File Share ARN to pass to the CopyMediaLambda
+   */
+  readonly marbleContentFileShareId: string;
+
 }
 
 export class ManifestPipelineStack extends Stack {
@@ -444,7 +449,7 @@ export class ManifestPipelineStack extends Stack {
     if ((props.createCopyMediaContentLambda !== undefined) && props.createCopyMediaContentLambda) {
 
       const marbleContentBucket = Bucket.fromBucketName(this, 'MarbleContentBucket', props.marbleContentBucketName)
-
+      const fileShareArn = Fn.sub('arn:aws:storagegateway:${AWS::Region}:${AWS::AccountId}:share/') + props.marbleContentFileShareId
       const copyMediaContentLambda = new Function(this, 'CopyMediaContentLambda', {
         code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'copy_media_content/')),
         description: 'Copies media files from other folders to /public-access/media folder to be served by CDN',
@@ -452,20 +457,14 @@ export class ManifestPipelineStack extends Stack {
         runtime: Runtime.PYTHON_3_8,
         environment: {
           SENTRY_DSN: props.sentryDsn,
+          FILE_SHARE_ARN: fileShareArn
         },
         timeout: Duration.seconds(900),
         initialPolicy: [
           new PolicyStatement({
             effect: Effect.ALLOW,
-            actions: ["storagegateway:ListFileShares"],
-            resources: [Fn.sub('arn:aws:storagegateway:${AWS::Region}:${AWS::AccountId}:*')],
-          }),
-          new PolicyStatement({
-            effect: Effect.ALLOW,
-            actions: ["storagegateway:DescribeSMBFileShares",
-              "storagegateway:RefreshCache",
-            ],
-            resources: [Fn.sub('arn:aws:storagegateway:${AWS::Region}:${AWS::AccountId}:share/*')],
+            actions: ["storagegateway:RefreshCache"],
+            resources: [fileShareArn],
           }),
         ],
       })

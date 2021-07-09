@@ -31,6 +31,7 @@ const manifestPipelineContext = {
   appConfigPath: "/all/test-marble",
   metadataTimeToLiveDays: "365",
   filesTimeToLiveDays: "365",
+  marbleContentFileShareId: "some fake arn",
 }
 
 const maintainMetadataContext = {

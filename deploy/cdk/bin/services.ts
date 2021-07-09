@@ -98,6 +98,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     rBSCS3ImageBucketName: contextEnv.rBSCS3ImageBucketName,
     marbleContentBucketName: contextEnv.marbleContentBucketName,
     multimediaBucket: multimediaAssetsStack.multimediaBucket,
+    marbleContentFileShareId: contextEnv.marbleContentFileShareId,
     ...commonProps,
     ...manifestPipelineContext,
   })

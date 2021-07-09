@@ -1325,13 +1325,21 @@ def _delete_expired_api_keys(graphql_api_id: str):
         ## note:  $null is an undefined variable, which has the effect of assigning null to our variable
         #set($copyrightStatemnt = $util.defaultIfNullOrBlank($ctx.args.copyrightStatement, $null))
         $!{supplementalDataArgs.put('copyrightStatement', $copyrightStatemnt)}
+
+        ## removed when I made inCopyright optional
         ## set copyrightStatus based on inCopyright boolean
-        #set($copyrightStatus = 'Copyright')
-        #if(!$ctx.args.inCopyright)
-          #set($copyrightStatus = 'not in copyright')
-        #end
+        ## #set($copyrightStatus = 'Copyright')
+        ## #if(!$ctx.args.inCopyright)
+        ##   #set($copyrightStatus = 'not in copyright')
+        ## #end
+
+        ## note: I added copyrightStatus as a parameter when I made inCopyright optional
+        #set($copyrightStatus = $util.defaultIfNullOrBlank($ctx.args.copyrightStatus, 'not in copyright'))
+
         #set($additionalNotes = $util.defaultIfNullOrBlank($ctx.args.additionalNotes, $null))
         $!{supplementalDataArgs.put('additionalNotes', $additionalNotes)}
+        #set($copyrightUrl = $util.defaultIfNullOrBlank($ctx.args.copyrightUrl, $null))
+        $!{supplementalDataArgs.put('copyrightUrl', $copyrightUrl)}
 
 
         $!{supplementalDataArgs.put('copyrightStatus', $copyrightStatus)}

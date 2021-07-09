@@ -31,6 +31,7 @@ const manifestPipelineContext = {
   metadataTimeToLiveDays: "365",
   filesTimeToLiveDays: "365",
   createCopyMediaContentLambda: true,
+  marbleContentFileShareId: "some fake arn",
 }
 
 const setup = (context: any) => {

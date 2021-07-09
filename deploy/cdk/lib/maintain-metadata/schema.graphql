@@ -295,7 +295,7 @@ type Mutation @aws_oidc @aws_api_key {
 	removePortfolioCollection(portfolioCollectionId: String!): RecordsDeleted @aws_oidc
 	removePortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): RecordsDeleted @aws_oidc
 	removePortfolioUser: RecordsDeleted @aws_oidc
-	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String, additionalNotes: String inCopyright: Boolean!): ItemMetadata
+	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String, additionalNotes: String inCopyright: Boolean, copyrightUrl: String, copyrightStatus: String): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String, imageGroupId: String): ItemMetadata
 	saveFileLastProcessedDate(itemId: String!): FileToProcess
 	saveMediaGroupForWebsite(itemId: String!, websiteId: String, mediaGroupId: String!): ItemMetadata

@@ -50,6 +50,11 @@ export class MaintainMetadataStack extends Stack {
    */
   public readonly maintainMetadataKeyBase: string
 
+  /**
+   * The AppSync API Identifier
+   */
+  public readonly apiId: string
+
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
@@ -80,6 +85,7 @@ export class MaintainMetadataStack extends Stack {
       xrayEnabled: true,
       logConfig: { fieldLogLevel: FieldLogLevel.ERROR },
     })
+    this.apiId = api.apiId
 
     // This will need to be populated separately
     this.graphqlApiUrlKeyPath = `/all/stacks/${this.stackName}/graphql-api-url`

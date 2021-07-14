@@ -52,7 +52,7 @@
 					"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
 					"});",
 					"pm.test(\"Illegal endpoint status code is 405\", function () {",
-					"    pm.response.to.have.status(405);",
+					"    pm.response.to.have.status(405) || pm.response.to.have.status(403);",
 					"});"
 				]
 			}

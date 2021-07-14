@@ -22,7 +22,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "https://{{hostname}}/query/test",
+					"raw": "https://{{hostname}}",
 					"protocol": "https",
 					"host": [
 						"{{hostname}}"
@@ -51,8 +51,8 @@
 					"pm.test(\"Response time is less than \" + maxResponseTime + \"ms\", function () {",
 					"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
 					"});",
-					"pm.test(\"Illegal endpoint status code is 405\", function () {",
-					"    pm.response.to.have.status(405) || pm.response.to.have.status(403);",
+					"pm.test(\"Forbidden status code is 403 of not passing query parameter\", function () {",
+					"    pm.response.to.have.status(403);",
 					"});"
 				]
 			}

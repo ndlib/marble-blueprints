@@ -180,14 +180,6 @@ describe('ManifestPipelineStack', () => {
 
 
   describe('Lambdas', () => {
-    test('creates an SPA Redirection Edge Lambda ', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
-        Handler: "index.handler",
-        Description: `This Lambda will take incoming web requests and adjust the request URI as appropriate.
-        Any directory that does not end with an index.json will have that appended to it.`,
-      }))
-    })
-
     test('creates MuseumExportLambda', () => {
       expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
         Description: 'Creates standard json from web-enabled items from Web Kiosk.',

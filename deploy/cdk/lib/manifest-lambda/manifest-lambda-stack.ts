@@ -35,6 +35,11 @@ export interface IBaseStackProps extends StackProps {
    */
   readonly hostnamePrefix: string;
 
+  /**
+   * Hostname prefix for the public graphql API Gateway
+   */
+  readonly publicGraphqlHostnamePrefix: string;
+
   /** 
    * The filesystem root where we can find the source code for all our lambdas.  
    * e.g.  /user/me/source/marble-manifest-pipeline/
@@ -50,11 +55,13 @@ export interface IBaseStackProps extends StackProps {
 
 export class ManifestLambdaStack extends Stack {
   readonly apiName: string
+  readonly publicApiName: string
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
     this.apiName = props.hostnamePrefix
+    this.publicApiName = props.publicGraphqlHostnamePrefix
 
     if (props.hostnamePrefix.length > 63) {
       Annotations.of(this).addError(`Max length of hostnamePrefix is 63.  "${props.hostnamePrefix}" is too long.}`)
@@ -68,7 +75,9 @@ export class ManifestLambdaStack extends Stack {
     const graphqlApiKeyKeyPath = props.maintainMetadataStack.graphqlApiKeyKeyPath
 
     const iiifApiBaseUrl = props.hostnamePrefix + '.' + props.foundationStack.hostedZone.zoneName
+    const graphqlApiBaseUrl = this.publicApiName + '.' + props.foundationStack.hostedZone.zoneName
 
+    // Create iiifManifestLambda and associated api and endpoints
     const iiifManifestLambda = new Function(this, 'IiifManifestLambdaFunction', {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'manifest_lambda/')),
       description: 'Create iiif manifests real-time',
@@ -138,5 +147,65 @@ export class ManifestLambdaStack extends Stack {
     const annotationId = annotation.addResource('{id}')
     annotationId.addMethod('GET', iiifManifestIntegration)
 
+
+    // Create publicGraphqlLambda and associated api and endpoints
+    const publicGraphqlLambda = new Function(this, 'PublicGraphqlLambdaFunction', {
+      code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'public_graphql_lambda/')),
+      description: 'Appends API keys and queries named AppSync resolvers',
+      handler: 'handler.run',
+      runtime: Runtime.PYTHON_3_8,
+      environment: {
+        GRAPHQL_API_URL_KEY_PATH: graphqlApiUrlKeyPath,
+        GRAPHQL_API_KEY_KEY_PATH: graphqlApiKeyKeyPath,
+        SENTRY_DSN: props.sentryDsn,
+      },
+      initialPolicy: [
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: [
+            'ssm:GetParameter',
+            'ssm:GetParameters',
+            'ssm:GetParametersByPath',
+          ],
+          resources: [
+            Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + graphqlApiUrlKeyPath + '*'),
+            Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + graphqlApiKeyKeyPath + '*'),
+          ],
+        }),
+      ],
+      timeout: Duration.seconds(90),
+      memorySize: 1024,
+    })
+
+    // Create API Gateway
+    const publicGraphqlApi = new apigateway.RestApi(this, 'PublicGraphqlApiGateway', {
+      restApiName: this.publicApiName,
+      defaultCorsPreflightOptions: {
+        allowOrigins: ["*"],
+        allowCredentials: false,
+        statusCode: 200,
+      },
+      domainName: {
+        certificate: props.foundationStack.certificate,
+        domainName: graphqlApiBaseUrl,
+      },
+      endpointExportName: `${this.stackName}-graphql-api-url`,
+    })
+    const publicGraphqlIntegration = new apigateway.LambdaIntegration(publicGraphqlLambda)
+
+    // Create DNS entry
+    if (props.createDns) {
+      new CnameRecord(this, `${this.publicApiName}-Route53CnameRecord`, {
+        recordName: props.publicGraphqlHostnamePrefix,
+        domainName: publicGraphqlApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+        zone: props.foundationStack.hostedZone,
+        ttl: Duration.minutes(15),
+      })
+    }
+
+    // Create endpoints
+    const query = publicGraphqlApi.root.addResource('query')
+    const queryId = query.addResource('{id}')
+    queryId.addMethod('POST', publicGraphqlIntegration)
   }
 }

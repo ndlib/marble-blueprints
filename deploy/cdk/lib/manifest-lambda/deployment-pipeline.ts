@@ -5,10 +5,10 @@ import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/a
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
-import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { NewmanRunner, SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
-import { PipelineFoundationStack } from '../foundation'
+import { FoundationStack, PipelineFoundationStack } from '../foundation'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack;
@@ -29,6 +29,9 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
   readonly createGithubWebhooks: boolean;
+  readonly publicGraphqlHostnamePrefix: string;
+  readonly testFoundationStack: FoundationStack
+  readonly prodFoundationStack: FoundationStack
  }
 
 
@@ -40,7 +43,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-manifest-lambda`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, deployConstructName: string) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, deployConstructName: string, publicGraphqlHostnamePrefix: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
         targetStack,
         dependsOnStacks: [],
@@ -68,6 +71,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
           "manifestLambda:hostnamePrefix": hostnamePrefix,
           "manifestLambda:lambdaCodeRootPath": `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`,
+          "manifestLambda:publicGraphqlHostnamePrefix": publicGraphqlHostnamePrefix,
         },
       })
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.api())
@@ -164,7 +168,18 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, `${props.namespace}-manifest-lambda-deploy-test`)
+    const testPublicGraphqlHostnamePrefix = `${props.namespace}-test-${props.publicGraphqlHostnamePrefix}`
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, `${props.namespace}-manifest-lambda-deploy-test`, testPublicGraphqlHostnamePrefix)
+    const testHostname = `${testPublicGraphqlHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
+
+    const newmanRunnerTest = new NewmanRunner(this, 'NewmanRunnerTest', {
+      sourceArtifact: infraSourceArtifact,
+      collectionPath: 'deploy/cdk/test/manifest-lambda/smokeTests.json',
+      collectionVariables: {
+        hostname: testHostname,
+      },
+      actionName: 'SmokeTests',
+    })
 
     // Approval
     const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`
@@ -183,7 +198,17 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix,`${props.namespace}-manifest-lambda-deploy-prod`)
+    const prodPublicGraphqlHostnamePrefix = `${props.namespace}-prod-${props.publicGraphqlHostnamePrefix}`
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, `${props.namespace}-manifest-lambda-deploy-prod`, prodPublicGraphqlHostnamePrefix)
+    const prodHostname = `${prodPublicGraphqlHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
+    const newmanRunnerProd = new NewmanRunner(this, 'NewmanRunnerProd', {
+      sourceArtifact: infraSourceArtifact,
+      collectionPath: 'deploy/cdk/test/manifest-lambda/smokeTests.json',
+      collectionVariables: {
+        hostname: prodHostname,
+      },
+      actionName: 'SmokeTests',
+    })
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
@@ -198,11 +223,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'UnitTest',
         },
         {
-          actions: [deployTest.action, approvalAction],
+          actions: [deployTest.action, newmanRunnerTest.action, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action],
+          actions: [deployProd.action, newmanRunnerProd.action],
           stageName: 'Production',
         },
       ],

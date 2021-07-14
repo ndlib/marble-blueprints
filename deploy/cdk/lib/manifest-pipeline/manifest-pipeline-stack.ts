@@ -1,8 +1,7 @@
-import { CloudFrontAllowedMethods, CloudFrontWebDistribution, HttpVersion, LambdaEdgeEventType, OriginAccessIdentity, PriceClass, ViewerCertificate } from '@aws-cdk/aws-cloudfront'
+import { CloudFrontWebDistribution, OriginAccessIdentity } from '@aws-cdk/aws-cloudfront'
 import { SfnStateMachine } from "@aws-cdk/aws-events-targets"
 import { CanonicalUserPrincipal, Effect, PolicyStatement } from '@aws-cdk/aws-iam'
-import { Code, Function, Runtime, Version } from "@aws-cdk/aws-lambda"
-import { CnameRecord } from "@aws-cdk/aws-route53"
+import { Function, Runtime } from "@aws-cdk/aws-lambda"
 import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { Choice, Condition, Errors, Fail, JsonPath, LogLevel, Parallel, Pass, Result, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
@@ -368,82 +367,6 @@ export class ManifestPipelineStack extends Stack {
       stringValue: props.multimediaBucket.bucketName,
       description: 'Name of the Multimedia Assets Bucket',
     })
-
-    const sPARedirectionLambda = new Function(this, 'SPARedirectionLambda', {
-      code: Code.fromInline(`'use strict';
-        exports.handler = (event, context, callback) => {
-          var request = event.Records[0].cf.request;
-
-          if (!request.uri.endsWith('/index.json') && !request.uri.endsWith('.xml')) {
-            if (request.uri.endsWith('/')) {
-              request.uri = request.uri + 'index.json'
-            } else {
-              request.uri = request.uri + '/index.json'
-            }
-          }
-          return callback(null, request);
-        };`),
-      handler: 'index.handler',
-      runtime: Runtime.NODEJS_12_X,
-      description: `This Lambda will take incoming web requests and adjust the request URI as appropriate.
-        Any directory that does not end with an index.json will have that appended to it.`,
-    })
-
-    const sPARedirectionLambdaV2 = new Version(this, 'SPARedirectionLambdaV2', {
-      lambda: sPARedirectionLambda,
-      description: 'Adds rewrite rules as needed',
-    })
-
-
-    // Create a CloudFront Distribution for the manifest bucket
-    const fqdn = `${props.hostnamePrefix}.${props.domainName}`
-    this.distribution = new CloudFrontWebDistribution(this, 'CloudFrontWebDistribution', {
-      originConfigs: [{
-        s3OriginSource: {
-          s3BucketSource: this.manifestBucket,
-          originAccessIdentity: originAccessId,
-        },
-        behaviors: [{
-          isDefaultBehavior: true,
-          lambdaFunctionAssociations: [{
-            eventType: LambdaEdgeEventType.ORIGIN_REQUEST,
-            lambdaFunction: sPARedirectionLambdaV2,
-          }],
-          forwardedValues: {
-            queryString: false,
-            headers: ["Access-Control-Request-Headers",
-              "Access-Control-Request-Method",
-              "Origin",
-              "Authorization",
-            ],
-          },
-          allowedMethods: CloudFrontAllowedMethods.GET_HEAD_OPTIONS,
-          compress: true,
-        }],
-      }],
-      defaultRootObject: 'index.json',
-      httpVersion: HttpVersion.HTTP2,
-      loggingConfig: {
-        bucket: props.foundationStack.logBucket,
-        includeCookies: true,
-        prefix: `web/${props.hostnamePrefix}.${props.domainName}`,
-      },
-      priceClass: PriceClass.PRICE_CLASS_100,
-      viewerCertificate: ViewerCertificate.fromAcmCertificate(props.foundationStack.certificate, {
-        aliases: [fqdn],
-      }),
-      comment: props.hostnamePrefix + '.' + props.domainName,
-    })
-
-
-    if (props.createDns) {
-      new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {
-        recordName: props.hostnamePrefix,
-        domainName: this.distribution.distributionDomainName,
-        zone: props.foundationStack.hostedZone,
-        ttl: Duration.minutes(15),
-      })
-    }
 
     if ((props.createCopyMediaContentLambda !== undefined) && props.createCopyMediaContentLambda) {
 

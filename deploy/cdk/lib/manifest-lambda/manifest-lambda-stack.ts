@@ -55,9 +55,9 @@ export interface IBaseStackProps extends StackProps {
 }
 
 export class ManifestLambdaStack extends Stack {
-  readonly apiName: string
-  readonly publicApiName: string
-  readonly publicGraphqlApiKeyPath: string
+  public readonly apiName: string
+  public readonly publicApiName: string
+  public readonly publicGraphqlApiKeyPath: string
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)

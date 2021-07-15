@@ -4,6 +4,7 @@ import { Function, Runtime } from "@aws-cdk/aws-lambda"
 import { CnameRecord } from "@aws-cdk/aws-route53"
 import { Construct, Duration, Fn, Stack, StackProps, Annotations } from "@aws-cdk/core"
 import path = require('path')
+import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { FoundationStack } from '../foundation'
 import { AssetHelpers } from '../asset-helpers'
 import { MaintainMetadataStack } from '../maintain-metadata'
@@ -56,6 +57,7 @@ export interface IBaseStackProps extends StackProps {
 export class ManifestLambdaStack extends Stack {
   readonly apiName: string
   readonly publicApiName: string
+  readonly publicGraphqlApiKeyPath: string
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
@@ -207,5 +209,15 @@ export class ManifestLambdaStack extends Stack {
     const query = publicGraphqlApi.root.addResource('query')
     const queryId = query.addResource('{id}')
     queryId.addMethod('POST', publicGraphqlIntegration)
+
+    // Create SSM keys
+    this.publicGraphqlApiKeyPath = `/all/stacks/${this.stackName}/public-graphql-api-url`
+    new StringParameter(this, 'SSMPublicGraphqlApiUrl', {
+      type: ParameterType.STRING,
+      parameterName: this.publicGraphqlApiKeyPath,
+      stringValue: publicGraphqlApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+      description: 'Public GraphQL API URL',
+    })
+
   }
 }

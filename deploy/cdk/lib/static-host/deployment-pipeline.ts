@@ -14,6 +14,7 @@ import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
 import { DockerhubImage } from '../dockerhub-image'
 import { MaintainMetadataStack } from '../maintain-metadata'
+import { ManifestLambdaStack } from '../manifest-lambda'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -51,6 +52,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly prodDomainNameOverride?: string
   readonly testMaintainMetadataStack: MaintainMetadataStack
   readonly prodMaintainMetadataStack: MaintainMetadataStack
+  readonly testManifestLambdaStack: ManifestLambdaStack
+  readonly prodManifestLambdaStack: ManifestLambdaStack
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -117,6 +120,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
         resources: [
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testMaintainMetadataStack.maintainMetadataKeyBase + '*'),
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.maintainMetadataKeyBase + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
         ],
         actions: ["ssm:Get*"],
       }))
@@ -190,6 +195,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.testElasticStack.domainName,
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
+      publicGraphqlApiKeyPath: props.testManifestLambdaStack.publicGraphqlApiKeyPath,
       buildEnvironment: 'test',
       maintainMetadataKeyBase: props.testMaintainMetadataStack.maintainMetadataKeyBase,
     }
@@ -256,6 +262,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       elasticSearchDomainName: props.prodElasticStack.domainName,
       graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
+      publicGraphqlApiKeyPath: props.prodManifestLambdaStack.publicGraphqlApiKeyPath,
       buildEnvironment: 'production',
       maintainMetadataKeyBase: props.prodMaintainMetadataStack.maintainMetadataKeyBase,
     }

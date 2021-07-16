@@ -1,0 +1,71 @@
+{
+	"info": {
+		"_postman_id": "d693411c-a8ff-4b88-aaf1-a47949804eb8",
+		"name": "Multimedia Assets Smoke Tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Website Root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{hostname}}",
+					"protocol": "https",
+					"host": [
+						"{{hostname}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"var maxResponseTime = pm.variables.get(\"maxResponseTime\");",
+					"pm.test(\"Response time is less than \" + maxResponseTime + \"ms\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+					"});",
+					"pm.test(\"Forbidden status code is 403 of not passing query parameter\", function () {",
+					"    pm.response.to.have.status(403);",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "hostname",
+			"value": ""
+		},
+		{
+			"key": "maxResponseTime",
+			"value": "1000"
+		}
+	]
+}

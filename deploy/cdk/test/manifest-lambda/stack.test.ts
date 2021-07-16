@@ -1,4 +1,4 @@
-import { expect as expectCDK, haveResourceLike } from '@aws-cdk/assert'
+import { expect as expectCDK, countResources, haveResourceLike } from '@aws-cdk/assert'
 import { Bucket } from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
@@ -44,6 +44,7 @@ const manifestLambdaContext = {
   createDns: true,
   hostnamePrefix: 'test-iiif-manifest',
   lambdaCodeRootPath: "../../../marble-manifest-lambda",
+  publicGraphqlHostnamePrefix: "sample-public-graphql",
 }
 
 const setup = (props: { manifestPipelineContext: any, maintainMetadataContext: any, manifestLambdaContext: any }) => {
@@ -74,23 +75,21 @@ const setup = (props: { manifestPipelineContext: any, maintainMetadataContext: a
 }
 
 describe('ManifestLambdaStack', () => {
-  let stack: cdk.Stack
-
   // Only synthesize once since we are only using one set of props
-  stack = setup({
+  const stack = setup({
     manifestPipelineContext,
     maintainMetadataContext,
     manifestLambdaContext,
   })
 
-  test('creates a Lambda', () => {
+  test('creates iiifManifestLambda', () => {
     expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      "Description": "Create iiif manifests real-time",
     }))
   })
 
-  test('creates an API Gateway', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Deployment', {
-    }))
+  test('creates an API Gateways for iiifManifestLambda and publicGraphqlLambda', () => {
+    expectCDK(stack).to(countResources('AWS::ApiGateway::Deployment', 2))
   })
 
   test('creates an API Gateway Resource (manifest)', () => {
@@ -123,6 +122,21 @@ describe('ManifestLambdaStack', () => {
       "Name": "test-iiif-manifest.test.edu.",
     }))
   })
+
+
+  test('creates a Lambda', () => {
+    expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      "Description": "Appends API keys and queries named AppSync resolvers",
+    }))
+  })
+
+
+  test('creates an API Gateway Resource (query)', () => {
+    expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
+      "PathPart": "query",
+    }))
+  })
+
 
   test('does not create an Route53 Recordset when createDns is false', () => {
     const testStack = setup({

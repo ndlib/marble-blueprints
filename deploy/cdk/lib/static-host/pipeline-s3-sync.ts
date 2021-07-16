@@ -46,6 +46,7 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly graphqlApiKeyKeyPath: string
   readonly maintainMetadataKeyBase: string
   readonly buildEnvironment: string
+  readonly publicGraphqlApiKeyPath: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -114,6 +115,10 @@ export class PipelineS3Sync extends Construct {
         GRAPHQL_KEY_BASE: {
           value: props.maintainMetadataKeyBase,
           type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        PUBLIC_GRAPHQL_API_URL: {
+          value: props.publicGraphqlApiKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
       },
       buildSpec: BuildSpec.fromObject({

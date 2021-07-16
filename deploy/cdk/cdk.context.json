@@ -145,6 +145,7 @@
   "manifestLambda:appRepoOwner": "ndlib",
   "manifestLambda:appRepoName": "marble-manifest-lambda",
   "manifestLambda:appSourceBranch": "master",
+  "manifestLambda:publicGraphqlHostnamePrefix": "public-graphql",
 
   "multimediaAssets:cacheTtl": 86400,
 

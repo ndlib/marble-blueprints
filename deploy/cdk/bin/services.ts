@@ -123,7 +123,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   })
 
   const manifestLambdaContext = getContextByNamespace('manifestLambda')
-  const manfiestLambdaStack = new manifestLambda.ManifestLambdaStack(app, `${namespace}-manifest-lambda`, {
+  const manifestLambdaStack = new manifestLambda.ManifestLambdaStack(app, `${namespace}-manifest-lambda`, {
     foundationStack,
     maintainMetadataStack,
     ...commonProps,
@@ -143,7 +143,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     manifestPipelineStack,
     maintainMetadataStack,
     multimediaAssetsStack,
-    manfiestLambdaStack,
+    manifestLambdaStack,
   }
 
   const slos = [
@@ -176,13 +176,13 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     {
       title: "IIIF Manifest API",
       type: "ApiAvailability",
-      apiName: manfiestLambdaStack.apiName,
+      apiName: manifestLambdaStack.apiName,
       sloThreshold: 0.999,
     },
     {
       title: "IIIF Manifest API",
       type: "ApiLatency",
-      apiName: manfiestLambdaStack.apiName,
+      apiName: manifestLambdaStack.apiName,
       sloThreshold: 0.95,
       latencyThreshold: 3000,
     },

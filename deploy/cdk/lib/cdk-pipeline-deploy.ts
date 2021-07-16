@@ -83,7 +83,7 @@ export class CDKPipelineDeploy extends Construct {
     }
     this.project = new PipelineProject(scope, `${id}Project`, {
       environment: {
-        buildImage: LinuxBuildImage.STANDARD_4_0,
+        buildImage: LinuxBuildImage.STANDARD_5_0,
         privileged: true,
       },
       buildSpec: BuildSpec.fromObject({
@@ -98,7 +98,7 @@ export class CDKPipelineDeploy extends Construct {
               'yarn install',
             ],
             'runtime-versions': {
-              nodejs: '12.x',
+              nodejs: '14.x',
               ...(props.additionalRuntimeEnvironments || []),
             },
           },

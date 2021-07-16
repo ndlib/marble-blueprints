@@ -62,7 +62,7 @@ export class PipelineS3Sync extends Construct {
       description: 'Deploys built source web component to bucket',
       timeout: Duration.minutes(30),
       environment: {
-        buildImage: LinuxBuildImage.STANDARD_4_0,
+        buildImage: LinuxBuildImage.STANDARD_5_0,
         privileged: true,
       },
       environmentVariables: {
@@ -118,6 +118,11 @@ export class PipelineS3Sync extends Construct {
       },
       buildSpec: BuildSpec.fromObject({
         phases: {
+          install: {
+            'runtime-versions': {
+              nodejs: '14.x',
+            },
+          },
           build: {
             commands: [
                 `chmod -R 755 ./scripts`,

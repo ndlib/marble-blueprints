@@ -153,20 +153,6 @@ describe('MaintainMetadataStack', () => {
 
 
   describe('Resolvers', () => {
-    test('creates FileFileGroupResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "File",
-        FieldName: "FileGroup",
-      }))
-    })
-
-    test('creates FileGroupFilesResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "FileGroup",
-        FieldName: "files",
-      }))
-    })
-
     test('creates ImageGroupImagesResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "ImageGroup",
@@ -178,13 +164,6 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Image",
         FieldName: "imageGroup",
-      }))
-    })
-
-    test('creates ItemMetadataDefaultFileResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "ItemMetadata",
-        FieldName: "defaultFile",
       }))
     })
 
@@ -234,13 +213,6 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "ItemMetadata",
         FieldName: "children",
-      }))
-    })
-
-    test('creates ItemMetadataFilesResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "ItemMetadata",
-        FieldName: "files",
       }))
     })
 
@@ -358,6 +330,21 @@ describe('MaintainMetadataStack', () => {
         FieldName: "ItemMetadata",
       }))
     })
+
+    test('creates PortfolioUserPortfolioCollectionsResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "PortfolioUser",
+        FieldName: "portfolioCollections",
+      }))
+    })
+
+    test('creates PortfolioCollectionCreatorResolver', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
+        TypeName: "PortfolioCollection",
+        FieldName: "creator",
+      }))
+    })
+
     test('creates QueryGetPortfolioCollectionResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
@@ -433,28 +420,12 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
-
-    test('creates QueryGetFileGroupResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "Query",
-        FieldName: "getFileGroup",
-      }))
-    })
-
     test('creates QueryGetFileToProcessRecordResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
         FieldName: "getFileToProcessRecord",
       }))
     })
-
-    test('creates QueryGetFileResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "Query",
-        FieldName: "getFile",
-      }))
-    })
-
 
     test('creates QueryGetImageResolver', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
@@ -502,20 +473,6 @@ describe('MaintainMetadataStack', () => {
       expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
         TypeName: "Query",
         FieldName: "listFilesToProcess",
-      }))
-    })
-
-    test('creates QueryListFileGroupsResolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "Query",
-        FieldName: "listFileGroups",
-      }))
-    })
-
-    test('creates QueryListFileGroupsForS3Resolver', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::AppSync::Resolver', {
-        TypeName: "Query",
-        FieldName: "listFileGroupsForS3",
       }))
     })
 

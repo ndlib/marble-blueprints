@@ -667,63 +667,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
 
     // Add Resolvers
-    // TODO: remove this once imageGroup is adopted
-    new Resolver(this, 'FileFileGroupResolver', {
-      api: api,
-      typeName: 'File',
-      fieldName: 'FileGroup',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($id = $ctx.source.objectFileGroupId)
-        #set($id = $util.defaultIfNullOrBlank($id, ""))
-        #set($id = $util.str.toUpper($id))
-        #set($id = $util.str.toReplace($id, " ", ""))
-        #set($fullId = "FILEGROUP#$id")
-        {
-          "version": "2017-02-28",
-          "operation": "GetItem",
-          "key": {
-            "PK": $util.dynamodb.toDynamoDBJson("FILEGROUP"),
-            "SK": $util.dynamodb.toDynamoDBJson($fullId),
-          }
-        }`),
-        responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-      })
-
-    // TODO: remove this once imageGroup is adopted (and remove corresponding schema types)
-    new Resolver(this, 'FileGroupFilesResolver', {
-      api: api,
-      typeName: 'FileGroup',
-      fieldName: 'files',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($id = $ctx.source.objectFileGroupId)
-        #set($id = $util.defaultIfNullOrBlank($id, ""))
-        #set($id = $util.str.toUpper($id))
-        #set($id = $util.str.toReplace($id, " ", ""))
-        #set($fullId = "FILEGROUP#$id")
-        {
-            "version" : "2017-02-28",
-            "operation" : "Query",
-            "index" : "GSI1",
-            "query" : {
-                "expression": "GSI1PK = :id and begins_with(GSI1SK, :beginsWith)",
-                "expressionValues" : {
-                  ":id" : $util.dynamodb.toDynamoDBJson($fullId),
-                  ":beginsWith": $util.dynamodb.toDynamoDBJson("SORT#"),
-                }
-            },
-            ## Add 'limit' and 'nextToken' arguments to this field in your schema to implement pagination. **
-            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
-            "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
-        }`),
-      responseMappingTemplate: MappingTemplate.fromString(`
-      {
-          "items": $util.toJson($ctx.result.items),
-          "nextToken": $util.toJson($util.defaultIfNullOrBlank($context.result.nextToken, null))
-      }`),
-    })
-
     new Resolver(this, 'ImageGroupImagesResolver', {
       api: api,
       typeName: 'ImageGroup',
@@ -908,40 +851,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
       // responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    // TODO: remove this once imageGroup is adopted (and remove corresponding schema types)
-    new Resolver(this, 'ItemMetadataFilesResolver', {
-      api: api,
-      typeName: 'ItemMetadata',
-      fieldName: 'files',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($id = $ctx.source.objectFileGroupId)
-        #set($id = $util.defaultIfNullOrBlank($id, ""))
-        #set($id = $util.str.toUpper($id))
-        #set($id = $util.str.toReplace($id, " ", ""))
-        #set($fullId = "FILEGROUP#$id")
-        {
-            "version" : "2017-02-28",
-            "operation" : "Query",
-            "index" : "GSI1",
-            "query" : {
-                ## Provide a query expression. **
-                "expression": "GSI1PK = :id and begins_with(GSI1SK, :beginsWith)",
-                "expressionValues" : {
-                  ":id" : $util.dynamodb.toDynamoDBJson($fullId),
-                  ":beginsWith": $util.dynamodb.toDynamoDBJson("SORT#"),
-                }
-            },
-            ## Add 'limit' and 'nextToken' arguments to this field in your schema to implement pagination. **
-            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
-            "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
-        }`),
-      responseMappingTemplate: MappingTemplate.fromString(`
-        {
-            "items": $util.toJson($ctx.result.items),
-            "nextToken": $util.toJson($util.defaultIfNullOrBlank($context.result.nextToken, null))
-        }`),
-    })
 
     new Resolver(this, 'ItemMetadataImagesResolver', {
       api: api,
@@ -1371,10 +1280,8 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
         ## note:  $null is an undefined variable, which has the effect of assigning null to our variable
         #set($defaultFilePath = $util.defaultIfNullOrBlank($ctx.args.defaultFilePath, $null))
-        #set($objectFileGroupId = $util.defaultIfNullOrBlank($ctx.args.objectFileGroupId, $null))
         #set($imageGroupId = $util.defaultIfNullOrBlank($ctx.args.imageGroupId, $null))
         $!{supplementalDataArgs.put('defaultFilePath', $defaultFilePath)}
-        $!{supplementalDataArgs.put('objectFileGroupId', $objectFileGroupId)}
         $!{supplementalDataArgs.put('imageGroupId', $imageGroupId)}
 
         $!{ctx.stash.put("supplementalDataArgs", $supplementalDataArgs)}
@@ -1703,6 +1610,29 @@ def _delete_expired_api_keys(graphql_api_id: str):
         }`),
     })
 
+    new Resolver(this, 'PortfolioCollectionCreatorResolver', {
+      api: api,
+      typeName: 'PortfolioCollection',
+      fieldName: 'creator',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($portfolioUserId = $ctx.source.portfolioUserId)
+        #set($portfolioUserId = $util.defaultIfNullOrBlank($portfolioUserId, ""))
+        #set($portfolioUserId = $util.str.toUpper($portfolioUserId))
+        #set($portfolioUserId = $util.str.toReplace($portfolioUserId, " ", ""))
+
+
+        {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId")),
+            }
+        }`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'PortfolioCollectionPortfolioItemsResolver', {
       api: api,
       typeName: 'PortfolioCollection',
@@ -1784,52 +1714,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
         $util.toJson($result)
         `),
-    })
-
-    new Resolver(this, 'QueryGetFileResolver', {
-      api: api,
-      typeName: 'Query',
-      fieldName: 'getFile',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($id = $ctx.args.id)
-        #set($id = $util.defaultIfNullOrBlank($id, ""))
-        #set($id = $util.str.toUpper($id))
-        #set($id = $util.str.toReplace($id, " ", ""))
-        #set($fullId = "FILE#$id")
-
-        {
-            "version": "2017-02-28",
-            "operation": "GetItem",
-            "key": {
-              "PK": $util.dynamodb.toDynamoDBJson("FILE"),
-                "SK": $util.dynamodb.toDynamoDBJson($fullId),
-            }
-        }`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-    })
-
-    new Resolver(this, 'QueryGetFileGroupResolver', {
-      api: api,
-      typeName: 'Query',
-      fieldName: 'getFileGroup',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($id = $ctx.args.id)
-        #set($id = $util.defaultIfNullOrBlank($id, ""))
-        #set($id = $util.str.toUpper($id))
-        #set($id = $util.str.toReplace($id, " ", ""))
-        #set($fullId = "FILEGROUP#$id")
-
-        {
-            "version": "2017-02-28",
-            "operation": "GetItem",
-            "key": {
-              "PK": $util.dynamodb.toDynamoDBJson("FILEGROUP"),
-                "SK": $util.dynamodb.toDynamoDBJson($fullId),
-            }
-        }`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
     new Resolver(this, 'QueryGetFileToProcessRecordResolver', {
@@ -2054,44 +1938,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
-    new Resolver(this, 'QueryListFileGroupsResolver', {
-      api: api,
-      typeName: 'Query',
-      fieldName: 'listFileGroups',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        ## Note:  $null is undefined, so this results in assigning the value of null to our variable if the parameter is not passed.
-        #set($storageSystem = $util.defaultIfNullOrBlank($ctx.args.storageSystem, $null))
-
-        {
-            "version" : "2017-02-28",
-            "operation" : "Query",
-            "query" : {
-                ## Provide a query expression. **
-                "expression": "PK = :id",
-                "expressionValues" : {
-                    ":id" : $util.dynamodb.toDynamoDBJson("FILEGROUP")
-                }
-            },
-          #if ( $storageSystem != $null )
-            "filter": {
-              "expression": "storageSystem = :storageSystem",
-              "expressionValues": {
-                ":storageSystem": $util.dynamodb.toDynamoDBJson("$storageSystem"),
-              }
-            },
-          #end
-            
-          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
-        }`),
-      responseMappingTemplate: MappingTemplate.fromString(`
-        {
-            "items": $util.toJson($ctx.result.items),
-            "nextToken": $util.toJson($util.defaultIfNullOrBlank($context.result.nextToken, null))
-        }`),
-    })
-
     new Resolver(this, 'QueryListFilesToProcessResolver', {
       api: api,
       typeName: 'Query',
@@ -2116,43 +1962,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
                   ":sk": $util.dynamodb.toDynamoDBJson($sk),
               }
           },
-          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
-          "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
-        }`),
-      responseMappingTemplate: MappingTemplate.fromString(`
-        {
-          "items": $util.toJson($context.result.items),
-          "nextToken": $util.toJson($context.result.nextToken)
-        }`),
-    })
-
-    new Resolver(this, 'QueryListFileGroupsForS3Resolver', {
-      api: api,
-      typeName: 'Query',
-      fieldName: 'listFileGroupsForS3',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($storageSystem = "S3")
-
-        {
-            "version" : "2017-02-28",
-            "operation" : "Query",
-            "query" : {
-                ## Provide a query expression. **
-                "expression": "PK = :id",
-                "expressionValues" : {
-                    ":id" : $util.dynamodb.toDynamoDBJson("FILEGROUP")
-                }
-            },
-          #if ( $storageSystem != $null )
-            "filter": {
-              "expression": "storageSystem = :storageSystem",
-              "expressionValues": {
-                ":storageSystem": $util.dynamodb.toDynamoDBJson("$storageSystem"),
-              }
-            },
-          #end
-
           "limit": $util.defaultIfNull($ctx.args.limit, 1000),
           "nextToken": #if($context.arguments.nextToken) "$context.arguments.nextToken" #else null #end
         }`),

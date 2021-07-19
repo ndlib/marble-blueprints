@@ -7,30 +7,6 @@ type CreationPlaceObject @aws_oidc @aws_api_key {
 	state: String
 }
 
-type File @aws_oidc @aws_api_key {
-	id: String!
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	description: String
-	digitalAccess: String
-	eTag: String
-	filePath: String
-	lastModified: String
-	mediaResourceId: String
-	mediaServer: String
-	mimeType: String
-	objectFileGroupId: String!
-	FileGroup: FileGroup
-	sequence: Int
-	size: Int
-	source: String
-	sourceType: String
-	sourceUri: String
-	title: String
-	treePath: String
-	TYPE: String
-}
-
 type FileToProcess @aws_oidc @aws_api_key {
 	id: String
 	copyrightStatus: String
@@ -52,26 +28,6 @@ type FileToProcess @aws_oidc @aws_api_key {
 	sourceUri: String
 	storageSystem: String
 	TYPE: String
-}
-
-type FileGroup @aws_oidc @aws_api_key {
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	objectFileGroupId: String
-	storageSystem: String
-	typeOfData: String
-	TYPE: String
-	files: FilesConnection
-}
-
-type FileGroupsConnection @aws_oidc @aws_api_key {
-	items: [FileGroup]
-	nextToken: String
-}
-
-type FilesConnection @aws_oidc @aws_api_key {
-	items: [File]
-	nextToken: String
 }
 
 type FilesToProcessConnection @aws_oidc @aws_api_key {
@@ -141,7 +97,6 @@ type ItemMetadata @aws_oidc @aws_api_key {
 	dateAddedToDynamo: String
 	dateModifiedInDynamo: String
 	dedication: String
-	defaultFile: File
 	defaultFilePath: String
 	defaultImage: Image
 	description: String
@@ -161,7 +116,6 @@ type ItemMetadata @aws_oidc @aws_api_key {
 	media(limit: Int, nextToken: String): MediaConnection
 	mediaGroupId: String
 	medium: String
-	objectFileGroupId: String
 	parentId: String
 	parent: ItemMetadata
 	partiallyDigitized: Boolean
@@ -179,7 +133,6 @@ type ItemMetadata @aws_oidc @aws_api_key {
 	uniqueIdentifier: String
 	workType: String
 	children(limit: Int, nextToken: String): MinimumItemMetadataConnection
-	files: FilesConnection
 	root: ItemMetadata
 }
 
@@ -296,7 +249,7 @@ type Mutation @aws_oidc @aws_api_key {
 	removePortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): RecordsDeleted @aws_oidc
 	removePortfolioUser: RecordsDeleted @aws_oidc
 	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String, additionalNotes: String inCopyright: Boolean, copyrightUrl: String, copyrightStatus: String): ItemMetadata
-	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, objectFileGroupId: String, imageGroupId: String): ItemMetadata
+	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, imageGroupId: String): ItemMetadata
 	saveFileLastProcessedDate(itemId: String!): FileToProcess
 	saveMediaGroupForWebsite(itemId: String!, websiteId: String, mediaGroupId: String!): ItemMetadata
 	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
@@ -322,6 +275,7 @@ type PortfolioCollection @aws_oidc @aws_api_key {
 	privacy: PortfolioPrivacy
 	portfolioItems: PortfolioItemsConnection
 	title: String
+	creator: PortfolioUser
 }	
 
 type PortfolioCollectionsConnection @aws_oidc @aws_api_key {
@@ -378,8 +332,6 @@ type PortfolioUser @aws_oidc @aws_api_key {
 
 type Query @aws_oidc @aws_api_key {
 	getExposedPortfolioCollection(portfolioCollectionId: String!): PortfolioCollection
-	getFile(id: String!): File
-	getFileGroup(id: String!): FileGroup
 	getFileToProcessRecord(filePath: String!): FileToProcess
 	getImage(id: String!): Image
 	getImageGroup(id: String!): ImageGroup
@@ -390,8 +342,6 @@ type Query @aws_oidc @aws_api_key {
 	getPortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): PortfolioItem  @aws_oidc
 	getPortfolioUser: PortfolioUser  @aws_oidc
 	getWebsite(id: String!): Website
-	listFileGroups(limit: Int, nextToken: String, storageSystem: StorageSystem): FileGroupsConnection
-	listFileGroupsForS3(limit: Int, nextToken: String): FileGroupsConnection
 	listFilesToProcess(dateLastProcessedBefore: String, limit: Int, nextToken: String): FilesToProcessConnection
 	listImageGroups(limit: Int, nextToken: String, storageSystem: StorageSystem): ImageGroupsConnection
 	listImageGroupsForS3(limit: Int, nextToken: String): ImageGroupsConnection
@@ -407,23 +357,6 @@ type Query @aws_oidc @aws_api_key {
 	listSupplementalDataRecords(id: String, websiteId: String): SupplementalDataConnection
 	listWebsites(filter: WebsiteFilterInput, limit: Int, nextToken: String): WebsiteConnection
 	showItemByWebsite(itemId: String!, websiteId: String): ItemMetadata
-}
-
-input ReplaceCopyrightStatementInput @aws_oidc @aws_api_key {
-	id: String!
-	generalCopyrightStatement: String!
-	generalInCopyright: Boolean!
-}
-
-input ReplaceDefaultImageInput @aws_oidc @aws_api_key {
-	id: String!
-	generalDefaultFilePath: String!
-	generalObjectFileGroupId: String!
-}
-
-input ReplacePartiallyDigitizedInput @aws_oidc @aws_api_key {
-	id: String!
-	generalPartiallyDigitized: Boolean!
 }
 
 enum StorageSystem @aws_oidc @aws_api_key {
@@ -449,7 +382,6 @@ type SupplementalDataRecord @aws_oidc @aws_api_key {
 	defaultFilePath: String
 	digitalAccess: String
 	inCopyright: Boolean
-	objectFileGroupId: String
 	partiallyDigitized: Boolean
 	title: String
 	TYPE: String

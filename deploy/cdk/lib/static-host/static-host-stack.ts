@@ -70,7 +70,7 @@ export class StaticHostStack extends cdk.Stack {
 
     this.bucket = new s3.Bucket(this, 'SiteBucket', {
       serverAccessLogsBucket: props.foundationStack.logBucket,
-      serverAccessLogsPrefix: `s3/${this.hostname}`,
+      serverAccessLogsPrefix: `s3/${this.hostname}/`,
     })
 
     let websiteCertificate: ICertificate

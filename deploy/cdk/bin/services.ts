@@ -151,7 +151,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       title: "Marble - Unified Website CDN",
       type: "CloudfrontAvailability",
       distributionId: website.cloudfront.distributionId,
-      sloThreshold: 0.99999,
+      sloThreshold: 0.999,
     },
     {
       title: "Marble - Unified Website CDN",
@@ -190,7 +190,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       title: "Marble - Maintain Metadata API",
       type: "AppSyncAvailability",
       apiId: maintainMetadataStack.apiId,
-      sloThreshold: 0.99999,
+      sloThreshold: 0.9995,
     },
     {
       title: "Marble - Maintain Metadata API",
@@ -226,7 +226,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       title: "Marble - IIIF Viewer CDN",
       type: "CloudfrontAvailability",
       distributionId: viewer.cloudfront.distributionId,
-      sloThreshold: 0.99999,
+      sloThreshold: 0.999,
     },
     {
       title: "Marble - IIIF Viewer CDN",

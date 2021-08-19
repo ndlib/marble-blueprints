@@ -8,13 +8,13 @@ import elasticsearch = require('../lib/elasticsearch')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import { getRequiredContext, getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
-import { Stacks } from '../lib/types'
+import { ServiceStacks } from '../lib/types'
 import { PipelineFoundationStack } from '../lib/foundation'
 import maintainMetadata = require('../lib/maintain-metadata')
 import manifestLambda = require('../lib/manifest-lambda')
 import multimediaAssets = require('../lib/multimedia-assets')
 
-export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv, testStacks: Stacks, prodStacks: Stacks): void => {
+export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv, testStacks: ServiceStacks, prodStacks: ServiceStacks): void => {
   const pipelineFoundationStack = new PipelineFoundationStack(app, `${namespace}-deployment-foundation`, {
     env: contextEnv.env,
   })

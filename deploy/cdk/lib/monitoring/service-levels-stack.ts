@@ -7,6 +7,7 @@ import {
 import { CfnDashboard } from "@aws-cdk/aws-cloudwatch"
 import * as subs from "@aws-cdk/aws-sns-subscriptions"
 import { AnySLO } from "@ndlib/ndlib-cdk/lib/slos/types"
+import { ServiceStacks } from "../types"
 
 export interface IServiceLevelsStackProps extends StackProps {
   readonly slos: AnySLO[]
@@ -43,6 +44,7 @@ export interface IServiceLevelsStackProps extends StackProps {
    */
   readonly performanceDashboardName?: string
 
+  readonly services: ServiceStacks
 }
 
 export class ServiceLevelsStack extends Stack {

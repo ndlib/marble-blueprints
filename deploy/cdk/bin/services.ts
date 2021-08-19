@@ -12,13 +12,14 @@ import multimediaAssets = require('../lib/multimedia-assets')
 import manifestLambda = require('../lib/manifest-lambda')
 import { getContextByNamespace, mapContextToProps, TypeHint } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
-import { Stacks } from '../lib/types'
-import { ServiceLevelsStack } from '../lib/service-levels/service-levels-stack'
+import { ServiceStacks } from '../lib/types'
+import { ServiceLevelsStack } from '../lib/monitoring/service-levels-stack'
 import { IStaticHostStackProps } from '../lib/static-host'
 import { BackupStack } from '../lib/backup/backup-stack'
 import { Bucket } from '@aws-cdk/aws-s3'
+import { DashboardsStack } from '../lib/monitoring/dashboards-stack'
 
-export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv): Stacks => {
+export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv): ServiceStacks => {
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
     useVpcId: contextEnv.useVpcId,
     useExistingDnsZone: contextEnv.useExistingDnsZone,
@@ -102,6 +103,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     manifestLambdaStack,
   }
 
+  new DashboardsStack(app, `${namespace}-dashboards-stack`, { root: app, namespace, env: contextEnv.env, services })
   const slos = [
     {
       title: "Marble - Unified Website CDN",
@@ -199,6 +201,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
 
   const sloContext = getContextByNamespace('slos')
   new ServiceLevelsStack(app, `${namespace}-service-levels`, {
+    services,
     slos,
     emailSubscriber: contextEnv.alarmsEmail,
     ...sloContext,

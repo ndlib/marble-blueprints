@@ -3,6 +3,8 @@
 !.eslintrc.js
 *.d.ts
 node_modules
+.yalc
+yalc.lock
 
 # CDK asset staging directory
 .cdk.staging

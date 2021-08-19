@@ -8,6 +8,7 @@ import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { FoundationStack } from '../foundation'
 import { AssetHelpers } from '../asset-helpers'
 import { MaintainMetadataStack } from '../maintain-metadata'
+import { RestApi } from '@aws-cdk/aws-apigateway'
 
 export interface IBaseStackProps extends StackProps {
 
@@ -58,10 +59,20 @@ export class ManifestLambdaStack extends Stack {
   public readonly apiName: string
   public readonly publicApiName: string
   public readonly publicGraphqlApiKeyPath: string
+  public readonly publicApi: RestApi
+  public readonly privateApi: RestApi
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
+    // TODO: Remove naming of these based on prefix and let cloudformation handle names.
+    // This is forcing dependent stacks to be deployed using the same context overrides
+    // as when this stack was deployed since this is determined at synth time instead of
+    // creating an export at deploy time. For example, the service-levels and dashboards
+    // stacks have to additionally add:
+    //   -c "manifestLambda:publicGraphqlHostnamePrefix=marbleb-prod-public-graphql"
+    // Once fixed, update the readme to remove these overrides from the example commands
+    // for those two stacks.
     this.apiName = props.hostnamePrefix
     this.publicApiName = props.publicGraphqlHostnamePrefix
 
@@ -109,7 +120,7 @@ export class ManifestLambdaStack extends Stack {
       memorySize: 1024,
     })
 
-    const api = new apigateway.RestApi(this, 'IIIFApiGateway', {
+    this.privateApi = new apigateway.RestApi(this, 'IIIFApiGateway', {
       restApiName: this.apiName,
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
@@ -127,25 +138,25 @@ export class ManifestLambdaStack extends Stack {
     if (props.createDns) {
       new CnameRecord(this, `${id}-Route53CnameRecord`, {
         recordName: props.hostnamePrefix,
-        domainName: api.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+        domainName: this.privateApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
         zone: props.foundationStack.hostedZone,
         ttl: Duration.minutes(15),
       })
     }
     // endpoints
-    const manifest = api.root.addResource('manifest')
+    const manifest = this.privateApi.root.addResource('manifest')
     const manifestId = manifest.addResource('{id}')
     manifestId.addMethod('GET', iiifManifestIntegration)
 
-    const canvas = api.root.addResource('canvas')
+    const canvas = this.privateApi.root.addResource('canvas')
     const canvasId = canvas.addResource('{id}')
     canvasId.addMethod('GET', iiifManifestIntegration)
 
-    const annotationPage = api.root.addResource('annotation_page')
+    const annotationPage = this.privateApi.root.addResource('annotation_page')
     const annotationPageId = annotationPage.addResource('{id}')
     annotationPageId.addMethod('GET', iiifManifestIntegration)
 
-    const annotation = api.root.addResource('annotation')
+    const annotation = this.privateApi.root.addResource('annotation')
     const annotationId = annotation.addResource('{id}')
     annotationId.addMethod('GET', iiifManifestIntegration)
 
@@ -180,7 +191,7 @@ export class ManifestLambdaStack extends Stack {
     })
 
     // Create API Gateway
-    const publicGraphqlApi = new apigateway.RestApi(this, 'PublicGraphqlApiGateway', {
+    this.publicApi = new apigateway.RestApi(this, 'PublicGraphqlApiGateway', {
       restApiName: this.publicApiName,
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
@@ -199,14 +210,14 @@ export class ManifestLambdaStack extends Stack {
     if (props.createDns) {
       new CnameRecord(this, `${this.publicApiName}-Route53CnameRecord`, {
         recordName: props.publicGraphqlHostnamePrefix,
-        domainName: publicGraphqlApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+        domainName: this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
         zone: props.foundationStack.hostedZone,
         ttl: Duration.minutes(15),
       })
     }
 
     // Create endpoints
-    const query = publicGraphqlApi.root.addResource('query')
+    const query = this.publicApi.root.addResource('query')
     const queryId = query.addResource('{id}')
     queryId.addMethod('POST', publicGraphqlIntegration)
 
@@ -215,7 +226,7 @@ export class ManifestLambdaStack extends Stack {
     new StringParameter(this, 'SSMPublicGraphqlApiUrl', {
       type: ParameterType.STRING,
       parameterName: this.publicGraphqlApiKeyPath,
-      stringValue: publicGraphqlApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+      stringValue: this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
       description: 'Public GraphQL API URL',
     })
 

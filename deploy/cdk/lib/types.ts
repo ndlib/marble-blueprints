@@ -1,6 +1,24 @@
-import { Stack, StackProps } from "@aws-cdk/core"
-import { FoundationStack, PipelineFoundationStack } from "./foundation"
-import { ContextEnv } from "./context-env"
-import { Environment } from "@aws-cdk/cx-api"
+import { FoundationStack } from "./foundation"
+import { StaticHostStack } from "./static-host"
+import { IiifServerlessStack } from "./iiif-serverless"
+import { ImagesStack } from "./image-processing"
+import { ElasticStack } from "./elasticsearch"
+import { ManifestPipelineStack } from "./manifest-pipeline"
+import { MaintainMetadataStack } from "./maintain-metadata"
+import { MultimediaAssetsStack } from "./multimedia-assets"
+import { ManifestLambdaStack } from "./manifest-lambda"
 
-export type Stacks = { [key: string]: Stack }
+export type ServiceStacks = {
+  foundationStack: FoundationStack,
+  website: StaticHostStack,
+  redbox: StaticHostStack,
+  inquisitions: StaticHostStack,
+  viewer: StaticHostStack,
+  iiifServerlessStack: IiifServerlessStack,
+  imageProcessingStack: ImagesStack,
+  elasticSearchStack: ElasticStack,
+  manifestPipelineStack: ManifestPipelineStack,
+  maintainMetadataStack: MaintainMetadataStack,
+  multimediaAssetsStack: MultimediaAssetsStack,
+  manifestLambdaStack: ManifestLambdaStack,
+}

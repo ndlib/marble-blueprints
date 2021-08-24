@@ -121,7 +121,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         repo: props.infraRepoName,
         trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
-    
+
 
     const appUnitTestsProject = new PipelineProject(this, 'AppUnitTests', {
       environment: {
@@ -132,7 +132,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         allow for the same patch version of python to be installed. If they differ
         then use this env var override .python-version files */
         PYENV_VERSION: {
-          value: `3.8.8`,
+          value: `3.8.10`,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },

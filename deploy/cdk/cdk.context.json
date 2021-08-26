@@ -83,6 +83,17 @@
   "redbox:siteDirectory": "",
   "redbox:workspaceName": "",
 
+  "seaside:hostnamePrefix": "seasidetwo",
+  "seaside:appRepoOwner": "ndlib",
+  "seaside:appRepoName": "seaside",
+  "seaside:appSourceBranch": "deployment",
+  "seaside:buildScriptsDir": "scripts/codebuild",
+  "seaside:lambdaCodePath": "../../src/unifiedEdgeLambda",
+  "seaside:qaSpecPath": "test/newman/smoke_tests.postman_collection.json",
+  "seaside:searchIndex": "seaside",
+  "seaside:siteDirectory": "",
+  "seaside:workspaceName": "",
+
   "inquisitions:hostnamePrefix": "inquisition",
   "inquisitions:appRepoOwner": "ndlib",
   "inquisitions:appRepoName": "marble-website-starter",

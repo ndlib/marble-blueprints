@@ -59,7 +59,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'chmod -R 755 ./scripts/codebuild/*',
           `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_${infraSourceArtifact.artifactName}"`,
           './scripts/codebuild/install.sh',
-          'pyenv versions',
+          'pyenv version || { echo "Python version mismatch"; exit 1; }',
           'yarn',
         ],
         outputFiles: [
@@ -223,7 +223,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
               python: '3.8',
             },
             commands: [
-              'pyenv versions',
+              'pyenv version || { echo "Python version mismatch"; exit 1; }',
               'pip install -r dev-requirements.txt',
               'chmod -R 755 ./scripts/codebuild/*',
               './scripts/codebuild/install.sh',

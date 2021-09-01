@@ -5,7 +5,7 @@ import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-a
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
-import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { SlackApproval, PipelineNotifications, NewmanRunner } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
@@ -141,21 +141,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
     addDataProject.addToRolePolicy(NamespacedPolicy.ssm(testStackName))
     addDataProject.addToRolePolicy(NamespacedPolicy.ssm(prodStackName))
 
-    const smokeTestsProject = new PipelineProject(this, 'MarbleUserContentSmokeTests', {
-      buildSpec: BuildSpec.fromObject({
-        phases: {
-          build: {
-            commands: [
-              'newman run tests/postman/collection.json --folder Smoke --env-var api=$TARGET_HOSTNAME',
-            ],
-          },
-        },
-        version: '0.2',
-      }),
-      environment: {
-        buildImage: DockerhubImage.fromNewman(this, 'MarbleUserContentSmokeTestsImage'),
-      },
-    })
     const addTestDataAction = new codepipelineActions.CodeBuildAction({
       input: appSourceArtifact,
       project: addDataProject,
@@ -176,14 +161,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
         },
       },
     })
-    const smokeTestsAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact,
-      project: smokeTestsProject,
-      actionName: 'SmokeTests',
-      runOrder: 98,
-      environmentVariables: {
-        TARGET_HOSTNAME: { value: testHostname },
+    const smokeTestsProject = new NewmanRunner(this, 'MarbleUserContentSmokeTests', {
+      sourceArtifact: appSourceArtifact,
+      collectionPath: 'tests/postman/smoke.json',
+      collectionVariables: {
+        'api': testHostname,
       },
+      actionName: 'SmokeTests',
     })
 
     // Approval
@@ -226,14 +210,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
         },
       },
     })
-    const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact,
-      project: smokeTestsProject,
-      actionName: 'SmokeTests',
-      runOrder: 98,
-      environmentVariables: {
-        TARGET_HOSTNAME: { value: prodHostname },
+    const smokeTestsProd = new NewmanRunner(this, 'MarbleUserContentProdSmokeTests', {
+      sourceArtifact: appSourceArtifact,
+      collectionPath: 'tests/postman/smoke.json',
+      collectionVariables: {
+        'api': prodHostname,
       },
+      actionName: 'SmokeTests',
     })
 
     // Pipeline
@@ -245,11 +228,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, addTestDataAction, smokeTestsAction, approvalAction],
+          actions: [deployTest.action, addTestDataAction, smokeTestsProject.action, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action, addProdDataAction, smokeTestsProdAction],
+          actions: [deployProd.action, addProdDataAction, smokeTestsProd.action],
           stageName: 'Production',
         },
       ],

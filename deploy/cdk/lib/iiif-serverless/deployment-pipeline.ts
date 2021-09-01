@@ -9,7 +9,7 @@ import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/a
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { Fn } from '@aws-cdk/core'
-import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { SlackApproval, NewmanRunner, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { DockerhubImage } from '../dockerhub-image'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
@@ -170,31 +170,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
         },
       },
     })
-    const smokeTestsProject = new PipelineProject(this, 'IIIFServerlessSmokeTests', {
-      buildSpec: BuildSpec.fromObject({
-        phases: {
-          build: {
-            commands: [
-              `echo '{
-                "values": [
-                  {"key": "image-server-host","value": "${testHost}"}
-                ]
-              }' > test_env.json`,
-              `newman run newman/smoke.json -e test_env.json`,
-            ],
-          },
-        },
-        version: '0.2',
-      }),
-      environment: {
-        buildImage: DockerhubImage.fromNewman(this, 'IIIFServerlessSmokeTestsImage'),
+    const smokeTestsProject = new NewmanRunner(this, 'IIIFServerlessSmokeTests', {
+      sourceArtifact: qaSourceArtifact,
+      collectionPath: 'newman/smoke.json',
+      collectionVariables: {
+        'image-server-host': testHost,
       },
-    })
-    const smokeTestsAction = new codepipelineActions.CodeBuildAction({
-      input: qaSourceArtifact,
-      project: smokeTestsProject,
       actionName: 'SmokeTests',
-      runOrder: 98,
     })
 
     // Approval
@@ -225,31 +207,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
         },
       },
     })
-    const smokeTestsProdProject = new PipelineProject(this, 'IIIFServerlessSmokeTestsProd', {
-      buildSpec: BuildSpec.fromObject({
-        phases: {
-          build: {
-            commands: [
-              `echo '{
-                "values": [
-                  {"key": "image-server-host","value": "${prodHost}"}
-                ]
-              }' > test_env.json`,
-              `newman run newman/smoke.json -e test_env.json`,
-            ],
-          },
-        },
-        version: '0.2',
-      }),
-      environment: {
-        buildImage: DockerhubImage.fromNewman(this, 'IIIFServerlessSmokeTestsProdImage'),
+    const smokeTestsProdProject = new NewmanRunner(this, 'IIIFServerlessSmokeTestsProd', {
+      sourceArtifact: qaSourceArtifact,
+      collectionPath: 'newman/smoke.json',
+      collectionVariables: {
+        'image-server-host': prodHost,
       },
-    })
-    const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
-      input: qaSourceArtifact,
-      project: smokeTestsProdProject,
       actionName: 'SmokeTests',
-      runOrder: 98,
     })
 
     // Pipeline
@@ -261,11 +225,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, copyImagesTestAction, smokeTestsAction, approvalAction],
+          actions: [deployTest.action, copyImagesTestAction, smokeTestsProject.action, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action, copyImagesProdAction, smokeTestsProdAction],
+          actions: [deployProd.action, copyImagesProdAction, smokeTestsProdProject.action],
           stageName: 'Production',
         },
       ],

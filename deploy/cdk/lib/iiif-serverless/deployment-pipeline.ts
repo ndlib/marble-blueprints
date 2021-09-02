@@ -11,6 +11,7 @@ import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { Fn } from '@aws-cdk/core'
 import { SlackApproval, NewmanRunner, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { DockerhubImage } from '../dockerhub-image'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -181,13 +182,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testHost} and is awaiting your approval. If you approve these changes, they will be deployed to https://${prodHost}.\n\n*Application Changes:*\n${appSourceAction.variables.commitMessage}\n\n*Infrastructure Changes:*\n${infraSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.\n\n*Infrastructure Changes:*\n${infraSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${infraRepoUrl}/commit/${infraSourceAction.variables.commitId}.`,
+    const approvalAction = new GithubApproval({
       notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
+      testTarget: `https://${testHost}`,
+      prodTarget: `https://${prodHost}`,
+      githubSources: [
+        { owner: props.appRepoOwner, sourceAction: appSourceAction },
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
     })
-
     if(props.slackNotifyStackName !== undefined){
       const slackApproval = new SlackApproval(this, 'SlackApproval', {
         approvalTopic,

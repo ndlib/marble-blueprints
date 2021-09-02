@@ -7,6 +7,7 @@ import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation/pipeline-foundation-stack'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -75,12 +76,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of elasticsearch has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.\n\n*Infrastructure Changes:*\n${infraSourceAction.variables.commitMessage}\n\nFor more details on the changes, see https://github.com/${props.infraRepoOwner}/${props.infraRepoName}/commit/${infraSourceAction.variables.commitId}.`,
-      
+    const approvalAction = new GithubApproval({
       notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
+      testTarget: `stack ${testStackName}`,
+      prodTarget: `stack ${prodStackName}`,
+      githubSources: [
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
     })
     if(props.slackNotifyStackName !== undefined){
       const slackApproval = new SlackApproval(this, 'SlackApproval', {

@@ -15,6 +15,7 @@ import { ElasticStack } from '../elasticsearch'
 import { DockerhubImage } from '../dockerhub-image'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -214,22 +215,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       actionName: 'SmokeTests',
     })
 
-    // Approval
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
-      notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
-    })
-    if (props.slackNotifyStackName !== undefined) {
-      new SlackApproval(this, 'SlackApproval', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
-
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
     const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
@@ -267,6 +252,24 @@ export class DeploymentPipelineStack extends cdk.Stack {
       },
       actionName: 'SmokeTests',
     })
+
+    // Approval
+    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const approvalAction = new GithubApproval({
+      notificationTopic: approvalTopic,
+      testTarget: `https://${testHostname}`,
+      prodTarget: `https://${prodHostname}`,
+      githubSources: [
+        { owner: props.appRepoOwner, sourceAction: appSourceAction },
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
+    })
+    if (props.slackNotifyStackName !== undefined) {
+      new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.slackNotifyStackName,
+      })
+    }
 
     // Pipeline
     const sources = [appSourceAction, infraSourceAction]

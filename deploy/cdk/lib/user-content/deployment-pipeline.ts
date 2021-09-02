@@ -1,7 +1,7 @@
-import { BuildEnvironmentVariableType, BuildSpec, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
+import { BuildEnvironmentVariableType, BuildSpec, PipelineProject } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
@@ -9,7 +9,7 @@ import { SlackApproval, PipelineNotifications, NewmanRunner } from '@ndlib/ndlib
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
-import { DockerhubImage } from '../dockerhub-image'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -170,22 +170,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       actionName: 'SmokeTests',
     })
 
-    // Approval
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
-      notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
-    })
-    if(props.slackNotifyStackName !== undefined){
-      const slackApproval = new SlackApproval(this, 'SlackApproval', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
-
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodFoundationStack)
@@ -218,6 +202,24 @@ export class DeploymentPipelineStack extends cdk.Stack {
       },
       actionName: 'SmokeTests',
     })
+
+    // Approval
+    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const approvalAction = new GithubApproval({
+      notificationTopic: approvalTopic,
+      testTarget: testHostname,
+      prodTarget: prodHostname,
+      githubSources: [
+        { owner: props.appRepoOwner, sourceAction: appSourceAction },
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
+    })
+    if(props.slackNotifyStackName !== undefined){
+      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.slackNotifyStackName,
+      })
+    }
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

@@ -8,6 +8,7 @@ import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack;
@@ -128,13 +129,14 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `${props.namespace}-maintain-metadata-deploy-test`)
 
     // Approval
-    const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${infraRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
+    const approvalAction = new GithubApproval({
       notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
+      testTarget: `stack ${testStackName}`,
+      prodTarget: `stack ${prodStackName}`,
+      githubSources: [
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
     })
     if(props.slackNotifyStackName !== undefined){
       new SlackApproval(this, 'SlackApproval', {

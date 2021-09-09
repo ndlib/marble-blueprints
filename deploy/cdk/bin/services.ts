@@ -172,6 +172,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       apiName: iiifServerlessStack.apiStack.apiName,
       sloThreshold: 0.95,
       latencyThreshold: 3000,
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - IIIF Manifest API",

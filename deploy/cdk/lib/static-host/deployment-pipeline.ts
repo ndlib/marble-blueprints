@@ -6,7 +6,7 @@ import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-a
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
-import { PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
+import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
@@ -15,6 +15,7 @@ import { ElasticStack } from '../elasticsearch'
 import { DockerhubImage } from '../dockerhub-image'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -205,44 +206,14 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', s3syncTestProps)
 
     const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
-    const smokeTestsProject = new PipelineProject(this, 'StaticHostSmokeTests', {
-      buildSpec: BuildSpec.fromObject({
-        phases: {
-          build: {
-            commands: [
-              `chmod -R 755 ${props.qaSpecPath}`,
-              `newman run ${props.qaSpecPath} --env-var hostname=${testHostname}`,
-            ],
-          },
-        },
-        version: '0.2',
-      }),
-      environment: {
-        buildImage: DockerhubImage.fromNewman(this, 'StaticHostSmokeTestsImage'),
+    const smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
+      sourceArtifact: appSourceArtifact,
+      collectionPath: props.qaSpecPath,
+      collectionVariables: {
+        'hostname': testHostname,
       },
-    })
-    const smokeTestsAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact,
-      project: smokeTestsProject,
       actionName: 'SmokeTests',
-      runOrder: 98,
     })
-
-    // Approval
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
-      notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
-    })
-    if (props.slackNotifyStackName !== undefined) {
-      new SlackApproval(this, 'SlackApproval', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
 
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
@@ -273,28 +244,32 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     const domainName = domainNameOverride || props.prodFoundationStack.hostedZone.zoneName
     const prodHostname = `${prodHostnamePrefix}.${domainName}`
-    const smokeTestsProdProject = new PipelineProject(this, 'StaticHostProdSmokeTests', {
-      buildSpec: BuildSpec.fromObject({
-        phases: {
-          build: {
-            commands: [
-              `chmod -R 755 ${props.qaSpecPath}`,
-              `newman run ${props.qaSpecPath} --env-var hostname=${prodHostname}`,
-            ],
-          },
-        },
-        version: '0.2',
-      }),
-      environment: {
-        buildImage: DockerhubImage.fromNewman(this, 'StaticHostProdSmokeTestsImage'),
+    const smokeTestsProd = new NewmanRunner(this, 'StaticHostProdSmokeTests', {
+      sourceArtifact: appSourceArtifact,
+      collectionPath: props.qaSpecPath,
+      collectionVariables: {
+        'hostname': prodHostname,
       },
-    })
-    const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact,
-      project: smokeTestsProdProject,
       actionName: 'SmokeTests',
-      runOrder: 98,
     })
+
+    // Approval
+    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const approvalAction = new GithubApproval({
+      notificationTopic: approvalTopic,
+      testTarget: `https://${testHostname}`,
+      prodTarget: `https://${prodHostname}`,
+      githubSources: [
+        { owner: props.appRepoOwner, sourceAction: appSourceAction },
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
+    })
+    if (props.slackNotifyStackName !== undefined) {
+      new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.slackNotifyStackName,
+      })
+    }
 
     // Pipeline
     const sources = [appSourceAction, infraSourceAction]
@@ -309,11 +284,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, s3syncTest.action, smokeTestsAction, approvalAction],
+          actions: [deployTest.action, s3syncTest.action, smokeTestsProject.action, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action, s3syncProd.action, smokeTestsProdAction],
+          actions: [deployProd.action, s3syncProd.action, smokeTestsProd.action],
           stageName: 'Production',
         },
       ],

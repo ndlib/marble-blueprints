@@ -9,6 +9,7 @@ import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -59,7 +60,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'chmod -R 755 ./scripts/codebuild/*',
           `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_${infraSourceArtifact.artifactName}"`,
           './scripts/codebuild/install.sh',
-          'pyenv versions',
+          'pyenv version || { echo "Python version mismatch"; exit 1; }',
           'yarn',
         ],
         outputFiles: [
@@ -202,7 +203,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         repo: props.infraRepoName,
         trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
-    
+
     const appUnitTestsProject = new PipelineProject(this, 'AppUnitTests', {
       environment: {
         buildImage: LinuxBuildImage.STANDARD_4_0,
@@ -212,7 +213,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         allow for the same patch version of python to be installed. If they differ
         then use this env var override .python-version files */
         PYENV_VERSION: {
-          value: `3.8.8`,
+          value: `3.8.10`,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
@@ -223,7 +224,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
               python: '3.8',
             },
             commands: [
-              'pyenv versions',
+              'pyenv version || { echo "Python version mismatch"; exit 1; }',
               'pip install -r dev-requirements.txt',
               'chmod -R 755 ./scripts/codebuild/*',
               './scripts/codebuild/install.sh',
@@ -251,13 +252,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays, false)
 
     // Approval
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
+    const approvalAction = new GithubApproval({
       notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
+      testTarget: `stack ${testStackName}`,
+      prodTarget: `stack ${prodStackName}`,
+      githubSources: [
+        { owner: props.appRepoOwner, sourceAction: appSourceAction },
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
     })
     if(props.slackNotifyStackName !== undefined){
       new SlackApproval(this, 'SlackApproval', {

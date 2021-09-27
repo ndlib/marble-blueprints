@@ -1419,18 +1419,12 @@ def _delete_expired_api_keys(graphql_api_id: str):
         $!{expValues.put(":privacy", $util.dynamodb.toDynamoDB($privacy))}
 
         #if( $privacy == "private" )
-          #set($GSI1PK = "")
-          #set($GSI1SK = "")
           #set($GSI2PK = "")
           #set($GSI2SK = "")
         #else
-          #set($GSI1PK = "PORTFOLIOCOLLECTION")
-          #set($GSI1SK = "PORTFOLIOCOLLECTION#$util.str.toUpper($portfolioCollectionId)")
           #set($GSI2PK = "PORTFOLIOCOLLECTION")
           #set($GSI2SK = $util.str.toUpper("$privacy#$portfolioCollectionId"))
 
-          $!{expValues.put(":GSI1PK", $util.dynamodb.toDynamoDB($GSI1PK))}
-          $!{expValues.put(":GSI1SK", $util.dynamodb.toDynamoDB($GSI1SK))}
           $!{expValues.put(":GSI2PK", $util.dynamodb.toDynamoDB($GSI2PK))}
           $!{expValues.put(":GSI2SK", $util.dynamodb.toDynamoDB($GSI2SK))}
         #end
@@ -1444,7 +1438,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
           },
           "update": {
             #if( $privacy == "private" )
-              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title REMOVE GSI1PK, GSI1SK, GSI2PK, GSI2SK",
+            "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK REMOVE GSI2PK, GSI2SK",
             #else
               "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
             #end

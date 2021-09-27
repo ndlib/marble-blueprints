@@ -339,8 +339,8 @@ type Query @aws_oidc @aws_api_key {
 	getMedia(id: String!): Media
 	getMediaGroup(id: String!): MediaGroup
 	getPortfolioCollection(portfolioCollectionId: String!): PortfolioCollection  @aws_oidc @aws_api_key
-	getPortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): PortfolioItem  @aws_oidc 
-	getPortfolioUser: PortfolioUser  @aws_oidc @aws_api_key
+	getPortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): PortfolioItem  @aws_oidc
+	getPortfolioUser(portfolioUserId: String!): PortfolioUser  @aws_oidc @aws_api_key
 	getWebsite(id: String!): Website
 	listFilesToProcess(dateLastProcessedBefore: String, limit: Int, nextToken: String): FilesToProcessConnection
 	listImageGroups(limit: Int, nextToken: String, storageSystem: StorageSystem): ImageGroupsConnection

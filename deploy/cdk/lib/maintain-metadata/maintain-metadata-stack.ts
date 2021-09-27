@@ -1428,7 +1428,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
           #set($GSI1SK = "PORTFOLIOCOLLECTION#$util.str.toUpper($portfolioCollectionId)")
           #set($GSI2PK = "PORTFOLIOCOLLECTION")
           #set($GSI2SK = $util.str.toUpper("$privacy#$portfolioCollectionId"))
-          
+
           $!{expValues.put(":GSI1PK", $util.dynamodb.toDynamoDB($GSI1PK))}
           $!{expValues.put(":GSI1SK", $util.dynamodb.toDynamoDB($GSI1SK))}
           $!{expValues.put(":GSI2PK", $util.dynamodb.toDynamoDB($GSI2PK))}
@@ -1578,31 +1578,39 @@ def _delete_expired_api_keys(graphql_api_id: str):
       fieldName: 'portfolioCollections',
       dataSource: websiteMetadataDynamoDataSource,
       requestMappingTemplate: MappingTemplate.fromString(`
-        #set($portfolioUserId = $ctx.source.portfolioUserId)
-        #set($portfolioUserId = $util.defaultIfNullOrBlank($portfolioUserId, ""))
-        #set($portfolioUserId = $util.str.toUpper($portfolioUserId))
-        #set($portfolioUserId = $util.str.toReplace($portfolioUserId, " ", ""))
+      #set($portfolioUserId = $ctx.source.portfolioUserId)
+      #set($portfolioUserId = $util.defaultIfNullOrBlank($portfolioUserId, ""))
+      #set($portfolioUserId = $util.str.toUpper($portfolioUserId))
+      #set($portfolioUserId = $util.str.toReplace($portfolioUserId, " ", ""))
+          #if($ctx.identity.claims && $ctx.identity.claims.netid == $ctx.source.portfolioUserId)
+          	#set($expression = "#TYPE = :rowType")
+          #else
+          	#set($expression = "#TYPE = :rowType and not contains(privacy, :privacy)")
+          #end
 
-        {
-            "version" : "2017-02-28",
-            "operation" : "Query",
-            "query" : {
-              "expression": "PK = :pk and begins_with(SK, :beginsWith)",
-              "expressionValues" : {
-                ":pk": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
-                ":beginsWith": $util.dynamodb.toDynamoDBJson("USER#$portfolioUserId#"),
+      {
+          "version" : "2017-02-28",
+          "operation" : "Query",
+          "query" : {
+            "expression": "PK = :pk and begins_with(SK, :beginsWith)",
+            "expressionValues" : {
+              ":pk": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+              ":beginsWith": $util.dynamodb.toDynamoDBJson("USER#$portfolioUserId#"),
+            },
+		      },
+          "filter": {
+            "expression": "$expression",
+            "expressionValues" : {
+              	":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+          #if(!($ctx.identity.claims && $ctx.identity.claims.netid == $ctx.source.portfolioUserId))
+                  ":privacy": $util.dynamodb.toDynamoDBJson("private"),
+          #end
               },
-			      },
-            "filter": {
-              "expression": "#TYPE = :rowType",
-              "expressionValues": {
-                ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
-              },
-              "expressionNames": {"#TYPE": "TYPE"},
-      			},
-            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
-            "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
-        }`),
+            "expressionNames": {"#TYPE": "TYPE"},
+    			},
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
+      }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
             "items": $util.toJson($ctx.result.items),
@@ -1858,14 +1866,34 @@ def _delete_expired_api_keys(graphql_api_id: str):
         #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
 
         {
-            "version": "2017-02-28",
-            "operation": "GetItem",
-            "key": {
-              "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
-              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId#$portfolioCollectionId")),
-            }
+          "version": "2017-02-28",
+          "operation": "Query",
+          "index": "GSI1",
+          "query" : {
+            "expression": "GSI1PK = :GSI1PK and GSI1SK = :GSI1SK",
+            "expressionValues" : {
+              ":GSI1PK": $util.dynamodb.toDynamoDBJson("PORTFOLIOCOLLECTION"),
+              ":GSI1SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("PORTFOLIOCOLLECTION#$portfolioCollectionId")),
+                }
+            },
+          "filter": {
+            "expression": "#TYPE = :rowType AND (#PORTFOLIOUSERID = :portfolioUserId OR not contains(privacy, :privacy))",
+              "expressionValues": {
+              ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+              ":portfolioUserId": $util.dynamodb.toDynamoDBJson($portfolioUserId),
+			  ":privacy": $util.dynamodb.toDynamoDBJson("private"),
+                },
+            "expressionNames": { "#TYPE": "TYPE", "#PORTFOLIOUSERID": "portfolioUserId" },
+          },
         }`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        #set($result = {})
+        #if( $ctx.result.items.size() > 0 )
+          #set($result = $ctx.result.items[0])
+        #end
+
+        $util.toJson($result)
+      `),
     })
 
     new Resolver(this, 'QueryGetPortfolioItemResolver', {
@@ -1902,14 +1930,17 @@ def _delete_expired_api_keys(graphql_api_id: str):
       fieldName: 'getPortfolioUser',
       dataSource: websiteMetadataDynamoDataSource,
       requestMappingTemplate: MappingTemplate.fromString(`
-        #set($portfolioUserId = $ctx.identity.claims.netid)
-
+        #if ($ctx.args.portfolioUserId)
+        	#set($ID = $ctx.args.portfolioUserId)
+        #else
+        	#set($ID = $ctx.identity.claims.netid)
+        #end
         {
             "version": "2017-02-28",
             "operation": "GetItem",
             "key": {
               "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
-              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId")),
+              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$ID")),
             }
         }`),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),

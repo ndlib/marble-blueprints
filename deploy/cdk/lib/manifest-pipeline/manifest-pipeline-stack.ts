@@ -11,6 +11,7 @@ import path = require('path')
 import { FoundationStack } from '../foundation'
 import { Rule, Schedule } from "@aws-cdk/aws-events"
 import dynamodb = require('@aws-cdk/aws-dynamodb')
+import backup = require('@aws-cdk/aws-backup')
 import { AssetHelpers } from '../asset-helpers'
 import { S3NotificationToLambdaCustomResource } from './s3ToLambda'
 
@@ -242,6 +243,14 @@ export class ManifestPipelineStack extends Stack {
       description: 'Time To live for metadata dynamodb records',
     })
 
+    // add back up to the table.
+    const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'Plan')
+    plan.addSelection('Selection', {
+      resources: [
+        backup.BackupResource.fromDynamoDbTable(this.websiteMetadataDynamoTable), // A DynamoDB table
+      ]
+    })
+    plan.addRule(backup.BackupPlanRule.daily())
 
      // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {

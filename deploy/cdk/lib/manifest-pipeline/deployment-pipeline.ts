@@ -134,6 +134,14 @@ export class DeploymentPipelineStack extends cdk.Stack {
           cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'),
         ],
       }))
+      // all the user to create a backup
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: ['backup:CreateBackupVault',],
+        resources: [
+          'arn:aws:backup:us-east-1:333680067100:backup-vault:*'
+        ],
+      }))
+
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['cloudfront:CreateCloudFrontOriginAccessIdentity',
           'cloudfront:CreateDistribution',

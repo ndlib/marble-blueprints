@@ -136,9 +136,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
       }))
       // all the user to create a backup
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        actions: ['backup:CreateBackupVault',],
+        actions: ['*',],
         resources: [
-          'arn:aws:backup:us-east-1:333680067100:backup-vault:*'
+          '*'
         ],
       }))
 

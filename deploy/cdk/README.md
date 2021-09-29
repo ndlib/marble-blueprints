@@ -37,7 +37,6 @@ marble-image-service
 marble-manifest
 marble-multimedia-assets
 marble-redbox
-marble-user-content
 marble-website
 marble-maintain-metadata
 marble-service-levels
@@ -102,7 +101,6 @@ When deploying a service stack, you will need to point cdk at the directory wher
 * `"iiifImageService:serverlessIiifSrcPath"`: "../../../serverless-iiif"
 * `"imageProcessing:lambdaCodePath"`: "../../../marble-images/s3_event"
 * `"imageProcessing:dockerfilePath"`: "../../../marble-images/"
-* `"userContent:lambdaCodePath"`: "../../../marble-user-content/src"
 * `"manifestPipeline:lambdaCodeRootPath"`: "../../../marble-manifest-pipeline"
 
 Example deploy of the user content service with an override to the path to the source:

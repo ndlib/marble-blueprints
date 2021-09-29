@@ -3,7 +3,6 @@ import { App } from '@aws-cdk/core'
 import 'source-map-support/register'
 import { FoundationStack } from '../lib/foundation'
 import IIIF = require('../lib/iiif-serverless')
-import userContent = require('../lib/user-content')
 import imageProcessing = require('../lib/image-processing')
 import elasticsearch = require('../lib/elasticsearch')
 import staticHost = require('../lib/static-host')
@@ -65,13 +64,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     foundationStack,
     ...commonProps,
     ...imageServiceContext,
-  })
-
-  const userContentContext = getContextByNamespace('userContent')
-  const userContentStack = new userContent.UserContentStack(app, `${namespace}-user-content`, {
-    foundationStack,
-    ...commonProps,
-    ...userContentContext,
   })
 
   const elasticsearchContext = getContextByNamespace('elasticsearch')
@@ -137,7 +129,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     inquisitions,
     viewer,
     iiifServerlessStack,
-    userContentStack,
     imageProcessingStack,
     elasticSearchStack,
     manifestPipelineStack,

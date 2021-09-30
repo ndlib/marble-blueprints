@@ -17,7 +17,7 @@ exports.handler = (event, context, callback) => {
 
   // this is not the best way that this we may need to do an s3 head request to fully
   // detect if the file exists.
-  const valid_extensions = ['.html', '.js', '.json', '.css', '.jpg', '.jpeg', '.png', '.ico', '.map', '.txt', '.kml', '.svg', '.webmanifest', '.webp', '.xml', '.zip', '.avif', '.woff'];
+  const valid_extensions = ['.html', '.js', '.json', '.css', '.jpg', '.jpeg', '.png', '.ico', '.map', '.txt', '.kml', '.svg', '.webmanifest', '.webp', '.xml', '.zip', '.avif', '.woff', '.woff2', '.ttf'];
   // if there is no extension or it is not in one of the extensions we expect to find on the
   // server.
   if (parsedPath.ext == '' || !valid_extensions.includes(parsedPath.ext)) {

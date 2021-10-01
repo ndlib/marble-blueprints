@@ -125,6 +125,12 @@ export interface IBaseStackProps extends StackProps {
    */
   readonly marbleContentFileShareId: string;
 
+  /**
+   * The context environment prod / test
+   */
+  readonly contextEnvName: string;  
+
+
 }
 
 export class ManifestPipelineStack extends Stack {
@@ -243,14 +249,16 @@ export class ManifestPipelineStack extends Stack {
       description: 'Time To live for metadata dynamodb records',
     })
 
-    // add back up to the table.
-    const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'Plan')
-    plan.addSelection('Selection', {
-      resources: [
-        backup.BackupResource.fromDynamoDbTable(this.websiteMetadataDynamoTable), // A DynamoDB table
-      ]
-    })
-    plan.addRule(backup.BackupPlanRule.daily())
+    // add back up to the table but only prod
+    if (props.contextEnvName === 'prod') {
+      const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
+      plan.addSelection('DynamoTables', {
+        resources: [
+          backup.BackupResource.fromDynamoDbTable(this.websiteMetadataDynamoTable), // A DynamoDB table
+        ]
+      })
+      plan.addRule(backup.BackupPlanRule.daily())
+    }
 
      // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {

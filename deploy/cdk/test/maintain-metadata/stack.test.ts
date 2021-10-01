@@ -53,6 +53,7 @@ describe('MaintainMetadataStack', () => {
     const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {
       foundationStack,
       multimediaBucket,
+      contextEnvName: 'test',
       ...manifestPipelineContext,
     })
     stack = new MaintainMetadataStack(app, 'MyTestStack', {

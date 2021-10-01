@@ -128,7 +128,7 @@ export interface IBaseStackProps extends StackProps {
   /**
    * The context environment prod / test
    */
-  readonly createBackup?: boolean;
+  readonly createBackup?: string;
 
 
 }
@@ -251,7 +251,7 @@ export class ManifestPipelineStack extends Stack {
 
     // add back up to the table but only prod
     console.log(" hi hi hi what is the backup", props.createBackup, typeof props.createBackup)
-    if (props.createBackup) {
+    if (props.createBackup === "true") {
       console.log("in the backup !! ")
       const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
       plan.addSelection('DynamoTables', {

@@ -248,7 +248,16 @@ export class ManifestPipelineStack extends Stack {
       stringValue: props.metadataTimeToLiveDays,
       description: 'Time To live for metadata dynamodb records',
     })
-
+    // add back up to the table but only prod
+    if (props.createBackup === "true") {
+      const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
+      plan.addSelection('DynamoTables', {
+        resources: [
+          backup.BackupResource.fromDynamoDbTable(this.websiteMetadataDynamoTable), // A DynamoDB table
+        ]
+      })
+      plan.addRule(backup.BackupPlanRule.daily())
+    }
 
      // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {

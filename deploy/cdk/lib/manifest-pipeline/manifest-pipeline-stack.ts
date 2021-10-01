@@ -250,6 +250,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     // add back up to the table but only prod
+    console.log(" hi hi hi what is the backup", props.createBackup)
     if (props.createBackup) {
       const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
       plan.addSelection('DynamoTables', {

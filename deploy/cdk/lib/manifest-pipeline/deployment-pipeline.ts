@@ -138,21 +138,29 @@ export class DeploymentPipelineStack extends cdk.Stack {
       // all the user to create a backup
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: [
+/*
           'backup:CreateBackupPlan',
           'backup:CreateBackupSelection',
           'backup:CreateBackupVault',
           'backup:TagResource',
           'backup:StartBackupJob',
           'backup:UpdateBackupPlan',
+          'backup:PutBackupVaultAccessPolicy',
+          'backup:PutBackupVaultNotifications',
+          'backup:DeleteBackupVaultAccessPolicy',
+          'backup:DeleteBackupVaultNotification',
           'backup:DeleteBackupPlan',
           'backup:DeleteBackupVault',
           'backup:DeleteBackupVault',
+          */
+          'backup:*',
         ],
         resources: [
           cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),
           cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-vault:*'),
           cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-storage:*'),
-        ],
+          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:recovery-point:*'),
+          cdk.Fn.sub('arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*/backup/*'),         ],
       }))
 
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({

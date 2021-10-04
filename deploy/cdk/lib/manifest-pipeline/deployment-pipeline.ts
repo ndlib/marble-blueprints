@@ -141,14 +141,17 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'backup:CreateBackupPlan',
           'backup:CreateBackupSelection',
           'backup:CreateBackupVault',
+          'backup:TagResource',
+          'backup:StartBackupJob',
+          'backup:UpdateBackupPlan',
           'backup:DeleteBackupPlan',
           'backup:DeleteBackupVault',
           'backup:DeleteBackupVault',
         ],
         resources: [
-          cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),
-          cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:backup-vault:*'),
-          cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:table/*/backup/*'), 
+          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),
+          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-vault:*'),
+          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-storage:*'),
         ],
       }))
 

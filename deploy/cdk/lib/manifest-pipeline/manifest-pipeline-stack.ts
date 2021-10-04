@@ -126,7 +126,7 @@ export interface IBaseStackProps extends StackProps {
   readonly marbleContentFileShareId: string;
 
   /**
-   * The context environment prod / test
+   * The flag to determine if we a backup should be added to the dynamo table.
    */
   readonly createBackup?: string;
 
@@ -248,8 +248,9 @@ export class ManifestPipelineStack extends Stack {
       stringValue: props.metadataTimeToLiveDays,
       description: 'Time To live for metadata dynamodb records',
     })
-    // add back up to the table but only prod
-    if (props.createBackup === "true") {
+
+    // currently we only want this to be added in the stage production.
+    //if (props.createBackup === "true") {
       const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
       plan.addSelection('DynamoTables', {
         resources: [
@@ -257,7 +258,7 @@ export class ManifestPipelineStack extends Stack {
         ]
       })
       plan.addRule(backup.BackupPlanRule.daily())
-    }
+    //    }
 
      // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {

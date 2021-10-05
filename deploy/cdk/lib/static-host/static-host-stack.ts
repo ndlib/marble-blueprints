@@ -122,6 +122,15 @@ export class StaticHostStack extends cdk.Stack {
                   lambdaFunction: this.spaRedirectionLambda.currentVersion,
                 },
               ],
+              forwardedValues: {
+                cookies: {
+                  forward: 'none',
+                },
+                queryString: true,
+                queryStringCacheKeys: [
+                  'synthetics-timestamp',
+                ],
+              },
             },
           ],
         },

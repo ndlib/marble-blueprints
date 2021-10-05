@@ -150,17 +150,15 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'backup:DeleteBackupVaultAccessPolicy',
           'backup:DeleteBackupVaultNotification',
           'backup:DeleteBackupPlan',
-          'backup:DeleteBackupVault',
+        'backup:DeleteBackupVault',
           'backup:DeleteBackupVault',
           */
           'backup:*',
+          'backup-storage:MountCapsule',
         ],
         resources: [
-          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),
-          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-vault:*'),
-          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-storage:*'),
-          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:recovery-point:*'),
-          cdk.Fn.sub('arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*/backup/*'),         ],
+          '*'
+         ],
       }))
 
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({

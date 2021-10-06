@@ -151,8 +151,12 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'backup:DeleteBackupPlan',
           'backup:DeleteBackupVault',
           'backup:DeleteBackupVault',
-          'backup-storage:*',
-          'kms:*'
+          'backup-storage:MountCapsule',
+          'kms:CreateGrant',
+          'kms:GenerateDataKeys',
+          'kms:Decrypt',
+          'kms:RetireGrant',
+          'kms:DescribeKey',
         ],
         resources: [
           cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),

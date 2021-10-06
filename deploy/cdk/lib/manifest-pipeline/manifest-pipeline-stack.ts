@@ -250,7 +250,7 @@ export class ManifestPipelineStack extends Stack {
     })
 
     // currently we only want this to be added in the stage production.
-    if (props.createBackup === "true") {
+    //if (props.createBackup === "true") {
       const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
       plan.addSelection('DynamoTables', {
         resources: [
@@ -258,7 +258,7 @@ export class ManifestPipelineStack extends Stack {
         ]
       })
       plan.addRule(backup.BackupPlanRule.daily())
-    }
+    //}
 
      // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {

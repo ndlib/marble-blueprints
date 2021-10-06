@@ -138,7 +138,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       // all the user to create a backup
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: [
-/*
           'backup:CreateBackupPlan',
           'backup:CreateBackupSelection',
           'backup:CreateBackupVault',
@@ -150,14 +149,17 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'backup:DeleteBackupVaultAccessPolicy',
           'backup:DeleteBackupVaultNotification',
           'backup:DeleteBackupPlan',
-        'backup:DeleteBackupVault',
           'backup:DeleteBackupVault',
-          */
-          'backup:*',
-          'backup-storage:MountCapsule',
+          'backup:DeleteBackupVault',
+          'backup-storage:*',
+          'kms:*'
         ],
         resources: [
-          '*'
+          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),
+          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-vault:*'),
+          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-storage:*'),
+          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:key:*'),
+          cdk.Fn.sub('arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*/backup/*'),
          ],
       }))
 

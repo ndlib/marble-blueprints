@@ -248,7 +248,7 @@ export class ManifestPipelineStack extends Stack {
 
     // currently we only want this to be added in the stage production.
     if (props.createBackup) {
-      const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, `${this.stackName}-MarbleDynamoDbBackupPlan`)
+      const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
       plan.addSelection('DynamoTables', {
         resources: [
           backup.BackupResource.fromDynamoDbTable(this.websiteMetadataDynamoTable), // A DynamoDB table

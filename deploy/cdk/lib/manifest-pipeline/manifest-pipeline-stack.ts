@@ -126,11 +126,9 @@ export interface IBaseStackProps extends StackProps {
   readonly marbleContentFileShareId: string;
 
   /**
-   * The flag to determine if we a backup should be added to the dynamo table.
+   * The flag to determine if a backup should be added to the dynamo table.
    */
   readonly createBackup?: boolean;
-
-
 }
 
 export class ManifestPipelineStack extends Stack {

@@ -93,6 +93,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     marbleContentFileShareId: contextEnv.marbleContentFileShareId,
     ...commonProps,
     ...manifestPipelineContext,
+    createBackup: app.node.tryGetContext('manifestPipeline:createBackup') === "true" ? true : false,
   })
 
   const maintainMetadataContext = getContextByNamespace('maintainMetadata')

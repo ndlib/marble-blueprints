@@ -128,7 +128,7 @@ export interface IBaseStackProps extends StackProps {
   /**
    * The flag to determine if we a backup should be added to the dynamo table.
    */
-  readonly createBackup?: string;
+  readonly createBackup?: boolean;
 
 
 }
@@ -181,7 +181,6 @@ export class ManifestPipelineStack extends Stack {
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
-
 
     if (props.hostnamePrefix.length > 63) {
       Annotations.of(this).addError(`Max length of hostnamePrefix is 63.  "${props.hostnamePrefix}" is too long.}`)
@@ -250,7 +249,8 @@ export class ManifestPipelineStack extends Stack {
     })
 
     // currently we only want this to be added in the stage production.
-    //if (props.createBackup === "true") {
+    console.log("backy back up!: ", props.createBackup)
+    if (props.createBackup) {
       const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
       plan.addSelection('DynamoTables', {
         resources: [
@@ -258,7 +258,7 @@ export class ManifestPipelineStack extends Stack {
         ]
       })
       plan.addRule(backup.BackupPlanRule.daily())
-    //}
+    }
 
      // Create Origin Access Id
     const originAccessId = new OriginAccessIdentity(this, 'OriginAccessIdentity', {

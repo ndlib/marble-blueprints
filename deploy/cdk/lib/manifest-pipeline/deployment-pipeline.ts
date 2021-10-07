@@ -135,37 +135,39 @@ export class DeploymentPipelineStack extends cdk.Stack {
           cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'),
         ],
       }))
-      // all the user to create a backup
-      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        actions: [
-          'backup:CreateBackupPlan',
-          'backup:CreateBackupSelection',
-          'backup:CreateBackupVault',
-          'backup:TagResource',
-          'backup:StartBackupJob',
-          'backup:UpdateBackupPlan',
-          'backup:PutBackupVaultAccessPolicy',
-          'backup:PutBackupVaultNotifications',
-          'backup:DeleteBackupVaultAccessPolicy',
-          'backup:DeleteBackupVaultNotification',
-          'backup:DeleteBackupPlan',
-          'backup:DeleteBackupVault',
-          'backup:DeleteBackupVault',
-          'backup-storage:MountCapsule',
-          'kms:CreateGrant',
-          'kms:GenerateDataKeys',
-          'kms:Decrypt',
-          'kms:RetireGrant',
-          'kms:DescribeKey',
-        ],
-        resources: [
-          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),
-          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-vault:*'),
-          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-storage:*'),
-          cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:key:*'),
-          cdk.Fn.sub('arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*/backup/*'),
-         ],
-      }))
+      if (createBackup) {
+        // Add the policies to create the dynamo backup.
+        cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+          actions: [
+            'backup:TagResource',
+            'backup:UntagResource',
+            'backup:StartBackupJob',
+            'backup:StopBackupJob',
+            'backup:StartRestoreJob',
+            'backup:ExportBackupPlanTemplate',
+            'backup:Create*',
+            'backup:Delete*',
+            'backup:Update*',
+            'backup:List*',
+            'backup:Get*',
+            'backup:Put*',
+            'backup:Describe*',
+            'backup-storage:*',
+            'kms:*',
+          ],
+          resources: [
+            cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),
+            cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-vault:*'),
+            cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-storage:*'),
+            cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:recovery-point:*'),
+            cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:key:*'),
+            cdk.Fn.sub('arn:aws:rds:${AWS::Region}:${AWS::AccountId}:snapshot:awsbackup:*'),
+            cdk.Fn.sub('arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster-snapshot:awsbackup:*'),
+            cdk.Fn.sub('arn:aws:ec2:${AWS::Region}::snapshots/:*'),
+            cdk.Fn.sub('arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*/backup/*'),
+           ],
+        }))
+      }
 
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['cloudfront:CreateCloudFrontOriginAccessIdentity',

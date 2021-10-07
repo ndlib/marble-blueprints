@@ -167,16 +167,12 @@ export class DeploymentPipelineStack extends cdk.Stack {
         }))
         cdkDeploy.project.addToRolePolicy(new PolicyStatement({
           actions: [
-            'kms:CreateGrant',
-            'kms:GenerateDataKey',
-            'kms:Decrypt',
-            'kms:RetireGrant',
-            'kms:DescribeKey',
+            'kms:*',
           ],
           resources: [
             cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:key:*'),
            ],
-        }))
+        })) 
 
       }
 

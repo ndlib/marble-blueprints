@@ -153,20 +153,31 @@ export class DeploymentPipelineStack extends cdk.Stack {
             'backup:Put*',
             'backup:Describe*',
             'backup-storage:*',
-            'kms:*',
           ],
           resources: [
             cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-plan:*'),
             cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-vault:*'),
             cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:backup-storage:*'),
             cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:recovery-point:*'),
-            cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:key:*'),
             cdk.Fn.sub('arn:aws:rds:${AWS::Region}:${AWS::AccountId}:snapshot:awsbackup:*'),
             cdk.Fn.sub('arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster-snapshot:awsbackup:*'),
             cdk.Fn.sub('arn:aws:ec2:${AWS::Region}::snapshots/:*'),
             cdk.Fn.sub('arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*/backup/*'),
            ],
         }))
+        cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+          actions: [
+            'kms:CreateGrant',
+            'kms:GenerateDataKey',
+            'kms:Decrypt',
+            'kms:RetireGrant',
+            'kms:DescribeKey',
+          ],
+          resources: [
+            cdk.Fn.sub('arn:aws:backup:${AWS::Region}:${AWS::AccountId}:key:*'),
+           ],
+        }))
+
       }
 
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({

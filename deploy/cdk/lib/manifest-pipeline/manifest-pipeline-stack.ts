@@ -249,9 +249,9 @@ export class ManifestPipelineStack extends Stack {
     })
 
     // currently we only want this to be added in the stage production.
-    console.log("backy back up!: ", props.createBackup)
+    console.log("backup ", props.createBackup, typeof props.createBackup)
     if (props.createBackup) {
-      const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'MarbleDynamoDbBackupPlan')
+      const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, `${this.stackName}-MarbleDynamoDbBackupPlan`)
       plan.addSelection('DynamoTables', {
         resources: [
           backup.BackupResource.fromDynamoDbTable(this.websiteMetadataDynamoTable), // A DynamoDB table

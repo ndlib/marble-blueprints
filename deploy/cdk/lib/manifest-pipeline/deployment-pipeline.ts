@@ -135,7 +135,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'),
         ],
       }))
-      if (createBackup) {
+      //if (createBackup) {
         // Add the policies to create the dynamo backup.
         cdkDeploy.project.addToRolePolicy(new PolicyStatement({
           actions: [
@@ -167,7 +167,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
             cdk.Fn.sub('arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*/backup/*'),
            ],
         }))
-      }
+      //}
 
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['cloudfront:CreateCloudFrontOriginAccessIdentity',

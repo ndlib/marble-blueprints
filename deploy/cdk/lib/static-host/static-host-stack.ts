@@ -32,6 +32,11 @@ export interface IStaticHostStackProps extends cdk.StackProps {
    * Optional domainName override
    */
   readonly domainNameOverride?: string
+
+  /**
+   * Optional additional aliases
+   */
+  readonly additionalAliases?: Array<string>
 }
 
 export class StaticHostStack extends cdk.Stack {
@@ -67,7 +72,10 @@ export class StaticHostStack extends cdk.Stack {
 
     const domainName = props.domainNameOverride || props.foundationStack.hostedZone.zoneName
     this.hostname = `${props.hostnamePrefix || this.stackName}.${domainName}`
-
+    const aliases = [
+      this.hostname,
+      ...(props.additionalAliases ?? []),
+    ]
     this.bucket = new s3.Bucket(this, 'SiteBucket', {
       serverAccessLogsBucket: props.foundationStack.logBucket,
       serverAccessLogsPrefix: `s3/${this.hostname}/`,
@@ -136,7 +144,7 @@ export class StaticHostStack extends cdk.Stack {
         },
       ],
       viewerCertificate: ViewerCertificate.fromAcmCertificate(websiteCertificate, {
-        aliases: [this.hostname],
+        aliases,
         securityPolicy: SecurityPolicyProtocol.TLS_V1_1_2016,
         sslMethod: SSLMethod.SNI,
       }),

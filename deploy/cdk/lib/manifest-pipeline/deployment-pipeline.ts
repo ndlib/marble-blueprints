@@ -174,7 +174,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
         }))
         cdkDeploy.project.addToRolePolicy(new PolicyStatement({
           actions: [
-            'kms:*',
+            'kms:CreateGrant',
+            'kms:GenerateDataKey',
+            'kms:Decrypt',
+            'kms:RetireGrant',
+            'kms:DescribeKey',
           ],
           resources: [
             '*',

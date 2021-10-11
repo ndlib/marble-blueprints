@@ -1,8 +1,7 @@
-import { BuildSpec, PipelineProject } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
@@ -12,7 +11,6 @@ import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
-import { DockerhubImage } from '../dockerhub-image'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
 import { GithubApproval } from '../github-approval'
@@ -51,6 +49,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly submoduleSourceBranch?: string
   readonly prodCertificateArnPath?: string
   readonly prodDomainNameOverride?: string
+  readonly prodAdditionalAliases?: string
   readonly testMaintainMetadataStack: MaintainMetadataStack
   readonly prodMaintainMetadataStack: MaintainMetadataStack
   readonly testManifestLambdaStack: ManifestLambdaStack
@@ -65,7 +64,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack, certificateArnPath?: string, domainNameOverride?:string) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack,
+                          certificateArnPath?: string, domainNameOverride?:string, additionalAliases?: string) => {
+
       const additionalContext = {
         description: props.description,
         projectName: props.projectName,
@@ -78,6 +79,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
       }
       if (domainNameOverride) {
         additionalContext[`${props.instanceName}:domainNameOverride`] = domainNameOverride
+      }
+      if (additionalAliases) {
+        additionalContext[`${props.instanceName}:additionalAliases`] = additionalAliases
       }
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
@@ -221,7 +225,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodBuildOutput = new Artifact('ProdBuild')
     const certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
     const domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
 
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,

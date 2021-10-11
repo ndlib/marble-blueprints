@@ -43,25 +43,29 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   }
 
   const staticHostContext = getContextByNamespace('staticHost')
-  const siteInstances = [
-    'website', // Main marble site
-    'redbox',
-    'inquisitions',
-    'viewer',
+  const commonSitePipelineProps = {
+    testElasticStack: testStacks.elasticSearchStack,
+    prodElasticStack: prodStacks.elasticSearchStack,
+    testMaintainMetadataStack: testStacks.maintainMetadataStack,
+    prodMaintainMetadataStack: prodStacks.maintainMetadataStack,
+    testManifestLambdaStack: testStacks.manifestLambdaStack,
+    prodManifestLambdaStack: prodStacks.manifestLambdaStack,
+    ...commonProps,
+    ...staticHostContext,
+  }
+  type siteInstance = { name: string, props: staticHost.IDeploymentPipelineStackProps }
+  const siteInstances : siteInstance[] = [
+    { name: 'website', props: { ...commonSitePipelineProps, prodAdditionalAliases: 'marble.library.nd.edu' } },
+    { name: 'redbox', props: commonSitePipelineProps },
+    { name: 'inquisitions', props: commonSitePipelineProps },
+    { name: 'viewer', props: commonSitePipelineProps },
   ]
-  siteInstances.map(instanceName => {
-    const instanceContext = getContextByNamespace(instanceName)
-    new staticHost.DeploymentPipelineStack(app, `${namespace}-${instanceName}-deployment`, {
-      instanceName,
-      testElasticStack: testStacks.elasticSearchStack,
-      prodElasticStack: prodStacks.elasticSearchStack,
-      testMaintainMetadataStack: testStacks.maintainMetadataStack,
-      prodMaintainMetadataStack: prodStacks.maintainMetadataStack,
-      testManifestLambdaStack: testStacks.manifestLambdaStack,
-      prodManifestLambdaStack: prodStacks.manifestLambdaStack,
-      ...commonProps,
-      ...staticHostContext,
+  siteInstances.map(instance => {
+    const instanceContext = getContextByNamespace(instance.name)
+    new staticHost.DeploymentPipelineStack(app, `${namespace}-${instance.name}-deployment`, {
+      ...instance.props,
       ...instanceContext,
+      instanceName: instance.name,
     })
   })
 

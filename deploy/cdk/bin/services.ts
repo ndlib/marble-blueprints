@@ -11,14 +11,24 @@ import manifestPipeline = require('../lib/manifest-pipeline')
 import maintainMetadata = require('../lib/maintain-metadata')
 import multimediaAssets = require('../lib/multimedia-assets')
 import manifestLambda = require('../lib/manifest-lambda')
-import { getContextByNamespace } from '../lib/context-helpers'
+import { getContextByNamespace, mapContextToProps, TypeHint } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
 import { ServiceLevelsStack } from '../lib/service-levels/service-levels-stack'
+import { IStaticHostStackProps } from '../lib/static-host'
+import { Bucket } from '@aws-cdk/aws-s3'
 
 export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv): Stacks => {
+  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+    useVpcId: contextEnv.useVpcId,
+    useExistingDnsZone: contextEnv.useExistingDnsZone,
+    env: contextEnv.env,
+    domainName: contextEnv.domainName,
+  })
+
   // Construct common props that are required by all service stacks
   const commonProps = {
+    foundationStack,
     namespace,
     env: contextEnv.env,
     contextEnvName: contextEnv.name,
@@ -26,109 +36,59 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     domainName: contextEnv.domainName,
   }
 
-  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-    useVpcId: contextEnv.useVpcId,
-    useExistingDnsZone: contextEnv.useExistingDnsZone,
-    ...commonProps,
-  })
+  const staticHostTypeHints : TypeHint = { additionalAliases: 'csv' }
+  const websiteProps = mapContextToProps<IStaticHostStackProps>('website', commonProps, staticHostTypeHints)
+  const website = new staticHost.StaticHostStack(app, `${namespace}-website`, websiteProps)
 
-  const websiteContext = getContextByNamespace('website')
-  const website = new staticHost.StaticHostStack(app, `${namespace}-website`, {
-    foundationStack,
-    ...commonProps,
-    ...websiteContext,
-  })
+  const redboxProps = mapContextToProps<IStaticHostStackProps>('redbox', commonProps, staticHostTypeHints)
+  const redbox = new staticHost.StaticHostStack(app, `${namespace}-redbox`, redboxProps)
 
-  const redboxContext = getContextByNamespace('redbox')
-  const redbox = new staticHost.StaticHostStack(app, `${namespace}-redbox`, {
-    foundationStack,
-    ...commonProps,
-    ...redboxContext,
-  })
+  const inquisitionsProps = mapContextToProps<IStaticHostStackProps>('inquisitions', commonProps, staticHostTypeHints)
+  const inquisitions = new staticHost.StaticHostStack(app, `${namespace}-inquisitions`, inquisitionsProps)
 
-  const inquisitionsContext = getContextByNamespace('inquisitions')
-  const inquisitions = new staticHost.StaticHostStack(app, `${namespace}-inquisitions`, {
-    foundationStack,
-    ...commonProps,
-    ...inquisitionsContext,
-  })
+  const viewerProps: IStaticHostStackProps = mapContextToProps<IStaticHostStackProps>('viewer', commonProps, staticHostTypeHints)
+  const viewer = new staticHost.StaticHostStack(app, `${namespace}-viewer`, viewerProps)
 
-  const viewerContext = getContextByNamespace('viewer')
-  const viewer = new staticHost.StaticHostStack(app, `${namespace}-viewer`, {
-    foundationStack,
-    ...commonProps,
-    ...viewerContext,
-  })
+  const imageServiceProps = mapContextToProps<IIIF.IIiifServerlessStackProps>('iiifImageService', commonProps)
+  const iiifServerlessStack = new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, imageServiceProps)
 
-  const imageServiceContext = getContextByNamespace('iiifImageService')
-  const iiifServerlessStack = new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, {
-    foundationStack,
-    ...commonProps,
-    ...imageServiceContext,
-  })
+  const userContentProps = mapContextToProps<userContent.UserContentStackProps>('userContent', commonProps)
+  const userContentStack = new userContent.UserContentStack(app, `${namespace}-user-content`, userContentProps)
 
-  const userContentContext = getContextByNamespace('userContent')
-  const userContentStack = new userContent.UserContentStack(app, `${namespace}-user-content`, {
-    foundationStack,
-    ...commonProps,
-    ...userContentContext,
-  })
+  const elasticsearchProps = mapContextToProps<elasticsearch.ElasticStackProps>('elasticsearch', commonProps)
+  const elasticSearchStack = new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps)
 
-  const elasticsearchContext = getContextByNamespace('elasticsearch')
-  const elasticSearchStack = new elasticsearch.ElasticStack(app, `${namespace}-elastic`, {
-    foundationStack,
+  const multimediaAssetsProps = mapContextToProps<multimediaAssets.IMultimediaAssetsStackProps>('multimediaAssets', {
     ...commonProps,
-    ...elasticsearchContext,
-  })
-
-  const multimediaAssetsContext = getContextByNamespace('multimediaAssets')
-  const multimediaAssetsStack = new multimediaAssets.MultimediaAssetsStack(app, `${namespace}-multimedia-assets`, {
-    foundationStack,
     marbleContentBucketName: contextEnv.marbleContentBucketName,
-    ...commonProps,
-    ...multimediaAssetsContext,
   })
+  const multimediaAssetsStack = new multimediaAssets.MultimediaAssetsStack(app, `${namespace}-multimedia-assets`, multimediaAssetsProps)
 
-  const manifestPipelineContext = getContextByNamespace('manifestPipeline')
-  const manifestPipelineStack = new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, {
-    foundationStack,
+  const manifestPipelineProps = mapContextToProps<manifestPipeline.IBaseStackProps>('manifestPipeline', {
+    ...commonProps,
     sentryDsn: app.node.tryGetContext('sentryDsn'),
-    createEventRules: app.node.tryGetContext('manifestPipeline:createEventRules') === "true" ? true : false,
-    appConfigPath: app.node.tryGetContext('manifestPipeline:appConfigPath') ? app.node.tryGetContext('manifestPipeline:appConfigPath') : `/all/stacks/${namespace}-manifest`,
+    appConfigPath: `/all/stacks/${namespace}-manifest`,
     rBSCS3ImageBucketName: contextEnv.rBSCS3ImageBucketName,
     marbleContentBucketName: contextEnv.marbleContentBucketName,
-    multimediaBucket: multimediaAssetsStack.multimediaBucket,
+    multimediaBucket: multimediaAssetsStack.multimediaBucket as Bucket,
     marbleContentFileShareId: contextEnv.marbleContentFileShareId,
-    ...commonProps,
-    ...manifestPipelineContext,
-  })
+  }, { createEventRules: 'boolean' })
+  const manifestPipelineStack = new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
 
-  const maintainMetadataContext = getContextByNamespace('maintainMetadata')
-  const maintainMetadataStack = new maintainMetadata.MaintainMetadataStack(app, `${namespace}-maintain-metadata`, {
-    foundationStack,
-    manifestPipelineStack,
-    ...commonProps,
-    ...maintainMetadataContext,
-  })
+  const maintainMetadataProps = mapContextToProps<maintainMetadata.IBaseStackProps>('maintainMetadata', { ...commonProps, manifestPipelineStack })
+  const maintainMetadataStack = new maintainMetadata.MaintainMetadataStack(app, `${namespace}-maintain-metadata`, maintainMetadataProps)
 
-  const imageProcessingContext = getContextByNamespace('imageProcessing')
-  const imageProcessingStack = new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, {
-    foundationStack,
+  const imageProcessingProps = mapContextToProps<imageProcessing.ImagesStackProps>('imageProcessing', {
+    ...commonProps,
     rbscBucketName: contextEnv.rBSCS3ImageBucketName,
     marbleContentBucketName: contextEnv.marbleContentBucketName,
     manifestPipelineStack,
     maintainMetadataStack,
-    ...commonProps,
-    ...imageProcessingContext,
   })
+  const imageProcessingStack = new imageProcessing.ImagesStack(app, `${namespace}-image-processing`, imageProcessingProps)
 
-  const manifestLambdaContext = getContextByNamespace('manifestLambda')
-  const manifestLambdaStack = new manifestLambda.ManifestLambdaStack(app, `${namespace}-manifest-lambda`, {
-    foundationStack,
-    maintainMetadataStack,
-    ...commonProps,
-    ...manifestLambdaContext,
-  })
+  const manifestLambdaProps = mapContextToProps<manifestLambda.IBaseStackProps>('manifestLambda', { ...commonProps, maintainMetadataStack })
+  const manifestLambdaStack = new manifestLambda.ManifestLambdaStack(app, `${namespace}-manifest-lambda`, manifestLambdaProps)
 
   const services = {
     foundationStack,

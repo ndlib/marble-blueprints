@@ -2,7 +2,6 @@
 import { App } from '@aws-cdk/core'
 import 'source-map-support/register'
 import IIIF = require('../lib/iiif-serverless')
-import userContent = require('../lib/user-content')
 import imageProcessing = require('../lib/image-processing')
 import staticHost = require('../lib/static-host')
 import elasticsearch = require('../lib/elasticsearch')
@@ -73,12 +72,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
     ...commonProps,
     ...imageServiceContext,
-  })
-
-  const userContentContext = getContextByNamespace('userContent')
-  new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
-    ...commonProps,
-    ...userContentContext,
   })
 
   const imageProcessingContext = getContextByNamespace('imageProcessing')

@@ -1,7 +1,7 @@
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
-import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')

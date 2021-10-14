@@ -717,9 +717,8 @@ export class ManifestPipelineStack extends Stack {
         description: 'Start State Machine harvest of source systems to create standard json.',
       })
     }
-
-    if (props.createBackup) {
-      Tags.of(this.websiteMetadataDynamoTable).add("BackupDynamoDB", "true")
+    if ((props.createBackup !== undefined) && (props.createBackup)) {
+      Tags.of(this.websiteMetadataDynamoTable).add("BackupMarbleDynamoDB", "true")
     }
 
   }

@@ -68,7 +68,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     marbleContentBucketName: contextEnv.marbleContentBucketName,
     multimediaBucket: multimediaAssetsStack.multimediaBucket as Bucket,
     marbleContentFileShareId: contextEnv.marbleContentFileShareId,
-  }, { createEventRules: 'boolean' })
+  }, { createEventRules: 'boolean' , 'createBackup': 'boolean' })
   const manifestPipelineStack = new manifestPipeline.ManifestPipelineStack(app, `${namespace}-manifest`, manifestPipelineProps)
 
   const maintainMetadataProps = mapContextToProps<maintainMetadata.IBaseStackProps>('maintainMetadata', { ...commonProps, manifestPipelineStack })

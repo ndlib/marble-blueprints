@@ -6,7 +6,7 @@ import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
 import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
 import { Choice, Condition, Errors, Fail, JsonPath, LogLevel, Parallel, Pass, Result, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
 import * as tasks from '@aws-cdk/aws-stepfunctions-tasks'
-import { Construct, Duration, Fn, Stack, StackProps, CfnOutput, Annotations } from "@aws-cdk/core"
+import { Construct, Duration, Fn, Stack, StackProps, CfnOutput, Annotations, Tags } from "@aws-cdk/core"
 import path = require('path')
 import { FoundationStack } from '../foundation'
 import { Rule, Schedule } from "@aws-cdk/aws-events"
@@ -124,6 +124,10 @@ export interface IBaseStackProps extends StackProps {
    */
   readonly marbleContentFileShareId: string;
 
+  /**
+     * The flag to determine if a backup should be added to the dynamo table.
+     */
+  readonly createBackup?: boolean;
 }
 
 export class ManifestPipelineStack extends Stack {
@@ -712,6 +716,10 @@ export class ManifestPipelineStack extends Stack {
         targets: [new SfnStateMachine(harvestStateMachine)],
         description: 'Start State Machine harvest of source systems to create standard json.',
       })
+    }
+
+    if (props.createBackup) {
+      Tags.of(this.websiteMetadataDynamoTable).add("BackupDynamoDB", "true")
     }
 
   }

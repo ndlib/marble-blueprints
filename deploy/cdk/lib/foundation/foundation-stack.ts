@@ -139,6 +139,5 @@ export class FoundationStack extends Stack {
       stringValue: this.publicBucket.bucketName,
       parameterName: this.publicBucketParam,
     })
-
   }
 }

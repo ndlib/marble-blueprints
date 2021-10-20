@@ -272,8 +272,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Production
     const createCopyMediaContentLambda = props.contextEnvName === 'prod' ? true : false  // only deploy copy lambda to prod stage in prod environment
-    const createBackup = props.contextEnvName === 'prod' ? true : false // eventually only create a dynamoDB backup to prod stage in prod enviornment
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true, props.prodMetadataTimeToLiveDays, props.prodFilesTimeToLiveDays, createCopyMediaContentLambda, true)
+    const createBackup = props.contextEnvName === 'prod' ? true : false // only create a dynamoDB backup to prod stage in prod enviornment
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true, props.prodMetadataTimeToLiveDays, props.prodFilesTimeToLiveDays, createCopyMediaContentLambda, createBackup)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

@@ -15,6 +15,7 @@ import { ContextEnv } from '../lib/context-env'
 import { Stacks } from '../lib/types'
 import { ServiceLevelsStack } from '../lib/service-levels/service-levels-stack'
 import { IStaticHostStackProps } from '../lib/static-host'
+import { BackupStack } from '../lib/backup/backup-stack'
 import { Bucket } from '@aws-cdk/aws-s3'
 
 export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv): Stacks => {
@@ -203,5 +204,11 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     ...sloContext,
     ...commonProps,
   })
+
+  const backupContext = getContextByNamespace('backup')
+  new BackupStack(app, `${namespace}-backup`, {
+    ...backupContext,
+  })
+
   return services
 }

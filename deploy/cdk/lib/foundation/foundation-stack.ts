@@ -1,4 +1,3 @@
-import { BackupPlan, BackupPlanRule, BackupResource, BackupVault } from "@aws-cdk/aws-backup"
 import { Certificate, CertificateValidation, ICertificate } from "@aws-cdk/aws-certificatemanager"
 import { IVpc, Vpc } from "@aws-cdk/aws-ec2"
 import { Cluster } from "@aws-cdk/aws-ecs"
@@ -141,13 +140,5 @@ export class FoundationStack extends Stack {
       parameterName: this.publicBucketParam,
     })
 
-    const backupVault = new BackupVault(this, 'backup-vault', {})  /* Note that stack name is automatically prepended to the string name here */
-    const backupPlan = BackupPlan.dailyMonthly1YearRetention(this, `${this.stackName}-MarbleDynamoDbBackupPlan`, backupVault)
-    backupPlan.addSelection('DynamoTables', {
-      resources: [
-        BackupResource.fromTag('BackupMarbleDynamoDB', 'true'),
-      ],
-    })
-    backupPlan.addRule(BackupPlanRule.daily())
   }
 }

@@ -60,6 +60,14 @@ npm run cdk deploy -- --exclusively marbleb-prod-service-levels \
   -c "env=prod"
 ```
 
+In order to backup the DynamoDB database which contains the source for information contained on the various websites as well as portfolio content, deploy the backup stack to production:
+```sh
+npm run cdk deploy -- --exclusively marbleb-prod-backup \
+  -c "namespace=marbleb-prod" \
+  -c "env=prod"
+```
+
+
 ## Context overrides
 
 There are a number of context values that can be overridden on the cli at deploy time that will change how and where the stacks are deployed.

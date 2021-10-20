@@ -1,3 +1,4 @@
+import { BackupPlan, BackupResource, BackupVault, IBackupPlan } from "@aws-cdk/aws-backup"
 import { CloudFrontWebDistribution, OriginAccessIdentity } from '@aws-cdk/aws-cloudfront'
 import { SfnStateMachine } from "@aws-cdk/aws-events-targets"
 import { CanonicalUserPrincipal, Effect, PolicyStatement } from '@aws-cdk/aws-iam'
@@ -719,6 +720,12 @@ export class ManifestPipelineStack extends Stack {
     }
     if ((props.createBackup !== undefined) && (props.createBackup)) {
       Tags.of(this.websiteMetadataDynamoTable).add("BackupMarbleDynamoDB", "true")
+      // const backupPlan = props.foundationStack.backupPlan
+      // backupPlan.addSelection('DynamoTables', {
+      //   resources: [
+      //     BackupResource.fromDynamoDbTable(this.websiteMetadataDynamoTable),
+      //   ],
+      // })
     }
 
   }

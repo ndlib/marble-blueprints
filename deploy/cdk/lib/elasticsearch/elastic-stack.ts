@@ -17,7 +17,7 @@ export class ElasticStack extends cdk.Stack {
     const anonSearch = `arn:aws:es:${Aws.REGION}:${Aws.ACCOUNT_ID}:domain/${this.domainName}/*/_search`
 
     const domain = new CfnDomain(this, `${props.namespace}-domain`, {
-      elasticsearchVersion: '7.7',
+      elasticsearchVersion: '7.10',
       elasticsearchClusterConfig: this.configCluster(props.contextEnvName),
       ebsOptions: {
         ebsEnabled: true,
@@ -54,7 +54,8 @@ export class ElasticStack extends cdk.Stack {
       instanceType: 't2.small.elasticsearch',
     }
     if (this.isProd(environment)) {
-      config.instanceCount = 2
+      config.instanceCount = 3
+      config.instanceType = 't2.medium.elasticsearch'
       config.zoneAwarenessEnabled = true
       config.zoneAwarenessConfig = { availabilityZoneCount: 2 }
     }

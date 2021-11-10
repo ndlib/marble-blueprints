@@ -132,6 +132,7 @@ export class ManifestLambdaStack extends Stack {
         domainName: iiifApiBaseUrl,
       },
       endpointExportName: `${this.stackName}-api-url`,
+      deployOptions: { metricsEnabled: true },
     })
     const iiifManifestIntegration = new apigateway.LambdaIntegration(iiifManifestLambda)
 
@@ -203,6 +204,7 @@ export class ManifestLambdaStack extends Stack {
         domainName: graphqlApiBaseUrl,
       },
       endpointExportName: `${this.stackName}-graphql-api-url`,
+      deployOptions: { metricsEnabled: true },
     })
     const publicGraphqlIntegration = new apigateway.LambdaIntegration(publicGraphqlLambda)
 

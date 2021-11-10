@@ -83,6 +83,16 @@ export class DashboardsStack extends Stack {
       distributionId: props.services.multimediaAssetsStack.cloudfront.distributionId,
     })
 
+    // TODO: Need to enable detailed metrics on this API for per method metrics
+    new ServerlessApiDashboard(this, 'ImageServiceDashboard', {
+      dashboardName: 'Marble-IIIF-Image-Service-API',
+      headerName: 'IIIF Image Service API',
+      desc: 'Placeholder',
+      apiName: props.services.iiifServerlessStack.apiStack.apiName,
+      stage: 'latest',
+      latencyPercentiles: [{ thresholdLabel: 'SLO', threshold: 3000, percentile: 0.95 }],
+    })
+
     new ServerlessApiDashboard(this, 'IIIFManifestDashboard', {
       dashboardName: 'Marble-IIIF-Manifest-API',
       headerName: 'IIIF Manifest API',
@@ -97,7 +107,7 @@ export class DashboardsStack extends Stack {
       headerName: 'User Portfolio API',
       desc: 'Placeholder',
       apiName: props.services.manifestLambdaStack.publicApi.restApiName,
-      stage: props.services.manifestLambdaStack.privateApi.deploymentStage.stageName,
+      stage: props.services.manifestLambdaStack.publicApi.deploymentStage.stageName,
     })
 
     // These don't exist yet in ndlib-cdk, so just projecting what they might look like

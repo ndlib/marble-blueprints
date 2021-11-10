@@ -52,12 +52,18 @@ It is recommended you run this as a diff to review the changes prior to redeploy
 
 `cdk diff -c env=prod -c stackType=pipeline  marble*deployment`
 
-Once all pipelines have fully deployed to production, deploy the service levels stack to monitor the production stacks:
+Once all pipelines have fully deployed to production, deploy the service levels and dashboards stacks to monitor the production stacks:
 
 ```sh
-npm run cdk deploy -- --exclusively marbleb-prod-service-levels \
+npx cdk deploy --exclusively marbleb-prod-service-levels \
   -c "namespace=marbleb-prod" \
-  -c "env=prod"
+  -c "env=prod" \
+  -c "manifestLambda:publicGraphqlHostnamePrefix=marbleb-prod-public-graphql"
+
+npx cdk deploy --exclusively marbleb-prod-dashboards-stack \
+  -c "namespace=marbleb-prod" \
+  -c "env=prod" \
+  -c "manifestLambda:publicGraphqlHostnamePrefix=marbleb-prod-public-graphql"
 ```
 
 In order to backup the DynamoDB database which contains the source for information contained on the various websites as well as portfolio content, deploy the backup stack to production:

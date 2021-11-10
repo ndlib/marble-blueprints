@@ -10,13 +10,14 @@ export interface ElasticStackProps extends cdk.StackProps {
 
 export class ElasticStack extends cdk.Stack {
   readonly domainName: string
+  readonly domain: CfnDomain
 
   constructor(scope: cdk.Construct, id: string, props: ElasticStackProps) {
     super(scope, id, props)
     this.domainName = `${props.namespace}-sites`
     const anonSearch = `arn:aws:es:${Aws.REGION}:${Aws.ACCOUNT_ID}:domain/${this.domainName}/*/_search`
 
-    const domain = new CfnDomain(this, `${props.namespace}-domain`, {
+    this.domain = new CfnDomain(this, `${props.namespace}-domain`, {
       elasticsearchVersion: '7.10',
       elasticsearchClusterConfig: this.configCluster(props.contextEnvName),
       ebsOptions: {
@@ -44,7 +45,7 @@ export class ElasticStack extends cdk.Stack {
 
     new StringParameter(this, 'DomainEndpointParam', {
       parameterName: `/all/stacks/${this.stackName}/domain-endpoint`,
-      stringValue: `https://${domain.attrDomainEndpoint}`,
+      stringValue: `https://${this.domain.attrDomainEndpoint}`,
     })
   }
 

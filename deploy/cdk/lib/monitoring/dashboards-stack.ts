@@ -23,6 +23,7 @@ export class DashboardsStack extends Stack {
       [`${props.services.elasticSearchStack.domain.node.addr}`]: 'Search API',
       [`${props.services.manifestLambdaStack.privateApi.node.addr}`]: 'IIIF Manifest API',
       [`${props.services.manifestLambdaStack.publicApi.node.addr}`]: 'User Portfolio API',
+      [`${props.services.multimediaAssetsStack.cloudfront.node.addr}`]: 'Multimedia Assets CDN',
     }
     SummaryDashboard.fromTree(this, "SummaryDashboard", {
       dashboardName: "Marble-Summary",

@@ -95,13 +95,13 @@ export class StaticHostStack extends cdk.Stack {
         {
           errorCode: 403,
           responseCode: 404,
-          responsePagePath: '/404.html/index.html',
+          responsePagePath: '/404.html',
           errorCachingMinTtl: 300,
         },
         {
           errorCode: 404,
           responseCode: 404,
-          responsePagePath: '/404.html/index.html',
+          responsePagePath: '/404.html',
           errorCachingMinTtl: 300,
         },
       ],

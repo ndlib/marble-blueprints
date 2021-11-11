@@ -2308,12 +2308,7 @@ concat-map@0.0.1:
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
   integrity sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=
 
-constructs@3.3.85:
-  version "3.3.85"
-  resolved "https://registry.yarnpkg.com/constructs/-/constructs-3.3.85.tgz#9b7496bb6197d04cd061e0509b5b2338355a6469"
-  integrity sha512-Or1CtFHhDLWEO64nFtDGStVSZKu0iOkxJ0y90elLR2zVkkFU7l3VujXRuJxY5Tb1SeuN0hSueC7SnMegFLafcw==
-
-constructs@^3.3.69:
+constructs@3.3.161, constructs@^3.3.69:
   version "3.3.161"
   resolved "https://registry.yarnpkg.com/constructs/-/constructs-3.3.161.tgz#9726b1d450f3b9aca7907230f2248e3fd4058ce4"
   integrity sha512-/27vW3fo0iyb3py4vKI1BduEYmv8vv8uJgLXvI+5F0Jbnn0/E+As2wkGMa7bumhzCd0Ckv/USkAXstGYVXTYQA==

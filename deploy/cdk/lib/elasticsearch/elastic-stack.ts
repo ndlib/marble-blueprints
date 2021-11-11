@@ -14,11 +14,11 @@ export class ElasticStack extends cdk.Stack {
 
   constructor(scope: cdk.Construct, id: string, props: ElasticStackProps) {
     super(scope, id, props)
-    this.domainName = `${props.namespace}-sites`
+    this.domainName = `${props.namespace}-sites`  // We'd like to let CloudFormation define the domain name, but we can't because of synthetics
     const anonSearch = `arn:aws:es:${Aws.REGION}:${Aws.ACCOUNT_ID}:domain/${this.domainName}/*/_search`
 
     this.domain = new CfnDomain(this, `${props.namespace}-domain`, {
-      elasticsearchVersion: '7.10',
+      elasticsearchVersion: '7.7',
       elasticsearchClusterConfig: this.configCluster(props.contextEnvName),
       ebsOptions: {
         ebsEnabled: true,
@@ -55,8 +55,7 @@ export class ElasticStack extends cdk.Stack {
       instanceType: 't2.small.elasticsearch',
     }
     if (this.isProd(environment)) {
-      config.instanceCount = 3
-      config.instanceType = 't2.medium.elasticsearch'
+      config.instanceCount = 2
       config.zoneAwarenessEnabled = true
       config.zoneAwarenessConfig = { availabilityZoneCount: 2 }
     }

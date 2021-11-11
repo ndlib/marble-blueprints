@@ -57,6 +57,9 @@ class ApiStack extends NestedStack {
     this.apiName = `${this.stackName}-api`
     this.apiId = Fn.importValue(`${this.stackName}:ApiId`)
 
+    // TODO: At some point we need to migrate this to just deploy from nulib's SAR, or deploy via
+    // our own API definition. When we do, need to enable detailed metrics on this API for per method metrics.
+    // Until then we have to maintain this via the console.
     if(!fs.existsSync(`${props.serverlessIiifSrcPath}/src`)) {
       this.node.addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/src`)
       return

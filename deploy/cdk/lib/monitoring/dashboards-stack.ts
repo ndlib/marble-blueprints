@@ -83,7 +83,12 @@ export class DashboardsStack extends Stack {
       distributionId: props.services.multimediaAssetsStack.cloudfront.distributionId,
     })
 
-    // TODO: Need to enable detailed metrics on this API for per method metrics
+    // TODO: This dashboard uses a function name search based on the API name to find
+    // any lambdas that are associated with this API. Unfortunately in this case, the
+    // API name is very long, so the actual lambda names are truncated, but the
+    // widget is searching for the full name. Until https://github.com/ndlib/ndlib-cdk/issues/96
+    // is fixed, we'll have to manually fix this in the widget via the console,
+    // creating drift with the stack
     new ServerlessApiDashboard(this, 'ImageServiceDashboard', {
       dashboardName: 'Marble-IIIF-Image-Service-API',
       headerName: 'IIIF Image Service API',

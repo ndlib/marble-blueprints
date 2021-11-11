@@ -89,6 +89,9 @@ export class StaticHostStack extends cdk.Stack {
       websiteCertificate = props.foundationStack.certificate
     }
 
+    // TODO: Enable additional metrics on all of these cloudfronts once https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/545
+    // is complete and cdk adds support for this. Until then, we'll have to manually enable additional metrics for each stack that uses
+    // a StaticHost
     this.cloudfront = new CloudFrontWebDistribution(this, 'Distribution', {
       comment: this.hostname,
       errorConfigurations: [

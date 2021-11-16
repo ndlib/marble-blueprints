@@ -11,6 +11,7 @@ import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
+import { OpenSearchStack } from '../opensearch'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
 import { GithubApproval } from '../github-approval'
@@ -42,6 +43,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean
   readonly testElasticStack: ElasticStack
   readonly prodElasticStack: ElasticStack
+  readonly testOpenSearchStack: OpenSearchStack
+  readonly prodOpenSearchStack: OpenSearchStack
   readonly searchIndex: string
   readonly siteDirectory: string
   readonly workspaceName: string
@@ -64,7 +67,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack,
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack, openSearchStack: OpenSearchStack,
                           certificateArnPath?: string, domainNameOverride?:string, additionalAliases?: string) => {
 
       const additionalContext = {
@@ -120,6 +123,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.s3(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(elasticStack.domainName))
+      // Need to do something for opensearchInvoke
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         effect: Effect.ALLOW,
         resources: [
@@ -189,7 +193,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const testBuildOutput = new Artifact('TestBuild')
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack, props.testOpenSearchStack)
     const s3syncTestProps: IPipelineS3SyncProps = {
       targetStack: testStackName,
       inputBuildArtifact: appSourceArtifact,
@@ -198,6 +202,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.testElasticStack.domainName,
+      // Need to add opensearch parameters here
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.testManifestLambdaStack.publicGraphqlApiKeyPath,
@@ -225,7 +230,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodBuildOutput = new Artifact('ProdBuild')
     const certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
     const domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, props.prodOpenSearchStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
 
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,
@@ -235,6 +240,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.prodElasticStack.domainName,
+      // Need to add opensearch props here
       graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.prodManifestLambdaStack.publicGraphqlApiKeyPath,

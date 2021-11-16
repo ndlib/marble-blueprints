@@ -5,6 +5,7 @@ import IIIF = require('../lib/iiif-serverless')
 import imageProcessing = require('../lib/image-processing')
 import staticHost = require('../lib/static-host')
 import elasticsearch = require('../lib/elasticsearch')
+import opensearch = require('../lib/opensearch')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import { getRequiredContext, getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
@@ -45,6 +46,8 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const commonSitePipelineProps = {
     testElasticStack: testStacks.elasticSearchStack,
     prodElasticStack: prodStacks.elasticSearchStack,
+    testOpenSearchStack: testStacks.openSearchStack,
+    prodOpenSearchStack: prodStacks.openSearchStack,
     testMaintainMetadataStack: testStacks.maintainMetadataStack,
     prodMaintainMetadataStack: prodStacks.maintainMetadataStack,
     testManifestLambdaStack: testStacks.manifestLambdaStack,
@@ -84,6 +87,12 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
     ...commonProps,
     ...elasticsearchContext,
+  })
+
+  const opensearchContext = getContextByNamespace('opensearch')
+  new opensearch.DeploymentPipelineStack(app, `${namespace}-opensearch-deployment`, {
+    ...commonProps,
+    ...opensearchContext,
   })
 
   const manifestPipelineContext = getContextByNamespace('manifestPipeline')

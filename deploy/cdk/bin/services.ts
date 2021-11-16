@@ -5,6 +5,7 @@ import { FoundationStack } from '../lib/foundation'
 import IIIF = require('../lib/iiif-serverless')
 import imageProcessing = require('../lib/image-processing')
 import elasticsearch = require('../lib/elasticsearch')
+import opensearch = require('../lib/opensearch')
 import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import maintainMetadata = require('../lib/maintain-metadata')
@@ -56,6 +57,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const elasticsearchProps = mapContextToProps<elasticsearch.ElasticStackProps>('elasticsearch', commonProps)
   const elasticSearchStack = new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps)
 
+  const openSearchProps = mapContextToProps<opensearch.OpenSearchStackProps>('opensearch', commonProps)
+  const openSearchStack = new opensearch.OpenSearchStack(app, `${namespace}-opensearch`, openSearchProps)
+
+
   const multimediaAssetsProps = mapContextToProps<multimediaAssets.IMultimediaAssetsStackProps>('multimediaAssets', {
     ...commonProps,
     marbleContentBucketName: contextEnv.marbleContentBucketName,
@@ -97,6 +102,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     iiifServerlessStack,
     imageProcessingStack,
     elasticSearchStack,
+    openSearchStack,
     manifestPipelineStack,
     maintainMetadataStack,
     multimediaAssetsStack,

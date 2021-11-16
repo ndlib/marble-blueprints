@@ -1,6 +1,7 @@
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
@@ -55,6 +56,18 @@ export class DeploymentPipelineStack extends cdk.Stack {
         NamespacedPolicy.globals([GlobalActions.Cloudwatch,GlobalActions.ES]))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.sns(targetStack))
+      // Allow ability to create a Service Linked Role
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: ['iam:CreateServiceLinkedRole'],
+        resources: [
+          cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:aws-service-role/es.amazonaws.com/AWSServiceRoleForAmazonElasticsearchService'),
+        ],
+      }))
+      // Allow SecretsManager access
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: ['secretsmanager:GetRandomPassword'],
+        resources: ['*'],
+      }))
 
       return cdkDeploy
     }

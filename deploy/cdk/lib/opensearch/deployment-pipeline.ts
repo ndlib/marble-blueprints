@@ -59,9 +59,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       // Allow ability to create a Service Linked Role
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['iam:CreateServiceLinkedRole'],
-        resources: [
-          cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:aws-service-role/es.amazonaws.com/AWSServiceRoleForAmazonElasticsearchService'),
-        ],
+        resources: ['*'],
       }))
       // Allow SecretsManager access
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({

@@ -65,7 +65,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
       }))
       // Allow SecretsManager access
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        actions: ['secretsmanager:GetRandomPassword'],
+        actions: [
+          'secretsmanager:GetRandomPassword',
+          'secretsmanager:DeleteSecret',
+        ],
         resources: ['*'],
       }))
 

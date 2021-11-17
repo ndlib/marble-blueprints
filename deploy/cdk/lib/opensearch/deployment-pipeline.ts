@@ -60,7 +60,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['iam:CreateServiceLinkedRole'],
         resources: [
-          cdk.Fn.sub('arn:aws:sts::${AWS::AccountId}:role/aws-service-role/es.amazonaws.com'),
+          cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/es.amazonaws.com/AWSServiceRoleForAmazonElasticsearchService'),
         ],
       }))
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
@@ -75,7 +75,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'secretsmanager:GetRandomPassword',
           'secretsmanager:DeleteSecret',
         ],
-        resources: ['*'],
+        resources: ['*'],  // may need to add to stack, and grant resource of opensearch domain
       }))
 
       return cdkDeploy

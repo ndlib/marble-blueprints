@@ -66,7 +66,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['iam:ListRoles'],
         resources: [
-          cdk.Fn.sub('arn:aws:sts::${AWS::AccountId}:role/aws-service-role/es.amazonaws.com/'),
+          cdk.Fn.sub('arn:aws:sts::${AWS::AccountId}:role/aws-service-role/es.amazonaws.com/'),  // sts
+          cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/es.amazonaws.com/'),  // iam
         ],
       }))
       // Allow SecretsManager access

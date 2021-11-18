@@ -95,9 +95,9 @@ export class OpenSearchStack extends cdk.Stack {
     })
 
     // Created a Service Linked Role
-    new CfnServiceLinkedRole(this, 'Service Linked Role', {
-      awsServiceName: 'es.amazonaws.com',
-    })
+    // new CfnServiceLinkedRole(this, 'Service Linked Role', {
+    //   awsServiceName: 'es.amazonaws.com',
+    // })
   }
 
   private isProd = (environment: string) => {

@@ -56,6 +56,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
         NamespacedPolicy.globals([GlobalActions.Cloudwatch,GlobalActions.ES]))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.sns(targetStack))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
+
       // Allow ability to create a Service Linked Role
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['iam:CreateServiceLinkedRole',
@@ -74,13 +76,25 @@ export class DeploymentPipelineStack extends cdk.Stack {
           cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/es.amazonaws.com/'),  // iam
         ],
       }))
+      
       // Allow SecretsManager access
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: [
           'secretsmanager:GetRandomPassword',
+          'secretsmanager:CreateSecret',
           'secretsmanager:DeleteSecret',
+          'secretsmanager:TagResource',
+          'secretsmanager:GetSecretValue',
         ],
         resources: ['*'],  // may need to add to stack, and grant resource of opensearch domain
+      }))
+      // log access
+      cdkDeploy.project.addToRolePolicy(new PolicyStatement({
+        actions: ['logs:PutRetentionPolicy'],
+        resources: [
+          cdk.Fn.sub('arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:') + testStackName + '*',
+          cdk.Fn.sub('arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:') + prodStackName + '*',
+        ],
       }))
 
       return cdkDeploy

@@ -43,8 +43,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean
   readonly testElasticStack: ElasticStack
   readonly prodElasticStack: ElasticStack
-  // readonly testOpenSearchStack: OpenSearchStack
-  // readonly prodOpenSearchStack: OpenSearchStack
+  // readonly testOpenSearchStack?: OpenSearchStack
+  // readonly prodOpenSearchStack?: OpenSearchStack
   readonly searchIndex: string
   readonly siteDirectory: string
   readonly workspaceName: string
@@ -67,8 +67,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack, openSearchStack: OpenSearchStack,
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack,
                           certificateArnPath?: string, domainNameOverride?:string, additionalAliases?: string) => {
+      // const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack, openSearchStack: OpenSearchStack,
+      //   certificateArnPath?: string, domainNameOverride?: string, additionalAliases?: string) => {
 
       const additionalContext = {
         description: props.description,
@@ -193,7 +195,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const testBuildOutput = new Artifact('TestBuild')
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack, props.testOpenSearchStack)
+    // const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack, props.testOpenSearchStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
     const s3syncTestProps: IPipelineS3SyncProps = {
       targetStack: testStackName,
       inputBuildArtifact: appSourceArtifact,
@@ -230,7 +233,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodBuildOutput = new Artifact('ProdBuild')
     const certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
     const domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, props.prodOpenSearchStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
+    // const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, props.prodOpenSearchStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
 
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,

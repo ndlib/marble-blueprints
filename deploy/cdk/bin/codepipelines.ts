@@ -46,8 +46,8 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const commonSitePipelineProps = {
     testElasticStack: testStacks.elasticSearchStack,
     prodElasticStack: prodStacks.elasticSearchStack,
-    testOpenSearchStack: testStacks.openSearchStack,
-    prodOpenSearchStack: prodStacks.openSearchStack,
+    // testOpenSearchStack: testStacks.openSearchStack,
+    // prodOpenSearchStack: prodStacks.openSearchStack,
     testMaintainMetadataStack: testStacks.maintainMetadataStack,
     prodMaintainMetadataStack: prodStacks.maintainMetadataStack,
     testManifestLambdaStack: testStacks.manifestLambdaStack,

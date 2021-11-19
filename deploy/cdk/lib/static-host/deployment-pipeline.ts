@@ -11,7 +11,7 @@ import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
-import { OpenSearchStack } from '../opensearch'
+// import { OpenSearchStack } from '../opensearch'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
 import { GithubApproval } from '../github-approval'
@@ -43,8 +43,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean
   readonly testElasticStack: ElasticStack
   readonly prodElasticStack: ElasticStack
-  readonly testOpenSearchStack: OpenSearchStack
-  readonly prodOpenSearchStack: OpenSearchStack
+  // readonly testOpenSearchStack: OpenSearchStack
+  // readonly prodOpenSearchStack: OpenSearchStack
   readonly searchIndex: string
   readonly siteDirectory: string
   readonly workspaceName: string

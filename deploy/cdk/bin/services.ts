@@ -110,6 +110,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       type: "CloudfrontAvailability",
       distributionId: website.cloudfront.distributionId,
       sloThreshold: 0.999,
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - Unified Website CDN",
@@ -117,12 +121,20 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       distributionId: website.cloudfront.distributionId,
       sloThreshold: 0.95,
       latencyThreshold: 1000,
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - IIIF Image Service API",
       type: "ApiAvailability",
       apiName: iiifServerlessStack.apiStack.apiName,
       sloThreshold: 0.97,
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - IIIF Image Service API",
@@ -139,34 +151,58 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       title: "Marble - IIIF Manifest API",
       type: "ApiAvailability",
       apiName: manifestLambdaStack.apiName,
-      sloThreshold: 0.999,
+ //     sloThreshold: 0.999,
+      sloThreshold: 0.95, // Changed sloThreshold to .95 because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - IIIF Manifest API",
       type: "ApiLatency",
       apiName: manifestLambdaStack.apiName,
       sloThreshold: 0.95,
-      latencyThreshold: 3000,
+      latencyThreshold: 3000 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - Maintain Metadata API",
       type: "AppSyncAvailability",
       apiId: maintainMetadataStack.apiId,
-      sloThreshold: 0.9995,
+//      sloThreshold: 0.9995,
+      sloThreshold: 0.95, // Changed sloThreshold to .95 because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - Maintain Metadata API",
       type: "AppSyncLatency",
       apiId: maintainMetadataStack.apiId,
       sloThreshold: 0.95,
-      latencyThreshold: 500,
+      // latencyThreshold: 500,
+      latencyThreshold: 500 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - Search API",
       type: "ElasticSearchAvailability",
       accountId: contextEnv.env.account,
       domainName: elasticSearchStack.domainName,
-      sloThreshold: 0.99,
+      // sloThreshold: 0.99,
+      sloThreshold: 0.95, // Changed sloThreshold to .95 because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - Search API",
@@ -174,7 +210,12 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       accountId: contextEnv.env.account,
       domainName: elasticSearchStack.domainName,
       sloThreshold: 0.95,
-      latencyThreshold: 200,
+      // latencyThreshold: 200,
+      latencyThreshold: 200 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - Search API",
@@ -182,13 +223,22 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       accountId: contextEnv.env.account,
       domainName: elasticSearchStack.domainName,
       sloThreshold: 0.99,
-      latencyThreshold: 1000,
+      // latencyThreshold: 1000,
+      latencyThreshold: 1000 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - IIIF Viewer CDN",
       type: "CloudfrontAvailability",
       distributionId: viewer.cloudfront.distributionId,
       sloThreshold: 0.999,
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
     {
       title: "Marble - IIIF Viewer CDN",
@@ -196,6 +246,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
       distributionId: viewer.cloudfront.distributionId,
       sloThreshold: 0.95,
       latencyThreshold: 750,
+      alarmsEnabled: {
+        High: true,
+        Low: false,
+      },
     },
   ]
 

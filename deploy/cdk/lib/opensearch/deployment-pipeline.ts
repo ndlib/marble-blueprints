@@ -50,7 +50,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
         },
       })
-      // cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearch(namespace))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearch(namespace))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(namespace))
+
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(
         NamespacedPolicy.globals([GlobalActions.Cloudwatch,GlobalActions.ES]))

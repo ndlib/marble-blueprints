@@ -312,4 +312,33 @@ export class NamespacedPolicy {
       ],
     })
   }
+
+  public static opensearch(domain: string): PolicyStatement {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/' + domain + '*'),
+      ],
+      actions: [
+        'es:DescribeElasticsearchDomain',
+        'es:CreateElasticsearchDomain',
+        'es:DeleteElasticsearchDomain',
+      ],
+    })
+  }
+
+  public static opensearchInvoke(domain: string): PolicyStatement {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/' + domain + '*/*'),
+      ],
+      actions: [
+        'es:ESHttpHead',
+        'es:ESHttpPost',
+        'es:ESHttpGet',
+        'es:ESHttpPut',
+        'es:ESHttpDelete',
+      ],
+    })
+  }
+
 }

@@ -3,6 +3,7 @@ import { StaticHostStack } from "./static-host"
 import { IiifServerlessStack } from "./iiif-serverless"
 import { ImagesStack } from "./image-processing"
 import { ElasticStack } from "./elasticsearch"
+import { OpenSearchStack } from "./opensearch"
 import { ManifestPipelineStack } from "./manifest-pipeline"
 import { MaintainMetadataStack } from "./maintain-metadata"
 import { MultimediaAssetsStack } from "./multimedia-assets"
@@ -17,6 +18,7 @@ export type ServiceStacks = {
   iiifServerlessStack: IiifServerlessStack,
   imageProcessingStack: ImagesStack,
   elasticSearchStack: ElasticStack,
+  openSearchStack: OpenSearchStack,
   manifestPipelineStack: ManifestPipelineStack,
   maintainMetadataStack: MaintainMetadataStack,
   multimediaAssetsStack: MultimediaAssetsStack,

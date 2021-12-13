@@ -1,4 +1,4 @@
-import { expect as expectCDK, haveResource, haveResourceLike, arrayWith, objectLike, anything, matchTemplate, MatchStyle } from '@aws-cdk/assert'
+import { expect as expectCDK, haveResource, haveResourceLike, matchTemplate, MatchStyle } from '@aws-cdk/assert'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
 import { IiifServerlessStack } from '../../lib/iiif-serverless'
@@ -332,7 +332,7 @@ describe('IiifServerlessStack', () => {
         },
         "EndpointConfiguration": "REGIONAL",
         "CacheClusterEnabled": {
-          "Fn::Sub": "${CacheEnabled}"
+          "Fn::Sub": "${CacheEnabled}",
         },
         "CacheClusterSize": "0.5",
         "MethodSettings": [
@@ -340,12 +340,12 @@ describe('IiifServerlessStack', () => {
             "ResourcePath": "/*",
             "HttpMethod": "*",
             "CachingEnabled": {
-              "Fn::Sub": "${CacheEnabled}"
+              "Fn::Sub": "${CacheEnabled}",
             },
             "CacheTtlInSeconds": {
-              "Fn::Sub": "${CacheTtl}"
-            }
-          }
+              "Fn::Sub": "${CacheTtl}",
+            },
+          },
         ],
         "Cors": {
           "AllowMethods": "'GET'",
@@ -412,7 +412,7 @@ describe('IiifServerlessStack', () => {
                   "passthroughBehavior": "when_no_match",
                   "httpMethod": "POST",
                   "cacheKeyParameters": [
-                    "method.request.path.id"
+                    "method.request.path.id",
                   ],
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy",
@@ -534,7 +534,7 @@ describe('IiifServerlessStack', () => {
                   "passthroughBehavior": "when_no_match",
                   "httpMethod": "POST",
                   "cacheKeyParameters": [
-                    "method.request.path.id"
+                    "method.request.path.id",
                   ],
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy",
@@ -676,7 +676,7 @@ describe('IiifServerlessStack', () => {
                   "cacheNamespace": "frz8df",
                   "cacheKeyParameters": [
                     "method.request.path.id",
-                    "method.request.path.proxy"
+                    "method.request.path.proxy",
                   ],
                   "contentHandling": "CONVERT_TO_TEXT",
                   "type": "aws_proxy",

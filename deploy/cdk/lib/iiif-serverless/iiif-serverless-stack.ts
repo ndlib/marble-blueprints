@@ -1,10 +1,11 @@
-import { Stack, StackProps, Construct, Duration, Fn, CfnInclude, NestedStack, NestedStackProps } from "@aws-cdk/core"
+import { Annotations, CfnInclude, Stack, StackProps, Construct, Duration, Fn, NestedStack, NestedStackProps } from "@aws-cdk/core"
 import { DomainName, BasePathMapping, RestApi } from "@aws-cdk/aws-apigateway"
 import { FoundationStack } from "../foundation"
 import { CnameRecord } from "@aws-cdk/aws-route53"
 import YAML = require('yaml')
 import * as fs from "fs"
 import { Asset } from '@aws-cdk/aws-s3-assets'
+// import { CfnInclude } from "@aws-cdk/cloudformation-include"  // the CfnInclude from the aws-cdk/core has been deprecated, but I can't get this replacement to work with the YAML file we need.
 
 export interface IIiifServerlessStackProps extends StackProps {
   /**
@@ -61,7 +62,7 @@ class ApiStack extends NestedStack {
     // our own API definition. When we do, need to enable detailed metrics on this API for per method metrics.
     // Until then we have to maintain this via the console.
     if(!fs.existsSync(`${props.serverlessIiifSrcPath}/src`)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/src`)
+      Annotations.of(scope).addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/src`)
       return
     }
     const lambdaAsset = new Asset(this, 'LambdaAsset', {
@@ -69,7 +70,7 @@ class ApiStack extends NestedStack {
     })
 
     if(!fs.existsSync(`${props.serverlessIiifSrcPath}/dependencies`)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/dependencies`)
+      Annotations.of(scope).addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/dependencies`)
       return
     }
     const lambdaDepsAsset = new Asset(this, 'SampleSingleFileAsset', {
@@ -77,11 +78,12 @@ class ApiStack extends NestedStack {
     })
 
     if (!fs.existsSync(`${props.serverlessIiifSrcPath}/template.yml`)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/template.yml`)
+      Annotations.of(scope).addError(`Cannot deploy this stack. Asset path not found ${props.serverlessIiifSrcPath}/template.yml`)
       return
     }
     const iiifTemplate = new CfnInclude(this, "IiifTemplate", {
       template: YAML.parse(fs.readFileSync(`${props.serverlessIiifSrcPath}/template.yml`).toString()),
+      // templateFile: `${props.serverlessIiifSrcPath}/template.yml`,  // this is the required syntax for "@aws-cdk/cloudformation-include", but causes "Maximum call stack size exceeded" error
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any
 

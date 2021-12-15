@@ -52,10 +52,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
       })
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearch(namespace))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(namespace))
-
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(
-        NamespacedPolicy.globals([GlobalActions.Cloudwatch,GlobalActions.ES]))
+        NamespacedPolicy.globals([GlobalActions.Cloudwatch, GlobalActions.ES, GlobalActions.EC2]))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.sns(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
@@ -92,7 +91,10 @@ export class DeploymentPipelineStack extends cdk.Stack {
       }))
       // log access
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        actions: ['logs:PutRetentionPolicy'],
+        actions: [
+          'logs:PutRetentionPolicy',
+          'logs:ListTagsLogGroup',
+        ],
         resources: [
           cdk.Fn.sub('arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:') + testStackName + '*',
           cdk.Fn.sub('arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:') + prodStackName + '*',

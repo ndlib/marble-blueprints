@@ -322,6 +322,7 @@ export class NamespacedPolicy {
         'es:DescribeElasticsearchDomain',
         'es:CreateElasticsearchDomain',
         'es:DeleteElasticsearchDomain',
+        'es:DescribeDomain',
       ],
     })
   }

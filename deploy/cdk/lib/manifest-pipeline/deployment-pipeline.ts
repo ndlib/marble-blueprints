@@ -1,7 +1,7 @@
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
-import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
@@ -9,6 +9,7 @@ import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -47,7 +48,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-manifest`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean, metadataTimeToLiveDays: string, filesTimeToLiveDays: string, createCopyMediaContentLambda: boolean) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean, metadataTimeToLiveDays: string, filesTimeToLiveDays: string, createCopyMediaContentLambda: boolean, createBackup: boolean) => {
 
       const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
         targetStack,
@@ -59,7 +60,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'chmod -R 755 ./scripts/codebuild/*',
           `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_${infraSourceArtifact.artifactName}"`,
           './scripts/codebuild/install.sh',
-          'pyenv versions',
+          'pyenv version || { echo "Python version mismatch"; exit 1; }',
           'yarn',
         ],
         outputFiles: [
@@ -83,6 +84,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           "manifestPipeline:metadataTimeToLiveDays": metadataTimeToLiveDays,
           "manifestPipeline:filesTimeToLiveDays": filesTimeToLiveDays,
           "manifestPipeline:createCopyMediaContentLambda": createCopyMediaContentLambda ? "true" : "false",
+          "manifestPipeline:createBackup": createBackup ? "true" : "false",
         },
         additionalRuntimeEnvironments: {
           python: '3.8',
@@ -223,7 +225,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
               python: '3.8',
             },
             commands: [
-              'pyenv versions',
+              'pyenv version || { echo "Python version mismatch"; exit 1; }',
               'pip install -r dev-requirements.txt',
               'chmod -R 755 ./scripts/codebuild/*',
               './scripts/codebuild/install.sh',
@@ -248,16 +250,18 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays, false)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays, false, false)
 
     // Approval
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
+    const approvalAction = new GithubApproval({
       notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
+      testTarget: `stack ${testStackName}`,
+      prodTarget: `stack ${prodStackName}`,
+      githubSources: [
+        { owner: props.appRepoOwner, sourceAction: appSourceAction },
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
     })
     if(props.slackNotifyStackName !== undefined){
       new SlackApproval(this, 'SlackApproval', {
@@ -268,7 +272,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     // Deploy to Production
     const createCopyMediaContentLambda = props.contextEnvName === 'prod' ? true : false  // only deploy copy lambda to prod stage in prod environment
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true, props.prodMetadataTimeToLiveDays, props.prodFilesTimeToLiveDays, createCopyMediaContentLambda)
+    const createBackup = props.contextEnvName === 'prod' ? true : false // only create a dynamoDB backup to prod stage in prod enviornment
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true, props.prodMetadataTimeToLiveDays, props.prodFilesTimeToLiveDays, createCopyMediaContentLambda, createBackup)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

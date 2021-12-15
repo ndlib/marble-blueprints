@@ -32,6 +32,7 @@ const manifestPipelineContext = {
   filesTimeToLiveDays: "365",
   createCopyMediaContentLambda: true,
   marbleContentFileShareId: "some fake arn",
+  createBackup: false,
 }
 
 const setup = (context: any) => {
@@ -431,6 +432,42 @@ describe('ManifestPipelineStack', () => {
           "Enabled": true,
         },
       }))
+    })
+
+    test('does not create tags for websiteMetadataDynamoTable ', () => {
+      expectCDK(stack).notTo(haveResourceLike('AWS::DynamoDB::Table', {
+        "Tags": [
+          {
+            "Key": "BackupMarbleDynamoDB",
+            "Value": "true",
+          },
+        ],
+      }))
+    })
+
+    test('creates tags for DynamoDB table', () => {
+      const app = new cdk.App()
+
+      const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+        domainName,
+      })
+      const multimediaStack = new cdk.Stack(app, 'MultimediaStack')
+      const multimediaBucket = new Bucket(multimediaStack, 'MultimediaBucket')
+      const stack = new ManifestPipelineStack(app, 'MyTestStack', {
+        foundationStack,
+        multimediaBucket,
+        ...manifestPipelineContext,
+        createBackup: true,
+      })
+      expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
+        "Tags": [
+          {
+            "Key": "BackupMarbleDynamoDB",
+            "Value": "true",
+          },
+        ],
+      }))
+
     })
 
   }) /* end of describe dynamoDB tables */

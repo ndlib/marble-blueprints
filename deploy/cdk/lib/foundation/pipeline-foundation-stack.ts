@@ -1,4 +1,4 @@
-import { Construct, Stack, StackProps, RemovalPolicy } from "@aws-cdk/core"
+import { Construct, Stack, StackProps } from "@aws-cdk/core"
 import { ArtifactBucket } from '@ndlib/ndlib-cdk'
 import { BucketEncryption } from "@aws-cdk/aws-s3"
 

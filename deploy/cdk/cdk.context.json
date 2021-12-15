@@ -118,15 +118,6 @@
   "viewer:siteDirectory": "",
   "viewer:workspaceName": "",
 
-  "userContent:allowedOrigins": "*",
-  "userContent:lambdaCodePath": "../../../marble-user-content/src",
-  "userContent:tokenAudiencePath": "/all/stacks/marble-user-content/tokenAudiencePath",
-  "userContent:tokenIssuerPath": "/all/stacks/marble-user-content/tokenIssuerPath",
-  "userContent:appRepoOwner": "ndlib",
-  "userContent:appRepoName": "marble-user-content",
-  "userContent:appSourceBranch": "master",
-  "userContent:hostnamePrefix": "marble-user-content",
-
   "manifestPipeline:imageServerHostname": "/all/stacks/marble-image-service-prod/hostname",
   "manifestPipeline:marbleProcessingKeyPath": "/all/marble-data-processing/prod",
   "manifestPipeline:noReplyEmailAddr": "noreply@nd.edu",
@@ -151,7 +142,7 @@
   "maintainMetadata:openIdConnectProvider": "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
 
   "manifestLambda:hostnamePrefix": "iiif-manifest",
-  "manfiestLambda:sentryDsn": "https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199",
+  "manifestLambda:sentryDsn": "https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199",
   "manifestLambda:lambdaCodeRootPath": "../../../marble-manifest-lambda",
   "manifestLambda:appRepoOwner": "ndlib",
   "manifestLambda:appRepoName": "marble-manifest-lambda",

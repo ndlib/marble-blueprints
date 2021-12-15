@@ -8,6 +8,7 @@ import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -108,21 +109,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       actionName: 'SmokeTests',
     })
 
-    // Approval
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of multimedia-assets has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
-      notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
-    })
-    if (props.slackNotifyStackName !== undefined) {
-      new SlackApproval(this, 'SlackApproval', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
-
     // Deploy to Production
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, props.prodFoundationStack)
 
@@ -135,6 +121,23 @@ export class DeploymentPipelineStack extends cdk.Stack {
       },
       actionName: 'SmokeTests',
     })
+
+    // Approval
+    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const approvalAction = new GithubApproval({
+      notificationTopic: approvalTopic,
+      testTarget: `https://${testHostname}`,
+      prodTarget: `https://${prodHostname}`,
+      githubSources: [
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
+    })
+    if (props.slackNotifyStackName !== undefined) {
+      new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.slackNotifyStackName,
+      })
+    }
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

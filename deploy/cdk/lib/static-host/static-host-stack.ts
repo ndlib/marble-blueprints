@@ -32,6 +32,11 @@ export interface IStaticHostStackProps extends cdk.StackProps {
    * Optional domainName override
    */
   readonly domainNameOverride?: string
+
+  /**
+   * Optional additional aliases
+   */
+  readonly additionalAliases?: Array<string>
 }
 
 export class StaticHostStack extends cdk.Stack {
@@ -67,7 +72,10 @@ export class StaticHostStack extends cdk.Stack {
 
     const domainName = props.domainNameOverride || props.foundationStack.hostedZone.zoneName
     this.hostname = `${props.hostnamePrefix || this.stackName}.${domainName}`
-
+    const aliases = [
+      this.hostname,
+      ...(props.additionalAliases ?? []),
+    ]
     this.bucket = new s3.Bucket(this, 'SiteBucket', {
       serverAccessLogsBucket: props.foundationStack.logBucket,
       serverAccessLogsPrefix: `s3/${this.hostname}/`,
@@ -81,19 +89,22 @@ export class StaticHostStack extends cdk.Stack {
       websiteCertificate = props.foundationStack.certificate
     }
 
+    // TODO: Enable additional metrics on all of these cloudfronts once https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/545
+    // is complete and cdk adds support for this. Until then, we'll have to manually enable additional metrics for each stack that uses
+    // a StaticHost
     this.cloudfront = new CloudFrontWebDistribution(this, 'Distribution', {
       comment: this.hostname,
       errorConfigurations: [
         {
           errorCode: 403,
           responseCode: 404,
-          responsePagePath: '/404.html/index.html',
+          responsePagePath: '/404.html',
           errorCachingMinTtl: 300,
         },
         {
           errorCode: 404,
           responseCode: 404,
-          responsePagePath: '/404.html/index.html',
+          responsePagePath: '/404.html',
           errorCachingMinTtl: 300,
         },
       ],
@@ -122,12 +133,21 @@ export class StaticHostStack extends cdk.Stack {
                   lambdaFunction: this.spaRedirectionLambda.currentVersion,
                 },
               ],
+              forwardedValues: {
+                cookies: {
+                  forward: 'none',
+                },
+                queryString: true,
+                queryStringCacheKeys: [
+                  'synthetics-timestamp',
+                ],
+              },
             },
           ],
         },
       ],
       viewerCertificate: ViewerCertificate.fromAcmCertificate(websiteCertificate, {
-        aliases: [this.hostname],
+        aliases,
         securityPolicy: SecurityPolicyProtocol.TLS_V1_1_2016,
         sslMethod: SSLMethod.SNI,
       }),

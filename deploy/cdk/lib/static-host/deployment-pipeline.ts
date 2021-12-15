@@ -1,20 +1,20 @@
-import { BuildSpec, PipelineProject } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
-import { PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
+import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
 import { ElasticStack } from '../elasticsearch'
-import { DockerhubImage } from '../dockerhub-image'
+// import { OpenSearchStack } from '../opensearch'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
+import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -43,6 +43,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean
   readonly testElasticStack: ElasticStack
   readonly prodElasticStack: ElasticStack
+  // readonly testOpenSearchStack?: OpenSearchStack
+  // readonly prodOpenSearchStack?: OpenSearchStack
   readonly searchIndex: string
   readonly siteDirectory: string
   readonly workspaceName: string
@@ -50,6 +52,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly submoduleSourceBranch?: string
   readonly prodCertificateArnPath?: string
   readonly prodDomainNameOverride?: string
+  readonly prodAdditionalAliases?: string
   readonly testMaintainMetadataStack: MaintainMetadataStack
   readonly prodMaintainMetadataStack: MaintainMetadataStack
   readonly testManifestLambdaStack: ManifestLambdaStack
@@ -64,7 +67,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack, certificateArnPath?: string, domainNameOverride?:string) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack,
+                          certificateArnPath?: string, domainNameOverride?:string, additionalAliases?: string) => {
+      // const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack, openSearchStack: OpenSearchStack,
+      //   certificateArnPath?: string, domainNameOverride?: string, additionalAliases?: string) => {
+
       const additionalContext = {
         description: props.description,
         projectName: props.projectName,
@@ -77,6 +84,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
       }
       if (domainNameOverride) {
         additionalContext[`${props.instanceName}:domainNameOverride`] = domainNameOverride
+      }
+      if (additionalAliases) {
+        additionalContext[`${props.instanceName}:additionalAliases`] = additionalAliases
       }
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
@@ -115,6 +125,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.s3(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(elasticStack.domainName))
+      // Need to do something for opensearchInvoke
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         effect: Effect.ALLOW,
         resources: [
@@ -184,6 +195,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const testBuildOutput = new Artifact('TestBuild')
+    // const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack, props.testOpenSearchStack)
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
     const s3syncTestProps: IPipelineS3SyncProps = {
       targetStack: testStackName,
@@ -193,6 +205,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.testElasticStack.domainName,
+      // Need to add opensearch parameters here
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.testManifestLambdaStack.publicGraphqlApiKeyPath,
@@ -205,44 +218,14 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', s3syncTestProps)
 
     const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
-    const smokeTestsProject = new PipelineProject(this, 'StaticHostSmokeTests', {
-      buildSpec: BuildSpec.fromObject({
-        phases: {
-          build: {
-            commands: [
-              `chmod -R 755 ${props.qaSpecPath}`,
-              `newman run ${props.qaSpecPath} --env-var hostname=${testHostname}`,
-            ],
-          },
-        },
-        version: '0.2',
-      }),
-      environment: {
-        buildImage: DockerhubImage.fromNewman(this, 'StaticHostSmokeTestsImage'),
+    const smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
+      sourceArtifact: appSourceArtifact,
+      collectionPath: props.qaSpecPath,
+      collectionVariables: {
+        'hostname': testHostname,
       },
-    })
-    const smokeTestsAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact,
-      project: smokeTestsProject,
       actionName: 'SmokeTests',
-      runOrder: 98,
     })
-
-    // Approval
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to stack '${testStackName}' and is awaiting your approval. If you approve these changes, they will be deployed to stack '${prodStackName}'.`,
-      notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
-    })
-    if (props.slackNotifyStackName !== undefined) {
-      new SlackApproval(this, 'SlackApproval', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
 
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
@@ -250,7 +233,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodBuildOutput = new Artifact('ProdBuild')
     const certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
     const domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride)
+    // const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, props.prodOpenSearchStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
 
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,
@@ -260,6 +244,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       workspaceName: props.workspaceName,
       esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
       elasticSearchDomainName: props.prodElasticStack.domainName,
+      // Need to add opensearch props here
       graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.prodManifestLambdaStack.publicGraphqlApiKeyPath,
@@ -273,28 +258,32 @@ export class DeploymentPipelineStack extends cdk.Stack {
 
     const domainName = domainNameOverride || props.prodFoundationStack.hostedZone.zoneName
     const prodHostname = `${prodHostnamePrefix}.${domainName}`
-    const smokeTestsProdProject = new PipelineProject(this, 'StaticHostProdSmokeTests', {
-      buildSpec: BuildSpec.fromObject({
-        phases: {
-          build: {
-            commands: [
-              `chmod -R 755 ${props.qaSpecPath}`,
-              `newman run ${props.qaSpecPath} --env-var hostname=${prodHostname}`,
-            ],
-          },
-        },
-        version: '0.2',
-      }),
-      environment: {
-        buildImage: DockerhubImage.fromNewman(this, 'StaticHostProdSmokeTestsImage'),
+    const smokeTestsProd = new NewmanRunner(this, 'StaticHostProdSmokeTests', {
+      sourceArtifact: appSourceArtifact,
+      collectionPath: props.qaSpecPath,
+      collectionVariables: {
+        'hostname': prodHostname,
       },
-    })
-    const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact,
-      project: smokeTestsProdProject,
       actionName: 'SmokeTests',
-      runOrder: 98,
     })
+
+    // Approval
+    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const approvalAction = new GithubApproval({
+      notificationTopic: approvalTopic,
+      testTarget: `https://${testHostname}`,
+      prodTarget: `https://${prodHostname}`,
+      githubSources: [
+        { owner: props.appRepoOwner, sourceAction: appSourceAction },
+        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+      ],
+    })
+    if (props.slackNotifyStackName !== undefined) {
+      new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.slackNotifyStackName,
+      })
+    }
 
     // Pipeline
     const sources = [appSourceAction, infraSourceAction]
@@ -309,11 +298,11 @@ export class DeploymentPipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, s3syncTest.action, smokeTestsAction, approvalAction],
+          actions: [deployTest.action, s3syncTest.action, smokeTestsProject.action, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action, s3syncProd.action, smokeTestsProdAction],
+          actions: [deployProd.action, s3syncProd.action, smokeTestsProd.action],
           stageName: 'Production',
         },
       ],

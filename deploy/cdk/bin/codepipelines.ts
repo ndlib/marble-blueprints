@@ -2,20 +2,20 @@
 import { App } from '@aws-cdk/core'
 import 'source-map-support/register'
 import IIIF = require('../lib/iiif-serverless')
-import userContent = require('../lib/user-content')
 import imageProcessing = require('../lib/image-processing')
 import staticHost = require('../lib/static-host')
 import elasticsearch = require('../lib/elasticsearch')
+import opensearch = require('../lib/opensearch')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import { getRequiredContext, getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
-import { Stacks } from '../lib/types'
+import { ServiceStacks } from '../lib/types'
 import { PipelineFoundationStack } from '../lib/foundation'
 import maintainMetadata = require('../lib/maintain-metadata')
 import manifestLambda = require('../lib/manifest-lambda')
 import multimediaAssets = require('../lib/multimedia-assets')
 
-export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv, testStacks: Stacks, prodStacks: Stacks): void => {
+export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv, testStacks: ServiceStacks, prodStacks: ServiceStacks): void => {
   const pipelineFoundationStack = new PipelineFoundationStack(app, `${namespace}-deployment-foundation`, {
     env: contextEnv.env,
   })
@@ -43,26 +43,32 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   }
 
   const staticHostContext = getContextByNamespace('staticHost')
-  const siteInstances = [
-    'website', // Main marble site
-    'redbox',
-    'inquisitions',
-    //'seaside',
-    'viewer',
+  const commonSitePipelineProps = {
+    testElasticStack: testStacks.elasticSearchStack,
+    prodElasticStack: prodStacks.elasticSearchStack,
+    testOpenSearchStack: testStacks.openSearchStack,
+    prodOpenSearchStack: prodStacks.openSearchStack,
+    testMaintainMetadataStack: testStacks.maintainMetadataStack,
+    prodMaintainMetadataStack: prodStacks.maintainMetadataStack,
+    testManifestLambdaStack: testStacks.manifestLambdaStack,
+    prodManifestLambdaStack: prodStacks.manifestLambdaStack,
+    ...commonProps,
+    ...staticHostContext,
+  }
+  type siteInstance = { name: string, props: staticHost.IDeploymentPipelineStackProps }
+  const siteInstances : siteInstance[] = [
+    { name: 'website', props: { ...commonSitePipelineProps, prodAdditionalAliases: 'marble.library.nd.edu' } },
+    { name: 'redbox', props: commonSitePipelineProps },
+    //{ name: 'seaside', props: commonSitePipelineProps },
+    { name: 'inquisitions', props: commonSitePipelineProps },
+    { name: 'viewer', props: commonSitePipelineProps },
   ]
-  siteInstances.map(instanceName => {
-    const instanceContext = getContextByNamespace(instanceName)
-    new staticHost.DeploymentPipelineStack(app, `${namespace}-${instanceName}-deployment`, {
-      instanceName,
-      testElasticStack: testStacks.elasticSearchStack,
-      prodElasticStack: prodStacks.elasticSearchStack,
-      testMaintainMetadataStack: testStacks.maintainMetadataStack,
-      prodMaintainMetadataStack: prodStacks.maintainMetadataStack,
-      testManifestLambdaStack: testStacks.manifestLambdaStack,
-      prodManifestLambdaStack: prodStacks.manifestLambdaStack,
-      ...commonProps,
-      ...staticHostContext,
+  siteInstances.map(instance => {
+    const instanceContext = getContextByNamespace(instance.name)
+    new staticHost.DeploymentPipelineStack(app, `${namespace}-${instance.name}-deployment`, {
+      ...instance.props,
       ...instanceContext,
+      instanceName: instance.name,
     })
   })
 
@@ -70,12 +76,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   new IIIF.DeploymentPipelineStack(app, `${namespace}-image-service-deployment`, {
     ...commonProps,
     ...imageServiceContext,
-  })
-
-  const userContentContext = getContextByNamespace('userContent')
-  new userContent.DeploymentPipelineStack(app, `${namespace}-user-content-deployment`, {
-    ...commonProps,
-    ...userContentContext,
   })
 
   const imageProcessingContext = getContextByNamespace('imageProcessing')
@@ -88,6 +88,12 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   new elasticsearch.DeploymentPipelineStack(app, `${namespace}-elastic-deployment`, {
     ...commonProps,
     ...elasticsearchContext,
+  })
+
+  const opensearchContext = getContextByNamespace('opensearch')
+  new opensearch.DeploymentPipelineStack(app, `${namespace}-opensearch-deployment`, {
+    ...commonProps,
+    ...opensearchContext,
   })
 
   const manifestPipelineContext = getContextByNamespace('manifestPipeline')

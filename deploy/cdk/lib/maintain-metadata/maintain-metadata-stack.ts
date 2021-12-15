@@ -55,6 +55,8 @@ export class MaintainMetadataStack extends Stack {
    */
   public readonly apiId: string
 
+  public readonly api: GraphqlApi
+
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
@@ -63,7 +65,7 @@ export class MaintainMetadataStack extends Stack {
     // Define construct contents here
     const apiSchema = Schema.fromAsset(path.join(__dirname, 'schema.graphql'))
 
-    const api = new GraphqlApi(this, 'Api', {
+    this.api = new GraphqlApi(this, 'Api', {
       name: `${this.stackName}-api`,
       schema: apiSchema,
       authorizationConfig: {
@@ -85,7 +87,7 @@ export class MaintainMetadataStack extends Stack {
       xrayEnabled: true,
       logConfig: { fieldLogLevel: FieldLogLevel.ERROR },
     })
-    this.apiId = api.apiId
+    this.apiId = this.api.apiId
 
     // This will need to be populated separately
     this.graphqlApiUrlKeyPath = `/all/stacks/${this.stackName}/graphql-api-url`
@@ -96,7 +98,7 @@ export class MaintainMetadataStack extends Stack {
     new StringParameter(this, 'SSMGraphqlApiUrl', {
       type: ParameterType.STRING,
       parameterName: this.graphqlApiUrlKeyPath,
-      stringValue: api.graphqlUrl,
+      stringValue: this.api.graphqlUrl,
       description: 'AppSync GraphQL base url',
     })
 
@@ -106,7 +108,7 @@ export class MaintainMetadataStack extends Stack {
     new StringParameter(this, 'SSMGraphqlApiId', {
       type: ParameterType.STRING,
       parameterName: this.graphqlApiIdKeyPath,
-      stringValue: api.apiId,
+      stringValue: this.api.apiId,
       description: 'AppSync GraphQL base id',
     })
 
@@ -188,7 +190,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
             'appsync:ListApiKeys',
           ],
           resources: [
-            Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/v1/apis/') + api.apiId + '/apikeys*',
+            Fn.sub('arn:aws:appsync:${AWS::Region}:${AWS::AccountId}:/v1/apis/') + this.api.apiId + '/apikeys*',
           ],
         }),
         new PolicyStatement({
@@ -217,7 +219,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     // Add Data Sources
     const websiteMetadataTable = props.manifestPipelineStack.websiteMetadataDynamoTable
     const websiteMetadataDynamoDataSource = new DynamoDbDataSource(this, 'WebsiteDynamoDataSource', {
-      api: api,
+      api: this.api,
       table: websiteMetadataTable,
       readOnlyAccess: false,
     })
@@ -225,7 +227,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
     // Add Functions
     const getMergedItemRecordFunction = new AppsyncFunction(this, 'GetMergedItemRecordFunction', {
-      api: api,
+      api: this.api,
       dataSource: websiteMetadataDynamoDataSource,
       name: 'getMergedItemRecordFunction',
       description: 'Used to read all records for an Item from DynamoDB.',
@@ -301,7 +303,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     const expandSubjectTermsFunction = new AppsyncFunction(this, 'ExpandSubjectTermsFunction', {
-      api: api,
+      api: this.api,
       dataSource: websiteMetadataDynamoDataSource,
       name: 'expandSubjectTermsFunction',
       description: 'Used to read all records for an Item from DynamoDB.',
@@ -403,7 +405,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     const findPortfolioContentForUserFunction = new AppsyncFunction(this, 'FindPortfolioContentForUserFunction', {
-      api: api,
+      api: this.api,
       dataSource: websiteMetadataDynamoDataSource,
       name: 'findPortfolioContentForUserFunction',
       description: 'Used to find all Portfolio-related content for a user (or user collection) from DynamoDB.',
@@ -456,7 +458,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
         }`),
     })
     const deletePortfolioContentForUserFunction = new AppsyncFunction(this, 'DeletePortfolioContentForUserFunction', {
-      api: api,
+      api: this.api,
       dataSource: websiteMetadataDynamoDataSource,
       name: 'deletePortfolioContentForUserFunction',
       description: 'Used to delete all Portfolio-related content for a user (or user collection) that was found in findPortfolioContentForUserFunction',
@@ -510,7 +512,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryShowItemByWebsite', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'showItemByWebsite',
       pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
@@ -523,7 +525,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     const updateSupplementalDataRecordFunction = new AppsyncFunction(this, 'UpdateSupplementalDataRecordFunction', {
-      api: api,
+      api: this.api,
       dataSource: websiteMetadataDynamoDataSource,
       name: 'updateSupplementalDataRecordFunction',
       description: 'Used to update a SupplementalData record in DynamoDB.',
@@ -668,7 +670,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
     // Add Resolvers
     new Resolver(this, 'ImageGroupImagesResolver', {
-      api: api,
+      api: this.api,
       typeName: 'ImageGroup',
       fieldName: 'images',
       dataSource: websiteMetadataDynamoDataSource,
@@ -701,7 +703,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'ImageImageGroupResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Image',
       fieldName: 'imageGroup',
       dataSource: websiteMetadataDynamoDataSource,
@@ -723,7 +725,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'ItemMetadataDefaultFileResolver', {
-      api: api,
+      api: this.api,
       typeName: 'ItemMetadata',
       fieldName: 'defaultFile',
       dataSource: websiteMetadataDynamoDataSource,
@@ -747,7 +749,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'ItemMetadataDefaultImageResolver', {
-      api: api,
+      api: this.api,
       typeName: 'ItemMetadata',
       fieldName: 'defaultImage',
       dataSource: websiteMetadataDynamoDataSource,
@@ -771,7 +773,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'ItemMetadataParentResolver', {
-      api: api,
+      api: this.api,
       typeName: 'ItemMetadata',
       fieldName: 'parent',
       pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
@@ -784,7 +786,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'ItemMetadataRootResolver', {
-      api: api,
+      api: this.api,
       typeName: 'ItemMetadata',
       fieldName: 'root',
       pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
@@ -802,7 +804,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'ItemMetadataChildrenResolver', {
-      api: api,
+      api: this.api,
       typeName: 'ItemMetadata',
       fieldName: 'children',
       dataSource: websiteMetadataDynamoDataSource,
@@ -853,7 +855,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
 
     new Resolver(this, 'ItemMetadataImagesResolver', {
-      api: api,
+      api: this.api,
       typeName: 'ItemMetadata',
       fieldName: 'images',
       dataSource: websiteMetadataDynamoDataSource,
@@ -887,7 +889,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'ItemMetadataMediaResolver', {
-      api: api,
+      api: this.api,
       typeName: 'ItemMetadata',
       fieldName: 'media',
       dataSource: websiteMetadataDynamoDataSource,
@@ -921,7 +923,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MediaGroupMediaResolver', {
-      api: api,
+      api: this.api,
       typeName: 'MediaGroup',
       fieldName: 'media',
       dataSource: websiteMetadataDynamoDataSource,
@@ -954,7 +956,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MediaMediaGroupResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Media',
       fieldName: 'mediaGroup',
       dataSource: websiteMetadataDynamoDataSource,
@@ -976,7 +978,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationAddItemToWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'addItemToWebsite',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1023,7 +1025,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationAddItemToHarvestResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'addItemToHarvest',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1062,7 +1064,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationRemoveItemFromWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'removeItemFromWebsite',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1090,7 +1092,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationRemoveDefaultImageForWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'removeDefaultImageForWebsite',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1125,7 +1127,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationRemoveMediaGroupForWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'removeMediaGroupForWebsite',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1160,7 +1162,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationRemovePortfolioCollectionResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'removePortfolioCollection',
       // dataSource: websiteMetadataDynamoDataSource,
@@ -1180,7 +1182,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationRemovePortfolioItemResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'removePortfolioItem',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1209,7 +1211,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationRemovePortfolioUserResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'removePortfolioUser',
       // dataSource: websiteMetadataDynamoDataSource,
@@ -1226,7 +1228,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationSaveCopyrightForWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'saveCopyrightForWebsite',
       pipelineConfig: [updateSupplementalDataRecordFunction],
@@ -1267,7 +1269,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationSaveDefaultImageForWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'saveDefaultImageForWebsite',
       pipelineConfig: [updateSupplementalDataRecordFunction],
@@ -1292,7 +1294,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationSaveFileLastProcessedDateResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'saveFileLastProcessedDate',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1327,7 +1329,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationSaveMediaGroupForWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'saveMediaGroupForWebsite',
       pipelineConfig: [updateSupplementalDataRecordFunction],
@@ -1348,7 +1350,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationSavePartiallyDigitizedForWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'savePartiallyDigitizedForWebsite',
       pipelineConfig: [updateSupplementalDataRecordFunction],
@@ -1369,7 +1371,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationSavePortfolioCollectionResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'savePortfolioCollection',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1419,18 +1421,12 @@ def _delete_expired_api_keys(graphql_api_id: str):
         $!{expValues.put(":privacy", $util.dynamodb.toDynamoDB($privacy))}
 
         #if( $privacy == "private" )
-          #set($GSI1PK = "")
-          #set($GSI1SK = "")
           #set($GSI2PK = "")
           #set($GSI2SK = "")
         #else
-          #set($GSI1PK = "PORTFOLIOCOLLECTION")
-          #set($GSI1SK = "PORTFOLIOCOLLECTION#$util.str.toUpper($portfolioCollectionId)")
           #set($GSI2PK = "PORTFOLIOCOLLECTION")
           #set($GSI2SK = $util.str.toUpper("$privacy#$portfolioCollectionId"))
-          
-          $!{expValues.put(":GSI1PK", $util.dynamodb.toDynamoDB($GSI1PK))}
-          $!{expValues.put(":GSI1SK", $util.dynamodb.toDynamoDB($GSI1SK))}
+
           $!{expValues.put(":GSI2PK", $util.dynamodb.toDynamoDB($GSI2PK))}
           $!{expValues.put(":GSI2SK", $util.dynamodb.toDynamoDB($GSI2SK))}
         #end
@@ -1444,7 +1440,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
           },
           "update": {
             #if( $privacy == "private" )
-              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title REMOVE GSI1PK, GSI1SK, GSI2PK, GSI2SK",
+            "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK REMOVE GSI2PK, GSI2SK",
             #else
               "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
             #end
@@ -1456,7 +1452,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationSavePortfolioItemResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'savePortfolioItem',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1525,7 +1521,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'MutationSavePortfolioUserResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Mutation',
       fieldName: 'savePortfolioUser',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1573,36 +1569,44 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'PortfolioUserPortfolioCollectionsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'PortfolioUser',
       fieldName: 'portfolioCollections',
       dataSource: websiteMetadataDynamoDataSource,
       requestMappingTemplate: MappingTemplate.fromString(`
-        #set($portfolioUserId = $ctx.source.portfolioUserId)
-        #set($portfolioUserId = $util.defaultIfNullOrBlank($portfolioUserId, ""))
-        #set($portfolioUserId = $util.str.toUpper($portfolioUserId))
-        #set($portfolioUserId = $util.str.toReplace($portfolioUserId, " ", ""))
+      #set($portfolioUserId = $ctx.source.portfolioUserId)
+      #set($portfolioUserId = $util.defaultIfNullOrBlank($portfolioUserId, ""))
+      #set($portfolioUserId = $util.str.toUpper($portfolioUserId))
+      #set($portfolioUserId = $util.str.toReplace($portfolioUserId, " ", ""))
+          #if($ctx.identity.claims && $ctx.identity.claims.netid == $ctx.source.portfolioUserId)
+          	#set($expression = "#TYPE = :rowType")
+          #else
+          	#set($expression = "#TYPE = :rowType and not contains(privacy, :privacy)")
+          #end
 
-        {
-            "version" : "2017-02-28",
-            "operation" : "Query",
-            "query" : {
-              "expression": "PK = :pk and begins_with(SK, :beginsWith)",
-              "expressionValues" : {
-                ":pk": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
-                ":beginsWith": $util.dynamodb.toDynamoDBJson("USER#$portfolioUserId#"),
+      {
+          "version" : "2017-02-28",
+          "operation" : "Query",
+          "query" : {
+            "expression": "PK = :pk and begins_with(SK, :beginsWith)",
+            "expressionValues" : {
+              ":pk": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
+              ":beginsWith": $util.dynamodb.toDynamoDBJson("USER#$portfolioUserId#"),
+            },
+		      },
+          "filter": {
+            "expression": "$expression",
+            "expressionValues" : {
+              	":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+          #if(!($ctx.identity.claims && $ctx.identity.claims.netid == $ctx.source.portfolioUserId))
+                  ":privacy": $util.dynamodb.toDynamoDBJson("private"),
+          #end
               },
-			      },
-            "filter": {
-              "expression": "#TYPE = :rowType",
-              "expressionValues": {
-                ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
-              },
-              "expressionNames": {"#TYPE": "TYPE"},
-      			},
-            "limit": $util.defaultIfNull($ctx.args.limit, 1000),
-            "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
-        }`),
+            "expressionNames": {"#TYPE": "TYPE"},
+    			},
+          "limit": $util.defaultIfNull($ctx.args.limit, 1000),
+          "nextToken": $util.toJson($util.defaultIfNullOrBlank($ctx.args.nextToken, null))
+      }`),
       responseMappingTemplate: MappingTemplate.fromString(`
         {
             "items": $util.toJson($ctx.result.items),
@@ -1611,7 +1615,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'PortfolioCollectionCreatorResolver', {
-      api: api,
+      api: this.api,
       typeName: 'PortfolioCollection',
       fieldName: 'creator',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1634,7 +1638,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'PortfolioCollectionPortfolioItemsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'PortfolioCollection',
       fieldName: 'portfolioItems',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1676,7 +1680,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGetExposedPortfolioCollectionResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getExposedPortfolioCollection',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1717,7 +1721,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGetFileToProcessRecordResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getFileToProcessRecord',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1740,7 +1744,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGetImageResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getImage',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1763,7 +1767,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGeImageGroupResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getImageGroup',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1786,7 +1790,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGetItemResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getItem',
       pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
@@ -1800,7 +1804,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGetMediaResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getMedia',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1823,7 +1827,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGeMediaGroupResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getMediaGroup',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1846,7 +1850,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGetPortfolioCollectionResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getPortfolioCollection',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1858,18 +1862,38 @@ def _delete_expired_api_keys(graphql_api_id: str):
         #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
 
         {
-            "version": "2017-02-28",
-            "operation": "GetItem",
-            "key": {
-              "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
-              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId#$portfolioCollectionId")),
-            }
+          "version": "2017-02-28",
+          "operation": "Query",
+          "index": "GSI1",
+          "query" : {
+            "expression": "GSI1PK = :GSI1PK and GSI1SK = :GSI1SK",
+            "expressionValues" : {
+              ":GSI1PK": $util.dynamodb.toDynamoDBJson("PORTFOLIOCOLLECTION"),
+              ":GSI1SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("PORTFOLIOCOLLECTION#$portfolioCollectionId")),
+                }
+            },
+          "filter": {
+            "expression": "#TYPE = :rowType AND (#PORTFOLIOUSERID = :portfolioUserId OR not contains(privacy, :privacy))",
+              "expressionValues": {
+              ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioCollection"),
+              ":portfolioUserId": $util.dynamodb.toDynamoDBJson($portfolioUserId),
+			  ":privacy": $util.dynamodb.toDynamoDBJson("private"),
+                },
+            "expressionNames": { "#TYPE": "TYPE", "#PORTFOLIOUSERID": "portfolioUserId" },
+          },
         }`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        #set($result = {})
+        #if( $ctx.result.items.size() > 0 )
+          #set($result = $ctx.result.items[0])
+        #end
+
+        $util.toJson($result)
+      `),
     })
 
     new Resolver(this, 'QueryGetPortfolioItemResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getPortfolioItem',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1897,26 +1921,29 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryGetPortfolioUserResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getPortfolioUser',
       dataSource: websiteMetadataDynamoDataSource,
       requestMappingTemplate: MappingTemplate.fromString(`
-        #set($portfolioUserId = $ctx.identity.claims.netid)
-
+        #if ($ctx.args.portfolioUserId)
+        	#set($ID = $ctx.args.portfolioUserId)
+        #else
+        	#set($ID = $ctx.identity.claims.netid)
+        #end
         {
             "version": "2017-02-28",
             "operation": "GetItem",
             "key": {
               "PK": $util.dynamodb.toDynamoDBJson("PORTFOLIO"),
-              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$portfolioUserId")),
+              "SK": $util.dynamodb.toDynamoDBJson($util.str.toUpper("USER#$ID")),
             }
         }`),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
     new Resolver(this, 'QueryGetWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'getWebsite',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1939,7 +1966,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListFilesToProcessResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listFilesToProcess',
       dataSource: websiteMetadataDynamoDataSource,
@@ -1973,7 +2000,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListImageGroupsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listImageGroups',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2011,7 +2038,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListImageGroupsForS3Resolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listImageGroupsForS3',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2048,7 +2075,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListImageGroupsReferencedResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listImageGroupsReferenced',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2077,7 +2104,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
     // Note that id is really sourceSystem, which can be confusing
     new Resolver(this, 'QueryListItemsBySourceSystemResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listItemsBySourceSystem',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2109,7 +2136,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListItemsByWebsiteResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listItemsByWebsite',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2139,7 +2166,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListMediaGroupsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listMediaGroups',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2177,7 +2204,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListMediaGroupsForS3Resolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listMediaGroupsForS3',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2214,7 +2241,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListMediaGroupsReferencedResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listMediaGroupsReferenced',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2241,7 +2268,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListPublicPortfolioCollectionsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listPublicPortfolioCollections',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2275,7 +2302,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListPublicHighlightedPortfolioCollectionsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listPublicHighlightedPortfolioCollections',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2310,7 +2337,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListPublicFeaturedPortfolioCollectionsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listPublicFeaturedPortfolioCollections',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2346,7 +2373,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
 
 
     new Resolver(this, 'QueryListSupplementalDataRecordsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listSupplementalDataRecords',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2405,7 +2432,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'QueryListWebsitesResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Query',
       fieldName: 'listWebsites',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2431,7 +2458,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'WebsiteWebsiteItemsResolver', {
-      api: api,
+      api: this.api,
       typeName: 'Website',
       fieldName: 'websiteItems',
       dataSource: websiteMetadataDynamoDataSource,
@@ -2464,7 +2491,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
     })
 
     new Resolver(this, 'WebsiteItemItemMetadataResolver', {
-      api: api,
+      api: this.api,
       typeName: 'WebsiteItem',
       fieldName: 'ItemMetadata',
       pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],

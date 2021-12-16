@@ -20,7 +20,7 @@ export class OpenSearchStack extends cdk.Stack {
     super(scope, id, props)
 
     const masterNodes = 0
-    const dataNodes = this.isProd(props.contextEnvName) ? 3 : 1
+    const dataNodes = this.isProd(props.contextEnvName) ? 4 : 1 // We must choose an even number of data nodes (greater than 2) for a two Availability Zone deployment
     const dataNodeInstanceType = this.isProd(props.contextEnvName) ? 't3.medium.search' : 't3.small.search' // T2 does not support encryption at rest, which is required when selecting useUnsignedBasicAuth
     const zoneAwarenessEanbled = this.isProd(props.contextEnvName) ? true : false
     const zoneAwarenessAvailabilityZoneCount = this.isProd(props.contextEnvName) ? 2 : 2  // 2 is the minimum availability zone count

@@ -4,6 +4,7 @@ import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Construct, Fn, Duration } from '@aws-cdk/core'
 import { NamespacedPolicy } from '../namespaced-policy'
+import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
    * The name of the stack that this project will deploy to. Will add
@@ -47,6 +48,11 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly maintainMetadataKeyBase: string
   readonly buildEnvironment: string
   readonly publicGraphqlApiKeyPath: string
+
+  readonly openSearchDomainNameKeyPath: string
+  readonly openSearchEndpointKeyPath: string
+  readonly openSearchMasterUserNameKeyPath: string
+  readonly openSearchMasterPasswordKeyPath: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -118,6 +124,23 @@ export class PipelineS3Sync extends Construct {
         },
         PUBLIC_GRAPHQL_API_URL: {
           value: props.publicGraphqlApiKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        // Added from here for OpenSearch
+        OPENSEARCH_DOMAIN_NAME: {
+          value: props.openSearchDomainNameKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        OPENSEARCH_ENDPOINT: {
+          value: props.openSearchEndpointKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        OPENSEARCH_MASTER_USERNAME: {
+          value: props.openSearchMasterUserNameKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        OPENSEARCH_MASTER_PASSWORD: {
+          value: props.openSearchMasterPasswordKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
       },
@@ -192,6 +215,10 @@ export class PipelineS3Sync extends Construct {
     this.project.addToRolePolicy(NamespacedPolicy.ssm(props.targetStack))
     if (props.elasticSearchDomainName !== undefined) {
       this.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(props.elasticSearchDomainName))
+    }
+    if (props.openSearchDomainNameKeyPath !== undefined) {
+      const openSearchDomainName = StringParameter.valueForStringParameter(this, props.openSearchDomainNameKeyPath)
+      this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(openSearchDomainName))
     }
 
     this.action = new CodeBuildAction({

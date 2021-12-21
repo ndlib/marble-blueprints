@@ -1,6 +1,6 @@
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
@@ -122,7 +122,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       ],
     })
     if(props.slackNotifyStackName !== undefined){
-      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+      new SlackApproval(this, 'SlackApproval', {
         approvalTopic,
         notifyStackName: props.slackNotifyStackName,
       })
@@ -150,7 +150,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       ],
     })
     if(props.notificationReceivers){
-      const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
+      new PipelineNotifications(this, 'PipelineNotifications', {
         pipeline,
         receivers: props.notificationReceivers,
       })

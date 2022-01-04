@@ -323,6 +323,9 @@ export class NamespacedPolicy {
         'es:CreateElasticsearchDomain',
         'es:DeleteElasticsearchDomain',
         'es:DescribeDomain',
+        'es:AddTags',
+        'es:ListTags',
+        'es:RemoveTags',
       ],
     })
   }

@@ -52,7 +52,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       })
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearch(namespace))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearch(props.namespace)) // Added to see if this gives me the needed permissions
-      // cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(namespace))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(
         NamespacedPolicy.globals([GlobalActions.Cloudwatch, GlobalActions.ES, GlobalActions.EC2]))
@@ -131,7 +130,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       ],
     })
     if(props.slackNotifyStackName !== undefined){
-      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+      new SlackApproval(this, 'SlackApproval', {
         approvalTopic,
         notifyStackName: props.slackNotifyStackName,
       })
@@ -159,7 +158,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       ],
     })
     if(props.notificationReceivers){
-      const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
+      new PipelineNotifications(this, 'PipelineNotifications', {
         pipeline,
         receivers: props.notificationReceivers,
       })

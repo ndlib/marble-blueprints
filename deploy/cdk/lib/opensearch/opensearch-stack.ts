@@ -15,6 +15,8 @@ export class OpenSearchStack extends cdk.Stack {
   readonly domainEndpointKeyPath: string
   readonly domainNameKeyPath: string
   readonly domainArnKeyPath: string
+  readonly domainMasterUserNameKeyPath: string
+  readonly domainMasterPasswordKeyPath: string
 
   constructor(scope: cdk.Construct, id: string, props: OpenSearchStackProps) {
     super(scope, id, props)
@@ -58,6 +60,8 @@ export class OpenSearchStack extends cdk.Stack {
     this.domainEndpointKeyPath = `/all/stacks/${this.stackName}/domain-endpoint`
     this.domainNameKeyPath = `/all/stacks/${this.stackName}/domain-name`
     this.domainArnKeyPath = `/all/stacks/${this.stackName}/domain-arn`
+    this.domainMasterUserNameKeyPath = `/all/stacks/${this.stackName}/master-user-name`
+    this.domainMasterPasswordKeyPath = `/all/stacks/${this.stackName}/master-user-password`
     
     new StringParameter(this, 'DomainEndpointParam', {
       parameterName: this.domainEndpointKeyPath,
@@ -85,12 +89,12 @@ export class OpenSearchStack extends cdk.Stack {
     })
 
     new StringParameter(this, 'DomainMasterUserNameParam', {
-      parameterName: `/all/stacks/${this.stackName}/master-user-name`,
+      parameterName: this.domainMasterUserNameKeyPath,
       stringValue: masterUserName,
     })
 
     new StringParameter(this, 'DomainMasterPasswordParam', {
-      parameterName: `/all/stacks/${this.stackName}/master-user-password`,
+      parameterName: this.domainMasterPasswordKeyPath,
       stringValue: `${this.domain.masterUserPassword}`,
     })
 

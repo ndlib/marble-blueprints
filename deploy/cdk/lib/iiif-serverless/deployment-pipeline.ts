@@ -239,7 +239,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     if(props.notificationReceivers){
-      const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
+      new PipelineNotifications(this, 'PipelineNotifications', {
         pipeline,
         receivers: props.notificationReceivers,
       })

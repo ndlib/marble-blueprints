@@ -17,13 +17,16 @@ export class OpenSearchStack extends cdk.Stack {
   readonly domainArnKeyPath: string
   readonly domainMasterUserNameKeyPath: string
   readonly domainMasterPasswordKeyPath: string
+  readonly domainReadOnlyUserNameKeyPath: string
+  readonly domainReadOnlyPasswordKeyPath: string
 
   constructor(scope: cdk.Construct, id: string, props: OpenSearchStackProps) {
     super(scope, id, props)
 
-    const masterNodes = 0
+    const masterNodes = this.isProd(props.contextEnvName) ? 3 : 0
+    const masterNodeInstanceType = 'm5.large.search' // Based upon recommendation here: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/managedomains-dedicatedmasternodes.html
     const dataNodes = this.isProd(props.contextEnvName) ? 4 : 1 // We must choose an even number of data nodes (greater than 2) for a two Availability Zone deployment
-    const dataNodeInstanceType = this.isProd(props.contextEnvName) ? 't3.medium.search' : 't3.small.search' // T2 does not support encryption at rest, which is required when selecting useUnsignedBasicAuth
+    const dataNodeInstanceType = 't3.medium.search' // T2 does not support encryption at rest, which is required when selecting useUnsignedBasicAuth
     const zoneAwarenessEanbled = this.isProd(props.contextEnvName) ? true : false
     const zoneAwarenessAvailabilityZoneCount = this.isProd(props.contextEnvName) ? 2 : 2  // 2 is the minimum availability zone count
     const masterUserName = 'admin'
@@ -33,6 +36,7 @@ export class OpenSearchStack extends cdk.Stack {
       version: EngineVersion.OPENSEARCH_1_0,
       capacity: {
         masterNodes: masterNodes,
+        masterNodeInstanceType: masterNodeInstanceType,
         dataNodes: dataNodes,
         dataNodeInstanceType: dataNodeInstanceType,
       },
@@ -62,7 +66,9 @@ export class OpenSearchStack extends cdk.Stack {
     this.domainArnKeyPath = `/all/stacks/${this.stackName}/domain-arn`
     this.domainMasterUserNameKeyPath = `/all/stacks/${this.stackName}/master-user-name`
     this.domainMasterPasswordKeyPath = `/all/stacks/${this.stackName}/master-user-password`
-    
+    this.domainReadOnlyUserNameKeyPath = `/all/stacks/${this.stackName}/read-only-user-name`
+    this.domainReadOnlyPasswordKeyPath = `/all/stacks/${this.stackName}/read-only-password`
+        
     new StringParameter(this, 'DomainEndpointParam', {
       parameterName: this.domainEndpointKeyPath,
       stringValue: `https://${this.domain.domainEndpoint}`,
@@ -80,7 +86,7 @@ export class OpenSearchStack extends cdk.Stack {
 
     new StringParameter(this, 'DomainNameParam', {
       parameterName: this.domainNameKeyPath,
-      stringValue: `https://${this.domain.domainName}`,
+      stringValue: this.domain.domainName,
     })
 
     new StringParameter(this, 'DomainArnParam', {
@@ -96,6 +102,16 @@ export class OpenSearchStack extends cdk.Stack {
     new StringParameter(this, 'DomainMasterPasswordParam', {
       parameterName: this.domainMasterPasswordKeyPath,
       stringValue: `${this.domain.masterUserPassword}`,
+    })
+
+    new StringParameter(this, 'DomainReadOnlyUserNameParam', {
+      parameterName: this.domainReadOnlyUserNameKeyPath,
+      stringValue: 'readOnly',
+    })
+
+    new StringParameter(this, 'DomainReadOnlyPasswordParam', {
+      parameterName: this.domainReadOnlyPasswordKeyPath,
+      stringValue: 'readOnly1!',
     })
 
     // Created a Service Linked Role

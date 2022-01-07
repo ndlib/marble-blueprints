@@ -50,8 +50,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           contact: props.contact,
         },
       })
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearch(namespace))
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearch(props.namespace)) // Added to see if this gives me the needed permissions
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearch(props.namespace)) // Because domains are named like marblebproddoma-0ioig7rg3ag6, passing "marbleb-prod" failed.  Passing simply "marbleb" works, since NamespacedPolicy appends "*"
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(
         NamespacedPolicy.globals([GlobalActions.Cloudwatch, GlobalActions.ES, GlobalActions.EC2]))

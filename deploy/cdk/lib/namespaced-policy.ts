@@ -326,6 +326,9 @@ export class NamespacedPolicy {
         'es:AddTags',
         'es:ListTags',
         'es:RemoveTags',
+        'es:UpgradeDomain',
+        'es:UpdateDomainConfig',
+        'es:DescribeDomainConfig',
       ],
     })
   }

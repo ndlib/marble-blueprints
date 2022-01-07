@@ -4,7 +4,6 @@ import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Construct, Fn, Duration } from '@aws-cdk/core'
 import { NamespacedPolicy } from '../namespaced-policy'
-import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
    * The name of the stack that this project will deploy to. Will add
@@ -53,6 +52,9 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly openSearchEndpointKeyPath: string
   readonly openSearchMasterUserNameKeyPath: string
   readonly openSearchMasterPasswordKeyPath: string
+  readonly openSearchDomainPrefix: string
+  readonly openSearchReadOnlyUserNameKeyPath: string
+  readonly openSearchReadOnlyPasswordKeyPath: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -143,6 +145,14 @@ export class PipelineS3Sync extends Construct {
           value: props.openSearchMasterPasswordKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
+        OPENSEARCH_READ_ONLY_USERNAME: {
+          value: props.openSearchReadOnlyUserNameKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        OPENSEARCH_READ_ONLY_PASSWORD: {
+          value: props.openSearchReadOnlyPasswordKeyPath,
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
       },
       buildSpec: BuildSpec.fromObject({
         phases: {
@@ -191,6 +201,12 @@ export class PipelineS3Sync extends Construct {
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + staticHostPath + '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.esEndpointParamPath),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.maintainMetadataKeyBase + '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchDomainNameKeyPath+ '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchEndpointKeyPath + '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchMasterUserNameKeyPath + '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchMasterPasswordKeyPath + '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchReadOnlyUserNameKeyPath + '*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchReadOnlyPasswordKeyPath + '*'),
       ],
     }))
     this.project.addToRolePolicy(new PolicyStatement({
@@ -216,11 +232,10 @@ export class PipelineS3Sync extends Construct {
     if (props.elasticSearchDomainName !== undefined) {
       this.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(props.elasticSearchDomainName))
     }
-    if (props.openSearchDomainNameKeyPath !== undefined) {
-      const openSearchDomainName = StringParameter.valueForStringParameter(this, props.openSearchDomainNameKeyPath)
-      this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(openSearchDomainName))
+    if (props.openSearchDomainPrefix !== undefined) {
+      this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(props.openSearchDomainPrefix))
     }
-
+    
     this.action = new CodeBuildAction({
       actionName: 'BuildSite_and_CopyS3',
       input: props.inputBuildArtifact,

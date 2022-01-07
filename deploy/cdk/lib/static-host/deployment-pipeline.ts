@@ -67,10 +67,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    // const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack,
-    //                       certificateArnPath?: string, domainNameOverride?:string, additionalAliases?: string) => {
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack, openSearchStack: OpenSearchStack,
-      certificateArnPath?: string, domainNameOverride?: string, additionalAliases?: string) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack,
+                          certificateArnPath?: string, domainNameOverride?:string, additionalAliases?: string) => {
 
       const additionalContext = {
         description: props.description,
@@ -125,7 +123,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.s3(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(elasticStack.domainName))
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(openSearchStack.domainName))
+      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(props.namespace))  // Because the domainName isn't available at synth time, and because the domain names start with the namespace name, I'll use the namespace name here to grant access to all domains starting with this namespace name
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         effect: Effect.ALLOW,
         resources: [
@@ -133,6 +131,18 @@ export class DeploymentPipelineStack extends cdk.Stack {
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.maintainMetadataKeyBase + '*'),
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainNameKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainEndpointKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainMasterUserNameKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainMasterUserNameKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainReadOnlyUserNameKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainReadOnlyPasswordKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainNameKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainEndpointKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainReadOnlyUserNameKeyPath + '*'),
+          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainReadOnlyPasswordKeyPath + '*'),
         ],
         actions: ["ssm:Get*"],
       }))
@@ -195,8 +205,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const testBuildOutput = new Artifact('TestBuild')
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack, props.testOpenSearchStack)
-    // const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
     const s3syncTestProps: IPipelineS3SyncProps = {
       targetStack: testStackName,
       inputBuildArtifact: appSourceArtifact,
@@ -209,6 +218,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
       openSearchEndpointKeyPath: props.testOpenSearchStack.domainEndpointKeyPath,
       openSearchMasterUserNameKeyPath: props.testOpenSearchStack.domainMasterUserNameKeyPath,
       openSearchMasterPasswordKeyPath: props.testOpenSearchStack.domainMasterPasswordKeyPath,
+      openSearchReadOnlyUserNameKeyPath: props.testOpenSearchStack.domainReadOnlyUserNameKeyPath,
+      openSearchReadOnlyPasswordKeyPath: props.testOpenSearchStack.domainReadOnlyPasswordKeyPath,
+      openSearchDomainPrefix: props.namespace,
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.testManifestLambdaStack.publicGraphqlApiKeyPath,
@@ -236,8 +248,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodBuildOutput = new Artifact('ProdBuild')
     const certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
     const domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, props.prodOpenSearchStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
-    // const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
 
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,
@@ -251,6 +262,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
       openSearchEndpointKeyPath: props.prodOpenSearchStack.domainEndpointKeyPath,
       openSearchMasterUserNameKeyPath: props.prodOpenSearchStack.domainMasterUserNameKeyPath,
       openSearchMasterPasswordKeyPath: props.prodOpenSearchStack.domainMasterPasswordKeyPath,
+      openSearchReadOnlyUserNameKeyPath: props.prodOpenSearchStack.domainReadOnlyUserNameKeyPath,
+      openSearchReadOnlyPasswordKeyPath: props.prodOpenSearchStack.domainReadOnlyPasswordKeyPath,
+      openSearchDomainPrefix: props.namespace,
       graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.prodManifestLambdaStack.publicGraphqlApiKeyPath,

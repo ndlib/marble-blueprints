@@ -10,7 +10,6 @@ import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
-import { ElasticStack } from '../elasticsearch'
 import { OpenSearchStack } from '../opensearch'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
@@ -41,8 +40,6 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly hostnamePrefix: string
   readonly buildScriptsDir: string
   readonly createDns: boolean
-  readonly testElasticStack: ElasticStack
-  readonly prodElasticStack: ElasticStack
   readonly testOpenSearchStack: OpenSearchStack
   readonly prodOpenSearchStack: OpenSearchStack
   readonly searchIndex: string
@@ -67,7 +64,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-${props.instanceName}`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack, elasticStack: ElasticStack,
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, buildPath: string, outputArtifact: Artifact, foundationStack: FoundationStack,
                           certificateArnPath?: string, domainNameOverride?:string, additionalAliases?: string) => {
 
       const additionalContext = {
@@ -122,7 +119,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.s3(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.ssm(targetStack))
-      cdkDeploy.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(elasticStack.domainName))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(props.namespace))  // Because the domainName isn't available at synth time, and because the domain names start with the namespace name, I'll use the namespace name here to grant access to all domains starting with this namespace name
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         effect: Effect.ALLOW,
@@ -205,15 +201,13 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const testHostnamePrefix = props.hostnamePrefix ? `${props.hostnamePrefix}-test` : testStackName
     const testBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const testBuildOutput = new Artifact('TestBuild')
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack, props.testElasticStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, testBuildPath, testBuildOutput, props.testFoundationStack)
     const s3syncTestProps: IPipelineS3SyncProps = {
       targetStack: testStackName,
       inputBuildArtifact: appSourceArtifact,
       searchIndex: props.searchIndex,
       siteDirectory: props.siteDirectory,
       workspaceName: props.workspaceName,
-      esEndpointParamPath: `/all/stacks/${props.testElasticStack.stackName}/domain-endpoint`,
-      elasticSearchDomainName: props.testElasticStack.domainName,
       openSearchDomainNameKeyPath: props.testOpenSearchStack.domainNameKeyPath,
       openSearchEndpointKeyPath: props.testOpenSearchStack.domainEndpointKeyPath,
       openSearchMasterUserNameKeyPath: props.testOpenSearchStack.domainMasterUserNameKeyPath,
@@ -248,7 +242,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodBuildOutput = new Artifact('ProdBuild')
     const certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
     const domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, props.prodElasticStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
 
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,
@@ -256,8 +250,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       searchIndex: props.searchIndex,
       siteDirectory: props.siteDirectory,
       workspaceName: props.workspaceName,
-      esEndpointParamPath: `/all/stacks/${props.prodElasticStack.stackName}/domain-endpoint`,
-      elasticSearchDomainName: props.prodElasticStack.domainName,
       openSearchDomainNameKeyPath: props.prodOpenSearchStack.domainNameKeyPath,
       openSearchEndpointKeyPath: props.prodOpenSearchStack.domainEndpointKeyPath,
       openSearchMasterUserNameKeyPath: props.prodOpenSearchStack.domainMasterUserNameKeyPath,

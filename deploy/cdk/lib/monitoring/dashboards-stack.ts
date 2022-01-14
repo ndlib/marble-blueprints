@@ -20,7 +20,7 @@ export class DashboardsStack extends Stack {
       [`${props.services.inquisitions.cloudfront.node.addr}`]: 'Inquisitions CDN',
       [`${props.services.viewer.cloudfront.node.addr}`]: 'IIIF Viewer CDN',
       [`${props.services.maintainMetadataStack.api.node.addr}`]: 'Maintain Metadata API',
-      [`${props.services.elasticSearchStack.domain.node.addr}`]: 'Search API',
+      // [`${props.services.elasticSearchStack.domain.node.addr}`]: 'Search API',
       [`${props.services.manifestLambdaStack.privateApi.node.addr}`]: 'IIIF Manifest API',
       [`${props.services.manifestLambdaStack.publicApi.node.addr}`]: 'User Portfolio API',
       [`${props.services.multimediaAssetsStack.cloudfront.node.addr}`]: 'Multimedia Assets CDN',

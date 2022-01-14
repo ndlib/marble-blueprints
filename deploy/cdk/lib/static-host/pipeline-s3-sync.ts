@@ -24,21 +24,9 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   extraBuildArtifacts?: Array<Artifact>;
 
   /**
-  * The name of the index that should be created for the website in elasticsearch
+  * The name of the index that should be created for the website in OpenSearch
   */
   readonly searchIndex: string
-
-  /**
-  * the ssm path to the full elasticsearch domain that we want a search index on\
-  * example: https://search-jon-test-sites-xnwpt33aguihqeotpz7yp6zp5m.us-east-1.es.amazonaws.com
-  */
-  readonly esEndpointParamPath: string
-
-  /**
-  * the domain name part that is used for permissions to the elastic search domain.
-  * example: jon-test-sites
-  */
-  readonly elasticSearchDomainName: string
 
   readonly siteDirectory: string
   readonly workspaceName: string
@@ -87,10 +75,6 @@ export class PipelineS3Sync extends Construct {
           value: `${paramsPath}distribution-id`,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
-        SEARCH_URL: {
-          value: props.esEndpointParamPath,
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
-        },
         SEARCH_INDEX: {
           value: props.searchIndex,
           type: BuildEnvironmentVariableType.PLAINTEXT,
@@ -108,6 +92,7 @@ export class PipelineS3Sync extends Construct {
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
         // TODO: Remove at least GRAPHQL_API_KEY (maybe also GRAPHQL_API_URL) Once sites are updated to use GRAPHQL_API_KEY_KEY_PATH and GRAPHQL_API_URL_KEY_PATH
+        // GRAPHQL_API_KEY and 
         GRAPHQL_API_KEY: {
           value: props.graphqlApiKeyKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
@@ -199,7 +184,6 @@ export class PipelineS3Sync extends Construct {
       resources:[
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramsPath + '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + staticHostPath + '*'),
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.esEndpointParamPath),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.maintainMetadataKeyBase + '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchDomainNameKeyPath+ '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchEndpointKeyPath + '*'),
@@ -229,9 +213,6 @@ export class PipelineS3Sync extends Construct {
     // We don't know exactly what the bucket's name will be until runtime, but it starts with the stack's name
     this.project.addToRolePolicy(NamespacedPolicy.s3(props.targetStack))
     this.project.addToRolePolicy(NamespacedPolicy.ssm(props.targetStack))
-    if (props.elasticSearchDomainName !== undefined) {
-      this.project.addToRolePolicy(NamespacedPolicy.elasticsearchInvoke(props.elasticSearchDomainName))
-    }
     if (props.openSearchDomainPrefix !== undefined) {
       this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(props.openSearchDomainPrefix))
     }

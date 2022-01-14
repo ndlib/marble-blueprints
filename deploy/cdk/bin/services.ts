@@ -4,7 +4,6 @@ import 'source-map-support/register'
 import { FoundationStack } from '../lib/foundation'
 import IIIF = require('../lib/iiif-serverless')
 import imageProcessing = require('../lib/image-processing')
-import elasticsearch = require('../lib/elasticsearch')
 import opensearch = require('../lib/opensearch')
 import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
@@ -54,9 +53,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const imageServiceProps = mapContextToProps<IIIF.IIiifServerlessStackProps>('iiifImageService', commonProps)
   const iiifServerlessStack = new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, imageServiceProps)
 
-  const elasticsearchProps = mapContextToProps<elasticsearch.ElasticStackProps>('elasticsearch', commonProps)
-  const elasticSearchStack = new elasticsearch.ElasticStack(app, `${namespace}-elastic`, elasticsearchProps)
-
   const openSearchProps = mapContextToProps<opensearch.OpenSearchStackProps>('opensearch', commonProps)
   const openSearchStack = new opensearch.OpenSearchStack(app, `${namespace}-opensearch`, openSearchProps)
 
@@ -101,7 +97,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     viewer,
     iiifServerlessStack,
     imageProcessingStack,
-    elasticSearchStack,
     openSearchStack,
     manifestPipelineStack,
     maintainMetadataStack,
@@ -198,44 +193,45 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
         Low: false,
       },
     },
-    {
-      title: "Marble - Search API",
-      type: "ElasticSearchAvailability",
-      accountId: contextEnv.env.account,
-      domainName: elasticSearchStack.domainName,
-      // sloThreshold: 0.99,
-      sloThreshold: 0.95, // Changed sloThreshold to .95 because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-      alarmsEnabled: {
-        High: true,
-        Low: false,
-      },
-    },
-    {
-      title: "Marble - Search API",
-      type: "ElasticSearchLatency",
-      accountId: contextEnv.env.account,
-      domainName: elasticSearchStack.domainName,
-      sloThreshold: 0.95,
-      // latencyThreshold: 200,
-      latencyThreshold: 200 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-      alarmsEnabled: {
-        High: true,
-        Low: false,
-      },
-    },
-    {
-      title: "Marble - Search API",
-      type: "ElasticSearchLatency",
-      accountId: contextEnv.env.account,
-      domainName: elasticSearchStack.domainName,
-      sloThreshold: 0.99,
-      // latencyThreshold: 1000,
-      latencyThreshold: 1000 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-      alarmsEnabled: {
-        High: true,
-        Low: false,
-      },
-    },
+    // Note:  ndlib-cdk/src/slos/types.ts does not yet contain anything for opensearch, so we'll need to just comment the elasticcearch SLOs for now.  Once functionality is added to ndlib-cdk, we can modify these commented lines.
+    // {
+    //   title: "Marble - Search API",
+    //   type: "ElasticSearchAvailability",
+    //   accountId: contextEnv.env.account,
+    //   domainName: openSearchStack.domainName,
+    //   // sloThreshold: 0.99,
+    //   sloThreshold: 0.95, // Changed sloThreshold to .95 because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+    //   alarmsEnabled: {
+    //     High: true,
+    //     Low: false,
+    //   },
+    // },
+    // {
+    //   title: "Marble - Search API",
+    //   type: "ElasticSearchLatency",
+    //   accountId: contextEnv.env.account,
+    //   domainName: openSearchStack.domainName,
+    //   sloThreshold: 0.95,
+    //   // latencyThreshold: 200,
+    //   latencyThreshold: 200 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+    //   alarmsEnabled: {
+    //     High: true,
+    //     Low: false,
+    //   },
+    // },
+    // {
+    //   title: "Marble - Search API",
+    //   type: "ElasticSearchLatency",
+    //   accountId: contextEnv.env.account,
+    //   domainName: openSearchStack.domainName,
+    //   sloThreshold: 0.99,
+    //   // latencyThreshold: 1000,
+    //   latencyThreshold: 1000 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+    //   alarmsEnabled: {
+    //     High: true,
+    //     Low: false,
+    //   },
+    // },
     {
       title: "Marble - IIIF Viewer CDN",
       type: "CloudfrontAvailability",

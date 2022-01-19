@@ -9,7 +9,7 @@ export const getContextByNamespace = (ns: string): any => {
   const prefix = `${ns}:`
   for (const [key, value] of Object.entries(allContext)) {
     if(key.startsWith(prefix)){
-      const flattenedKey =  key.substr(prefix.length)
+      const flattenedKey =  key.substring(prefix.length)
       result[flattenedKey] = value
     }
   }
@@ -40,7 +40,7 @@ export const mapContextToProps = <T> (ns: string, defaults?: Partial<T>, typeHin
   const prefix = `${ns}:`
   for (const [key, value] of Object.entries(allContext)) {
     if(key.startsWith(prefix)){
-      const flattenedKey = key.substr(prefix.length)
+      const flattenedKey = key.substring(prefix.length)
       const k: keyTypes = <keyTypes>flattenedKey
       const v = value as T[keyTypes]
       const typeHint = types[flattenedKey]

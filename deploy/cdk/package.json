@@ -64,7 +64,7 @@
     "@aws-cdk/cloudformation-include": "1.139.0",
     "@aws-cdk/core": "1.139.0",
     "@aws-cdk/custom-resources": "1.139.0",
-    "@ndlib/ndlib-cdk": "1.12.0",
+    "@ndlib/ndlib-cdk": "1.12.1",
     "@types/source-map-support": "^0.5.2",
     "constructs": "10.0.33",
     "leaked-handles": "^5.2.0",

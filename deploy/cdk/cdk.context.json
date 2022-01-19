@@ -71,6 +71,9 @@
   "website:submoduleSourceBranch": "master",
   "website:prodCertificateArnPath": "/all/marble/website/prod/certificateArn",
   "website:prodDomainNameOverride": "nd.edu",
+  "website:authClientIssuer": "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
+  "website:authClientUrl": "https://okta.nd.edu",
+  "website:authClientId": "0oa1f3ut0aKpdwap5357",
 
   "redbox:hostnamePrefix": "redbox",
   "redbox:appRepoOwner": "ndlib",
@@ -82,6 +85,9 @@
   "redbox:searchIndex": "",
   "redbox:siteDirectory": "",
   "redbox:workspaceName": "",
+  "redbox:authClientIssuer": "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
+  "redbox:authClientUrl": "https://okta.nd.edu",
+  "redbox:authClientId": "0oa4tlda8nvJGLv9i357",
 
   "inquisitions:hostnamePrefix": "inquisition",
   "inquisitions:appRepoOwner": "ndlib",
@@ -95,6 +101,9 @@
   "inquisitions:workspaceName": "inquisition",
   "inquisitions:submoduleRepoName": "inquisition",
   "inquisitions:submoduleSourceBranch": "main",
+  "inquisitions:authClientIssuer": "",
+  "inquisitions:authClientUrl": "",
+  "inquisitions:authClientId": "",
 
   "viewer:hostnamePrefix": "viewer-iiif",
   "viewer:appRepoOwner": "ndlib",
@@ -106,6 +115,9 @@
   "viewer:searchIndex": "",
   "viewer:siteDirectory": "",
   "viewer:workspaceName": "",
+  "viewer:authClientIssuer": "",
+  "viewer:authClientUrl": "",
+  "viewer:authClientId": "",
 
   "manifestPipeline:imageServerHostname": "/all/stacks/marble-image-service-prod/hostname",
   "manifestPipeline:marbleProcessingKeyPath": "/all/marble-data-processing/prod",

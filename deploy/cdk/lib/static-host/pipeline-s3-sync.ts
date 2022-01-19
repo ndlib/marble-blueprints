@@ -43,6 +43,10 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly openSearchDomainPrefix: string
   readonly openSearchReadOnlyUserNameKeyPath: string
   readonly openSearchReadOnlyPasswordKeyPath: string
+  
+  readonly authClientUrl: string
+  readonly authClientId: string
+  readonly authClientIssuer: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -137,6 +141,18 @@ export class PipelineS3Sync extends Construct {
         OPENSEARCH_READ_ONLY_PASSWORD: {
           value: props.openSearchReadOnlyPasswordKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        AUTH_CLIENT_URL: {
+          value: props.authClientUrl,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        AUTH_CLIENT_ID: {
+          value: props.authClientId,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        AUTH_CLIENT_ISSUER: {
+          value: props.authClientIssuer,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
       buildSpec: BuildSpec.fromObject({

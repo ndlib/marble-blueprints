@@ -54,6 +54,9 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly prodMaintainMetadataStack: MaintainMetadataStack
   readonly testManifestLambdaStack: ManifestLambdaStack
   readonly prodManifestLambdaStack: ManifestLambdaStack
+  readonly authClientUrl: string
+  readonly authClientId: string
+  readonly authClientIssuer: string
 }
 
 export class DeploymentPipelineStack extends cdk.Stack {
@@ -205,21 +208,31 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const s3syncTestProps: IPipelineS3SyncProps = {
       targetStack: testStackName,
       inputBuildArtifact: appSourceArtifact,
-      searchIndex: props.searchIndex,
+      searchIndex: `${props.searchIndex}-test`,
       siteDirectory: props.siteDirectory,
       workspaceName: props.workspaceName,
-      openSearchDomainNameKeyPath: props.testOpenSearchStack.domainNameKeyPath,
-      openSearchEndpointKeyPath: props.testOpenSearchStack.domainEndpointKeyPath,
-      openSearchMasterUserNameKeyPath: props.testOpenSearchStack.domainMasterUserNameKeyPath,
-      openSearchMasterPasswordKeyPath: props.testOpenSearchStack.domainMasterPasswordKeyPath,
-      openSearchReadOnlyUserNameKeyPath: props.testOpenSearchStack.domainReadOnlyUserNameKeyPath,
-      openSearchReadOnlyPasswordKeyPath: props.testOpenSearchStack.domainReadOnlyPasswordKeyPath,
+      // openSearchDomainNameKeyPath: props.testOpenSearchStack.domainNameKeyPath,
+      // openSearchEndpointKeyPath: props.testOpenSearchStack.domainEndpointKeyPath,
+      // openSearchMasterUserNameKeyPath: props.testOpenSearchStack.domainMasterUserNameKeyPath,
+      // openSearchMasterPasswordKeyPath: props.testOpenSearchStack.domainMasterPasswordKeyPath,
+      // openSearchReadOnlyUserNameKeyPath: props.testOpenSearchStack.domainReadOnlyUserNameKeyPath,
+      // openSearchReadOnlyPasswordKeyPath: props.testOpenSearchStack.domainReadOnlyPasswordKeyPath,
+      // openSearchDomainPrefix: props.namespace,
+      openSearchDomainNameKeyPath: props.prodOpenSearchStack.domainNameKeyPath,
+      openSearchEndpointKeyPath: props.prodOpenSearchStack.domainEndpointKeyPath,
+      openSearchMasterUserNameKeyPath: props.prodOpenSearchStack.domainMasterUserNameKeyPath,
+      openSearchMasterPasswordKeyPath: props.prodOpenSearchStack.domainMasterPasswordKeyPath,
+      openSearchReadOnlyUserNameKeyPath: props.prodOpenSearchStack.domainReadOnlyUserNameKeyPath,
+      openSearchReadOnlyPasswordKeyPath: props.prodOpenSearchStack.domainReadOnlyPasswordKeyPath,
       openSearchDomainPrefix: props.namespace,
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.testManifestLambdaStack.publicGraphqlApiKeyPath,
       buildEnvironment: 'test',
       maintainMetadataKeyBase: props.testMaintainMetadataStack.maintainMetadataKeyBase,
+      authClientUrl: props.authClientUrl,
+      authClientId: props.authClientId,
+      authClientIssuer: props.authClientIssuer,
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncTestProps.extraBuildArtifacts = [subAppSourceArtifact]
@@ -247,7 +260,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,
       inputBuildArtifact: appSourceArtifact,
-      searchIndex: props.searchIndex,
+      searchIndex: `${props.searchIndex}-prod`,
       siteDirectory: props.siteDirectory,
       workspaceName: props.workspaceName,
       openSearchDomainNameKeyPath: props.prodOpenSearchStack.domainNameKeyPath,
@@ -262,6 +275,9 @@ export class DeploymentPipelineStack extends cdk.Stack {
       publicGraphqlApiKeyPath: props.prodManifestLambdaStack.publicGraphqlApiKeyPath,
       buildEnvironment: 'production',
       maintainMetadataKeyBase: props.prodMaintainMetadataStack.maintainMetadataKeyBase,
+      authClientUrl: props.authClientUrl,
+      authClientId: props.authClientId,
+      authClientIssuer: props.authClientIssuer,
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncProdProps.extraBuildArtifacts = [subAppSourceArtifact]

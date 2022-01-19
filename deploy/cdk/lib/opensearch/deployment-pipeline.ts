@@ -34,7 +34,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const prodStackName = `${props.namespace}-prod-opensearch`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string) => {
+    const createDeploy = (targetStack: string, namespace: string, contextEnvName: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -42,7 +42,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         appBuildCommands: [],
         cdkDirectory: 'deploy/cdk',
         namespace: `${namespace}`,
-        contextEnvName: props.contextEnvName,
+        contextEnvName: contextEnvName,
         additionalContext: {
           description: "Opensearch cluster",
           projectName: "marble",
@@ -116,7 +116,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
     })
 
     // Deploy to Test
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`)
+    const testContextEnvName = 'dev' // Added specifically to force the test instance to be created with the same configuration as the dev environment
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testContextEnvName)
 
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
@@ -136,7 +137,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     }
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.contextEnvName)
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

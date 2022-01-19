@@ -5,7 +5,7 @@ import { CnameRecord } from "@aws-cdk/aws-route53"
 import YAML = require('yaml')
 import * as fs from "fs"
 import { Asset } from '@aws-cdk/aws-s3-assets'
-// import { CfnInclude } from "@aws-cdk/cloudformation-include"  // the CfnInclude from the aws-cdk/core has been deprecated, but I can't get this replacement to work with the YAML file we need.
+// import { CfnInclude } from "@aws-cdk/cloudformation-include"  // the CfnInclude from the aws-cdk/core has been deprecated, but I can't get this replacement to work with the YAML file we need.  https://github.com/aws/aws-cdk/issues/10926
 
 export interface IIiifServerlessStackProps extends StackProps {
   /**

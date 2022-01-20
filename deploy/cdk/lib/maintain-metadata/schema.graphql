@@ -17,6 +17,7 @@ type FileToProcess @aws_oidc @aws_api_key {
 	digitalAccess: String
 	eTag: String
 	filePath: String
+	height: Int
 	md5Checksum: String
 	mimeType: String
 	modifiedDate: String
@@ -28,6 +29,7 @@ type FileToProcess @aws_oidc @aws_api_key {
 	sourceUri: String
 	storageSystem: String
 	TYPE: String
+	width: Int
 }
 
 type FilesToProcessConnection @aws_oidc @aws_api_key {
@@ -43,6 +45,7 @@ type Image @aws_oidc @aws_api_key {
 	digitalAccess: String
 	eTag: String
 	filePath: String
+	height: Int
 	lastModified: String
 	mediaResourceId: String
 	mediaServer: String
@@ -58,6 +61,7 @@ type Image @aws_oidc @aws_api_key {
 	treePath: String
 	TYPE: String
 	typeOfData: String
+	width: Int
 }
 
 type ImageGroup @aws_oidc @aws_api_key {
@@ -250,7 +254,7 @@ type Mutation @aws_oidc @aws_api_key {
 	removePortfolioUser: RecordsDeleted @aws_oidc
 	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String, additionalNotes: String inCopyright: Boolean, copyrightUrl: String, copyrightStatus: String): ItemMetadata
 	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, imageGroupId: String): ItemMetadata
-	saveFileLastProcessedDate(itemId: String!): FileToProcess
+	saveFileLastProcessedDate(itemId: String!, height: Int, width: Int): FileToProcess
 	saveMediaGroupForWebsite(itemId: String!, websiteId: String, mediaGroupId: String!): ItemMetadata
 	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
 	savePortfolioCollection(portfolioCollectionId: String, description: String, imageUri: String, layout: String, privacy: PortfolioPrivacy, highlightedCollection: Boolean, featuredCollection: Boolean, title: String): PortfolioCollection @aws_oidc

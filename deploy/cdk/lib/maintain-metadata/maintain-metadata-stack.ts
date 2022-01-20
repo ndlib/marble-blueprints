@@ -524,6 +524,90 @@ def _delete_expired_api_keys(graphql_api_id: str):
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    const saveFileToProcessRecordFunction = new AppsyncFunction(this, 'SaveFileToProcessRecordFunction', {
+      api: this.api,
+      dataSource: websiteMetadataDynamoDataSource,
+      name: 'saveFileToProcessRecordFunction',
+      description: 'Used to save FileToProcess record in DynamoDB.',
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($itemId = $ctx.stash.itemId)
+        #set($height = $ctx.stash.height)
+        #set($width = $ctx.stash.width)
+        #set($itemId = $util.defaultIfNullOrBlank($itemId, ""))
+        #set($itemId = $util.str.toUpper($itemId))
+        #set($itemId = $util.str.toReplace($itemId, " ", ""))
+        #set($pk = "FILETOPROCESS")
+        #set($sk = "FILEPATH#$itemId")
+        #set($dateLastProcessed = $util.time.nowISO8601())
+        #set($GSI2SK = "DATELASTPROCESSED#$dateLastProcessed")
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            "expression": "SET dateLastProcessed = :dateLastProcessed, dateModifiedInDynamo = :dateModifiedInDynamo, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK, height = :height, width = :width",
+            "expressionValues": {
+              ":dateLastProcessed": $util.dynamodb.toDynamoDBJson($dateLastProcessed),
+              ":dateModifiedInDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
+              ":GSI2PK": $util.dynamodb.toDynamoDBJson("FILETOPROCESS"),
+              ":GSI2SK": $util.dynamodb.toDynamoDBJson($GSI2SK),
+              ":height": $util.dynamodb.toDynamoDBJson($height),
+              ":width": $util.dynamodb.toDynamoDBJson($width),
+            }
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        ## Raise a GraphQL field error in case of a datasource invocation error
+        #if($ctx.error)
+            $util.error($ctx.error.message, $ctx.error.type)
+        #end
+        ## Pass back the result from DynamoDB. **
+        $util.toJson($ctx.result)`),
+    })
+
+    const updateImageRecordFunction = new AppsyncFunction(this, 'UpdateImageRecordFunction', {
+      api: this.api,
+      dataSource: websiteMetadataDynamoDataSource,
+      name: 'updateImageRecordFunction',
+      description: 'Used to update width and height in the Image record in DynamoDB.',
+      requestMappingTemplate: MappingTemplate.fromString(`
+        #set($itemId = $ctx.stash.itemId)
+        #set($height = $ctx.stash.height)
+        #set($width = $ctx.stash.width)
+        #set($itemId = $util.defaultIfNullOrBlank($itemId, ""))
+        #set($itemId = $util.str.toUpper($itemId))
+        #set($itemId = $util.str.toReplace($itemId, " ", ""))
+        #set($pk = "IMAGE")
+        #set($sk = "IMAGE#$itemId")
+
+        {
+          "version": "2017-02-28",
+          "operation": "UpdateItem",
+          "key": {
+            "PK": $util.dynamodb.toDynamoDBJson($pk),
+            "SK": $util.dynamodb.toDynamoDBJson($sk),
+          },
+          "update": {
+            "expression": "SET height = :height, width = :width",
+            "expressionValues": {
+              ":height": $util.dynamodb.toDynamoDBJson($height),
+              ":width": $util.dynamodb.toDynamoDBJson($width),
+            }
+          }
+        }`),
+      responseMappingTemplate: MappingTemplate.fromString(`
+        ## Raise a GraphQL field error in case of a datasource invocation error
+        #if($ctx.error)
+            $util.error($ctx.error.message, $ctx.error.type)
+        #end
+        ## Pass back the result from DynamoDB. **
+        $util.toJson($ctx.result)`),
+    })
+
     const updateSupplementalDataRecordFunction = new AppsyncFunction(this, 'UpdateSupplementalDataRecordFunction', {
       api: this.api,
       dataSource: websiteMetadataDynamoDataSource,
@@ -719,30 +803,6 @@ def _delete_expired_api_keys(graphql_api_id: str):
           "key": {
             "PK": $util.dynamodb.toDynamoDBJson("IMAGEGROUP"),
             "SK": $util.dynamodb.toDynamoDBJson($fullId),
-          }
-        }`),
-      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
-    })
-
-    new Resolver(this, 'ItemMetadataDefaultFileResolver', {
-      api: this.api,
-      typeName: 'ItemMetadata',
-      fieldName: 'defaultFile',
-      dataSource: websiteMetadataDynamoDataSource,
-      requestMappingTemplate: MappingTemplate.fromString(`
-        #set($id = $ctx.source.defaultFilePath)
-        #set($id = $util.defaultIfNullOrBlank($id, ""))
-        #set($id = $util.str.toUpper($id))
-        #set($id = $util.str.toReplace($id, " ", ""))
-
-        #set($pk = "FILE")
-        #set($sk = "FILE#$id")
-        {
-          "version": "2017-02-28",
-          "operation": "GetItem",
-          "key": {
-            "PK": $util.dynamodb.toDynamoDBJson($pk),
-            "SK": $util.dynamodb.toDynamoDBJson($sk),
           }
         }`),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
@@ -1297,34 +1357,12 @@ def _delete_expired_api_keys(graphql_api_id: str):
       api: this.api,
       typeName: 'Mutation',
       fieldName: 'saveFileLastProcessedDate',
-      dataSource: websiteMetadataDynamoDataSource,
+      pipelineConfig: [updateImageRecordFunction, saveFileToProcessRecordFunction],
       requestMappingTemplate: MappingTemplate.fromString(`
-        #set($itemId = $ctx.args.itemId)
-        #set($itemId = $util.defaultIfNullOrBlank($itemId, ""))
-        #set($itemId = $util.str.toUpper($itemId))
-        #set($itemId = $util.str.toReplace($itemId, " ", ""))
-        #set($pk = "FILETOPROCESS")
-        #set($sk = "FILEPATH#$itemId")
-        #set($dateLastProcessed = $util.time.nowISO8601())
-        #set($GSI2SK = "DATELASTPROCESSED#$dateLastProcessed")
-
-        {
-          "version": "2017-02-28",
-          "operation": "UpdateItem",
-          "key": {
-            "PK": $util.dynamodb.toDynamoDBJson($pk),
-            "SK": $util.dynamodb.toDynamoDBJson($sk),
-          },
-          "update": {
-            "expression": "SET dateLastProcessed = :dateLastProcessed, dateModifiedInDynamo = :dateModifiedInDynamo, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
-            "expressionValues": {
-              ":dateLastProcessed": $util.dynamodb.toDynamoDBJson($dateLastProcessed),
-              ":dateModifiedInDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
-              ":GSI2PK": $util.dynamodb.toDynamoDBJson("FILETOPROCESS"),
-              ":GSI2SK": $util.dynamodb.toDynamoDBJson($GSI2SK),
-            }
-          }
-        }`),
+        $!{ctx.stash.put("itemId", $ctx.args.itemId)}
+        $!{ctx.stash.put("height", $ctx.args.height)}
+        $!{ctx.stash.put("width", $ctx.args.width)}
+        {}`),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 

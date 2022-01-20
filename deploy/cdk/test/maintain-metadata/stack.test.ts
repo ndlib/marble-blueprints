@@ -148,6 +148,18 @@ describe('MaintainMetadataStack', () => {
       }))
     })
 
+    test('creates saveFileToProcessRecordFunction', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::FunctionConfiguration', {
+        Name: "saveFileToProcessRecordFunction",
+      }))
+    })
+
+    test('creates updateImageRecordFunction', () => {
+      expectCDK(stack).to(haveResourceLike('AWS::AppSync::FunctionConfiguration', {
+        Name: "updateImageRecordFunction",
+      }))
+    })
+
   })
 
 

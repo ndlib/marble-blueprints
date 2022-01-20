@@ -25,15 +25,12 @@ describe('IiifServerlessStack', () => {
       })
       return parentStack.domainStack
     }
-    console.log("started - before first assert")
     
     test('creates a domain name with the fqdn', () => {
-      console.log("before first test")
       const subject = stack()
       expectCDK(subject).to(haveResourceLike('AWS::ApiGateway::DomainName', {
         DomainName: 'test-iiif.test.com',
       }))
-      console.log("after first test")
     })
 
     test('creates the domain with the cert from the foundation stack', () => {

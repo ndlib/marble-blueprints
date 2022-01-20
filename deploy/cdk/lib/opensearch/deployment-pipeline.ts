@@ -2,13 +2,11 @@ import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Topic } from '@aws-cdk/aws-sns'
 import cdk = require('@aws-cdk/core')
-import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation/pipeline-foundation-stack'
-import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -115,27 +113,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
 
-    // Deploy to Test
-    const testContextEnvName = 'dev' // Added specifically to force the test instance to be created with the same configuration as the dev environment
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testContextEnvName)
-
-    // Approval
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new GithubApproval({
-      notificationTopic: approvalTopic,
-      testTarget: `stack ${testStackName}`,
-      prodTarget: `stack ${prodStackName}`,
-      githubSources: [
-        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
-      ],
-    })
-    if(props.slackNotifyStackName !== undefined){
-      new SlackApproval(this, 'SlackApproval', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
-
+    // Because of cost issues, we are removing the OpenSearch test stack
     // Deploy to Production
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.contextEnvName)
 
@@ -146,10 +124,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
         {
           actions: [infraSourceAction],
           stageName: 'Source',
-        },
-        {
-          actions: [deployTest.action, approvalAction],
-          stageName: 'Test',
         },
         {
           actions: [deployProd.action],

@@ -43,7 +43,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
 
   const staticHostContext = getContextByNamespace('staticHost')
   const commonSitePipelineProps = {
-    testOpenSearchStack: testStacks.openSearchStack,
     prodOpenSearchStack: prodStacks.openSearchStack,
     testMaintainMetadataStack: testStacks.maintainMetadataStack,
     prodMaintainMetadataStack: prodStacks.maintainMetadataStack,

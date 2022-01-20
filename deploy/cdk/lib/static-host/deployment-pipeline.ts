@@ -40,7 +40,6 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly hostnamePrefix: string
   readonly buildScriptsDir: string
   readonly createDns: boolean
-  readonly testOpenSearchStack: OpenSearchStack
   readonly prodOpenSearchStack: OpenSearchStack
   readonly searchIndex: string
   readonly siteDirectory: string
@@ -130,12 +129,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.maintainMetadataKeyBase + '*'),
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainNameKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainEndpointKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainMasterUserNameKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainMasterUserNameKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainReadOnlyUserNameKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testOpenSearchStack.domainReadOnlyPasswordKeyPath + '*'),
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainNameKeyPath + '*'),
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainEndpointKeyPath + '*'),
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
@@ -211,13 +204,6 @@ export class DeploymentPipelineStack extends cdk.Stack {
       searchIndex: `${props.searchIndex}-test`,
       siteDirectory: props.siteDirectory,
       workspaceName: props.workspaceName,
-      // openSearchDomainNameKeyPath: props.testOpenSearchStack.domainNameKeyPath,
-      // openSearchEndpointKeyPath: props.testOpenSearchStack.domainEndpointKeyPath,
-      // openSearchMasterUserNameKeyPath: props.testOpenSearchStack.domainMasterUserNameKeyPath,
-      // openSearchMasterPasswordKeyPath: props.testOpenSearchStack.domainMasterPasswordKeyPath,
-      // openSearchReadOnlyUserNameKeyPath: props.testOpenSearchStack.domainReadOnlyUserNameKeyPath,
-      // openSearchReadOnlyPasswordKeyPath: props.testOpenSearchStack.domainReadOnlyPasswordKeyPath,
-      // openSearchDomainPrefix: props.namespace,
       openSearchDomainNameKeyPath: props.prodOpenSearchStack.domainNameKeyPath,
       openSearchEndpointKeyPath: props.prodOpenSearchStack.domainEndpointKeyPath,
       openSearchMasterUserNameKeyPath: props.prodOpenSearchStack.domainMasterUserNameKeyPath,

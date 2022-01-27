@@ -1,4 +1,4 @@
-import { expect as expectCDK, haveResource, haveResourceLike, matchTemplate, MatchStyle } from '@aws-cdk/assert'
+import { Template } from '@aws-cdk/assertions'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
 import { IiifServerlessStack } from '../../lib/iiif-serverless'
@@ -23,37 +23,41 @@ describe('IiifServerlessStack', () => {
         createDns: createDns ?? true,
         paramPathPrefix: '/all/marble/image-service',
       })
-      return parentStack.domainStack
+      return parentStack.domainStack     
     }
     
     test('creates a domain name with the fqdn', () => {
       const subject = stack()
-      expectCDK(subject).to(haveResourceLike('AWS::ApiGateway::DomainName', {
+      const template = Template.fromStack(subject)
+      template.hasResourceProperties('AWS::ApiGateway::DomainName', {
         DomainName: 'test-iiif.test.com',
-      }))
+      })
     })
 
     test('creates the domain with the cert from the foundation stack', () => {
       const subject = stack()
-      expectCDK(subject).to(haveResourceLike('AWS::ApiGateway::DomainName', {
+      const template = Template.fromStack(subject)
+      template.hasResourceProperties('AWS::ApiGateway::DomainName', {
         RegionalCertificateArn: {
           'Fn::ImportValue': 'FoundationStack:ExportsOutputRefCertificate4E7ABB08F7C8AF50',
         },
-      }))
+      })
     })
 
     test('creates the domain with the cert from the foundation stack', () => {
       const subject = stack()
-      expectCDK(subject).to(haveResourceLike('AWS::ApiGateway::DomainName', {
+      const template = Template.fromStack(subject)
+      template.hasResourceProperties('AWS::ApiGateway::DomainName', {
         RegionalCertificateArn: {
           'Fn::ImportValue': 'FoundationStack:ExportsOutputRefCertificate4E7ABB08F7C8AF50',
         },
-      }))
+      })
     })
 
     test('creates a base path mapping to the latest stage in the Api', () => {
       const subject = stack()
-      expectCDK(subject).to(haveResourceLike('AWS::ApiGateway::BasePathMapping', {
+      const template = Template.fromStack(subject)
+      template.hasResourceProperties('AWS::ApiGateway::BasePathMapping', {
         'DomainName': {
           'Ref': 'APIDomain02CC2FA9',
         },
@@ -81,12 +85,13 @@ describe('IiifServerlessStack', () => {
           },
         },
         'Stage': 'latest',
-      }))
+      })
     })
 
     test('creates a dns recordset in the foundation stack\'s hosted zone when createDns is true', () => {
       const subject = stack(true)
-      expectCDK(subject).to(haveResourceLike('AWS::Route53::RecordSet', {
+      const template = Template.fromStack(subject)
+      template.hasResourceProperties('AWS::Route53::RecordSet', {
         'Name': 'test-iiif.test.com.',
         'Type': 'CNAME',
         'HostedZoneId': {
@@ -101,12 +106,13 @@ describe('IiifServerlessStack', () => {
           },
         ],
         'TTL': '900',
-      }))
+      })
     })
 
     test('does not create a dns recordset when createDns is false', () => {
       const subject = stack(false)
-      expectCDK(subject).notTo(haveResource('AWS::Route53::RecordSet'))
+      const template = Template.fromStack(subject)
+      template.resourceCountIs('AWS::Route53::RecordSet', 0)
     })
   })
 
@@ -131,6 +137,7 @@ describe('IiifServerlessStack', () => {
     describe('template monkey patches', () => {
       test('changes Cfn params to read from SSM', () => {
         const subject = stack()
+        const template = Template.fromStack(subject)
         const expected = {
           Parameters: {
             SourceBucket: {
@@ -150,12 +157,13 @@ describe('IiifServerlessStack', () => {
             },
           },
         }
-        expectCDK(subject).to(matchTemplate(expected, MatchStyle.NO_REPLACES))
+        template.templateMatches(expected)
       })
 
       test('changes the dependency layer ContentUri to point to the assets pushed to cdk staging', () => {
         const subject = stack()
-        expectCDK(subject).to(haveResourceLike('AWS::Serverless::LayerVersion', {
+        const template = Template.fromStack(subject)
+        template.hasResourceProperties('AWS::Serverless::LayerVersion', {
           "ContentUri": {
             "Bucket": {
               "Ref": "referencetoMyTestStackAssetParametersb7826d21185e020066e56b133136e1082372d08cf21209a8823ac39710782f68S3Bucket113E00E2Ref",
@@ -194,12 +202,13 @@ describe('IiifServerlessStack', () => {
               ],
             },
           },
-        }))
+        })
       })
 
       test('changes the lambda CodeUri to point to the assets pushed to cdk staging', () => {
         const subject = stack()
-        expectCDK(subject).to(haveResourceLike('AWS::Serverless::Function', {
+        const template = Template.fromStack(subject)
+        template.hasResourceProperties('AWS::Serverless::Function', {
           "CodeUri": {
             "Bucket": {
               "Ref": "referencetoMyTestStackAssetParametersb7826d21185e020066e56b133136e1082372d08cf21209a8823ac39710782f68S3Bucket113E00E2Ref",
@@ -238,24 +247,26 @@ describe('IiifServerlessStack', () => {
               ],
             },
           },
-        }))
+        })
       })
     })
 
     test('creates a lambda with the dependencies layer', () => {
       const subject = stack()
-      expectCDK(subject).to(haveResourceLike('AWS::Serverless::Function', {
+      const template = Template.fromStack(subject)
+      template.hasResourceProperties('AWS::Serverless::Function', {
         "Layers": [
           {
             "Ref": "Dependencies",
           },
         ],
-      }))
+      })
     })
 
     test('creates a lambda with the events mapped to the api', () => {
       const subject = stack()
-      expectCDK(subject).to(haveResourceLike('AWS::Serverless::Function', {
+      const template = Template.fromStack(subject)
+      template.hasResourceProperties('AWS::Serverless::Function', {
         "Events": {
           "GetId": {
             "Type": "Api",
@@ -318,12 +329,13 @@ describe('IiifServerlessStack', () => {
             },
           },
         },
-      }))
+      })
     })
 
     test('creates the api', () => {
       const subject = stack()
-      expectCDK(subject).to(haveResourceLike('AWS::Serverless::Api', {
+      const template = Template.fromStack(subject)
+      template.hasResourceProperties('AWS::Serverless::Api', {
         "Name": {
           "Fn::Sub": "${AWS::StackName}-api",
         },
@@ -758,7 +770,7 @@ describe('IiifServerlessStack', () => {
             "*/*",
           ],
         },
-      }))
+      })
     })
   })
 })

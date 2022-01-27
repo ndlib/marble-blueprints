@@ -116,17 +116,18 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
         Low: false,
       },
     },
-    {
-      title: "Marble - Unified Website CDN",
-      type: "CloudfrontLatency",
-      distributionId: website.cloudfront.distributionId,
-      sloThreshold: 0.95,
-      latencyThreshold: 1000,
-      alarmsEnabled: {
-        High: true,
-        Low: false,
-      },
-    },
+    // Commented out 2022-01-27 when we decided to turn off latency alarms for Marble, since we don't have manpower to follow up on these alarms
+    // {
+    //   title: "Marble - Unified Website CDN",
+    //   type: "CloudfrontLatency",
+    //   distributionId: website.cloudfront.distributionId,
+    //   sloThreshold: 0.95,
+    //   latencyThreshold: 1000,
+    //   alarmsEnabled: {
+    //     High: true,
+    //     Low: false,
+    //   },
+    // },
     {
       title: "Marble - IIIF Image Service API",
       type: "ApiAvailability",
@@ -137,17 +138,18 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
         Low: false,
       },
     },
-    {
-      title: "Marble - IIIF Image Service API",
-      type: "ApiLatency",
-      apiName: iiifServerlessStack.apiStack.apiName,
-      sloThreshold: 0.95,
-      latencyThreshold: 3000,
-      alarmsEnabled: {
-        High: true,
-        Low: false,
-      },
-    },
+    // Commented out 2022-01-27 when we decided to turn off latency alarms for Marble, since we don't have manpower to follow up on these alarms
+    // {
+    //   title: "Marble - IIIF Image Service API",
+    //   type: "ApiLatency",
+    //   apiName: iiifServerlessStack.apiStack.apiName,
+    //   sloThreshold: 0.95,
+    //   latencyThreshold: 3000,
+    //   alarmsEnabled: {
+    //     High: true,
+    //     Low: false,
+    //   },
+    // },
     {
       title: "Marble - IIIF Manifest API",
       type: "ApiAvailability",
@@ -159,17 +161,18 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
         Low: false,
       },
     },
-    {
-      title: "Marble - IIIF Manifest API",
-      type: "ApiLatency",
-      apiName: manifestLambdaStack.apiName,
-      sloThreshold: 0.95,
-      latencyThreshold: 3000 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-      alarmsEnabled: {
-        High: true,
-        Low: false,
-      },
-    },
+    // Commented out 2022-01-27 when we decided to turn off latency alarms for Marble, since we don't have manpower to follow up on these alarms
+    // {
+    //   title: "Marble - IIIF Manifest API",
+    //   type: "ApiLatency",
+    //   apiName: manifestLambdaStack.apiName,
+    //   sloThreshold: 0.95,
+    //   latencyThreshold: 3000 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+    //   alarmsEnabled: {
+    //     High: true,
+    //     Low: false,
+    //   },
+    // },
     {
       title: "Marble - Maintain Metadata API",
       type: "AppSyncAvailability",
@@ -181,18 +184,19 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
         Low: false,
       },
     },
-    {
-      title: "Marble - Maintain Metadata API",
-      type: "AppSyncLatency",
-      apiId: maintainMetadataStack.apiId,
-      sloThreshold: 0.95,
-      // latencyThreshold: 500,
-      latencyThreshold: 500 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-      alarmsEnabled: {
-        High: true,
-        Low: false,
-      },
-    },
+    // Commented out 2022-01-27 when we decided to turn off latency alarms for Marble, since we don't have manpower to follow up on these alarms
+    // {
+    //   title: "Marble - Maintain Metadata API",
+    //   type: "AppSyncLatency",
+    //   apiId: maintainMetadataStack.apiId,
+    //   sloThreshold: 0.95,
+    //   // latencyThreshold: 500,
+    //   latencyThreshold: 500 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
+    //   alarmsEnabled: {
+    //     High: true,
+    //     Low: false,
+    //   },
+    // },
     // Note:  ndlib-cdk/src/slos/types.ts does not yet contain anything for opensearch, so we'll need to just comment the elasticcearch SLOs for now.  Once functionality is added to ndlib-cdk, we can modify these commented lines.
     // {
     //   title: "Marble - Search API",
@@ -242,17 +246,18 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
         Low: false,
       },
     },
-    {
-      title: "Marble - IIIF Viewer CDN",
-      type: "CloudfrontLatency",
-      distributionId: viewer.cloudfront.distributionId,
-      sloThreshold: 0.95,
-      latencyThreshold: 750,
-      alarmsEnabled: {
-        High: true,
-        Low: false,
-      },
-    },
+    // Commented out 2022-01-27 when we decided to turn off latency alarms for Marble, since we don't have manpower to follow up on these alarms
+    // {
+    //   title: "Marble - IIIF Viewer CDN",
+    //   type: "CloudfrontLatency",
+    //   distributionId: viewer.cloudfront.distributionId,
+    //   sloThreshold: 0.95,
+    //   latencyThreshold: 750,
+    //   alarmsEnabled: {
+    //     High: true,
+    //     Low: false,
+    //   },
+    // },
   ]
 
   const sloContext = getContextByNamespace('slos')

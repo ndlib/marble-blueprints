@@ -43,8 +43,8 @@ describe('MultimediaAssetsStack', () => {
                 '*.fake.domain',
               ],
               MaxAge: 3600,
-            }
-          ]
+            },
+          ],
         },
         LoggingConfiguration: {
           DestinationBucketName: {

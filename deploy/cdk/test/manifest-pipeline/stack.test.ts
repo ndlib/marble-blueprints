@@ -1,4 +1,4 @@
-import { expect as expectCDK, haveResourceLike } from '@aws-cdk/assert'
+import { Match, Template } from '@aws-cdk/assertions'
 import { Bucket } from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
@@ -61,18 +61,20 @@ describe('ManifestPipelineStack', () => {
 
   describe('Buckets', () => {
     test('creates a Process Bucket', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::S3::Bucket', {
+      const template = Template.fromStack(stack)
+        template.hasResourceProperties('AWS::S3::Bucket', {
         LoggingConfiguration: {
           DestinationBucketName: {
             "Fn::ImportValue": "marble-foundation:ExportsOutputRefLogBucketCC3B17E818DCEC53",
           },
           LogFilePrefix: "s3/data-broker/",
         },
-      }))
+      })
     })
 
     test('creates a Manifest Bucket', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::S3::Bucket', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::S3::Bucket', {
         CorsConfiguration: {
           CorsRules: [
             {
@@ -94,75 +96,82 @@ describe('ManifestPipelineStack', () => {
           },
           LogFilePrefix: "s3/data-broker/",
         },
-      }))
+      })
     })
   }) /* end of describe Buckets */
 
   describe('SSM Parameters', () => {
     test('creates SSMImageServerBaseUrl', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::SSM::Parameter', {
         Type: "String",
         Description: "Image server base url",
         Name: `${manifestPipelineContext.appConfigPath}/image-server-base-url`,
-      }))
+      })
     })
 
     test('creates SSMImageSourceBucket', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::SSM::Parameter', {
         Type: "String",
         Value: {
           "Fn::ImportValue": "marble-foundation:ExportsOutputRefPublicBucketA6745C1519F3350E",
         },
         Description: "Image source bucket",
         Name: `${manifestPipelineContext.appConfigPath}/image-server-bucket`,
-      }))
+      })
     })
 
     test('creates SSMManifestServerBaseUrl', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::SSM::Parameter', {
         Type: "String",
         Value: "presentation-iiif.test.edu",
         Description: "Manifest Server URL",
         Name: `${manifestPipelineContext.appConfigPath}/manifest-server-base-url`,
-      }))
+      })
     })
 
     test('creates SSMManifestBucket', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::SSM::Parameter', {
         Type: "String",
         Value: {
           Ref: "ManifestBucket46C412A5",
         },
         Description: "S3 Bucket to hold Manifests",
         Name: `${manifestPipelineContext.appConfigPath}/manifest-server-bucket`,
-      }))
+      })
     })
 
     test('creates SSMProcessBucket', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::SSM::Parameter', {
         Type: "String",
         Value: {
           Ref: "ProcessBucketE5460FC2",
         },
         Description: "S3 Bucket to accumulate assets during processing",
         Name: `${manifestPipelineContext.appConfigPath}/process-bucket`,
-      }))
+      })
     })
 
     test('creates SSMRBSCS3ImageBucketName', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::SSM::Parameter', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::SSM::Parameter', {
         Type: "String",
         Value: "libnd-smb-rbsc",
         Description: "Name of the RBSC Image Bucket",
         Name: `${ manifestPipelineContext.appConfigPath }/rbsc-image-bucket`,
-      }))
+      })
     })
   }) /* end of describe SSM Parameters */
 
 
   describe('Edge Lambda', () => {
     test('creates a Service Roll for the Edge Lambda ', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::IAM::Role', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::IAM::Role', {
         AssumeRolePolicyDocument: {
           Statement: [
             {
@@ -174,7 +183,7 @@ describe('ManifestPipelineStack', () => {
             },
           ],
         },
-      }))
+      })
     })
 
   }) /* end of describe Lambdas */
@@ -182,45 +191,52 @@ describe('ManifestPipelineStack', () => {
 
   describe('Lambdas', () => {
     test('creates MuseumExportLambda', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::Lambda::Function', {
         Description: 'Creates standard json from web-enabled items from Web Kiosk.',
-      }))
+      })
     })
 
     test('creates CopyMediaContentLambda', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::Lambda::Function', {
         Description: 'Copies media files from other folders to /public-access/media folder to be served by CDN',
-      }))
+      })
     })
 
     test('creates AlephExportLambda', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::Lambda::Function', {
         Description: 'Creates standard json from Aleph records with 500$a = MARBLE.',
-      }))
+      })
     })
 
     test('creates ArchivesSpaceExportLambda', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::Lambda::Function', {
         Description: 'Creates standard json from a list of ArchivesSpace urls.',
-      }))
+      })
     })
 
     test('creates CurateExportLambda', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::Lambda::Function', {
         Description: 'Creates standard json from a list of curate PIDs.',
-      }))
+      })
     })
 
     test('creates ExpandSubjectTermsLambda', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::Lambda::Function', {
         Description: 'Cycles through subject term URIs stored in dynamo, and expands those subject terms using the appropriate online authority.',
-      }))
+      })
     })
 
     test('creates ObjectFilesApiLambda', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::Lambda::Function', {
         Description: 'Creates json representations files to be used by Red Box.',
-      }))
+      })
     })
 
 
@@ -230,7 +246,8 @@ describe('ManifestPipelineStack', () => {
 
   describe('State Machines', () => {
     test('creates HarvestStateMachine ', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::StepFunctions::StateMachine', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
         "DefinitionString": {
           "Fn::Join": [
             "",
@@ -305,7 +322,7 @@ describe('ManifestPipelineStack', () => {
             ],
           ],
         },
-      }))
+      })
     })
 
   }) /* end of describe StateMachines */
@@ -322,10 +339,11 @@ describe('ManifestPipelineStack', () => {
       })
 
       test('creates StartStdJsonHarvestRule ', () => {
-        expectCDK(stack).to(haveResourceLike('AWS::Events::Rule', {
+        const template = Template.fromStack(stack)
+        template.hasResourceProperties('AWS::Events::Rule', {
           Description: "Start State Machine harvest of source systems to create standard json.",
           ScheduleExpression: "cron(0 6 * * ? *)",
-        }))
+        })
       })
     }) /* end of describe when createEventRules is true */
 
@@ -337,11 +355,10 @@ describe('ManifestPipelineStack', () => {
         })
       })
 
-      test('creates StartStdJsonHarvestRule ', () => {
-        expectCDK(stack).notTo(haveResourceLike('AWS::Events::Rule', {
-          Description: "Start State Machine harvest of source systems to create standard json.",
-          ScheduleExpression: "cron(0 6 * * ? *)",
-        }))
+      test('does not create StartStdJsonHarvestRule ', () => {
+        const template = Template.fromStack(stack)
+        template.resourceCountIs('AWS::Events::Rule', 0)
+
       })
     }) /* end of describe when createEventRules is false */
 
@@ -352,7 +369,8 @@ describe('ManifestPipelineStack', () => {
 
   describe('dynamoDB tables', () => {
     test('creates websiteMetadataDynamoTable ', () => {
-      expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::DynamoDB::Table', {
         "KeySchema": [
           {
             "AttributeName": "PK",
@@ -386,6 +404,14 @@ describe('ManifestPipelineStack', () => {
           },
           {
             "AttributeName": "GSI2SK",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "GSI3PK",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "GSI3SK",
             "AttributeType": "S",
           },
         ],
@@ -423,6 +449,22 @@ describe('ManifestPipelineStack', () => {
               "ProjectionType": "ALL",
             },
           },
+          {
+            "IndexName": "GSI3",
+            "KeySchema": [
+              {
+                "AttributeName": "GSI3PK",
+                "KeyType": "HASH",
+              },
+              {
+                "AttributeName": "GSI3SK",
+                "KeyType": "RANGE",
+              },
+            ],
+            "Projection": {
+              "ProjectionType": "ALL",
+            },
+          },
         ],
         "PointInTimeRecoverySpecification": {
           "PointInTimeRecoveryEnabled": true,
@@ -431,18 +473,14 @@ describe('ManifestPipelineStack', () => {
           "AttributeName": "expireTime",
           "Enabled": true,
         },
-      }))
+      })
     })
 
     test('does not create tags for websiteMetadataDynamoTable ', () => {
-      expectCDK(stack).notTo(haveResourceLike('AWS::DynamoDB::Table', {
-        "Tags": [
-          {
-            "Key": "BackupMarbleDynamoDB",
-            "Value": "true",
-          },
-        ],
-      }))
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::DynamoDB::Table', {
+        "Tags": Match.absent(),
+      })
     })
 
     test('creates tags for DynamoDB table', () => {
@@ -459,14 +497,15 @@ describe('ManifestPipelineStack', () => {
         ...manifestPipelineContext,
         createBackup: true,
       })
-      expectCDK(stack).to(haveResourceLike('AWS::DynamoDB::Table', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::DynamoDB::Table', {
         "Tags": [
           {
             "Key": "BackupMarbleDynamoDB",
             "Value": "true",
           },
         ],
-      }))
+      })
 
     })
 

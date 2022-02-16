@@ -1,4 +1,4 @@
-import { expect as expectCDK, countResources, haveResourceLike } from '@aws-cdk/assert'
+import { Template } from '@aws-cdk/assertions'
 import { Bucket } from '@aws-cdk/aws-s3'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
@@ -83,58 +83,67 @@ describe('ManifestLambdaStack', () => {
   })
 
   test('creates iiifManifestLambda', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::Lambda::Function', {
       "Description": "Create iiif manifests real-time",
-    }))
+    })
   })
 
   test('creates an API Gateways for iiifManifestLambda and publicGraphqlLambda', () => {
-    expectCDK(stack).to(countResources('AWS::ApiGateway::Deployment', 2))
+    const template = Template.fromStack(stack)
+    template.resourceCountIs('AWS::ApiGateway::Deployment', 2)
   })
 
   test('creates an API Gateway Resource (manifest)', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::ApiGateway::Resource', {
       "PathPart": "manifest",
-    }))
+    })
   })
 
 
   test('creates an API Gateway Resource (canvas)', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::ApiGateway::Resource', {
       "PathPart": "canvas",
-    }))
+    })
   })
 
   test('creates an API Gateway Resource (annotation_page)', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::ApiGateway::Resource', {
       "PathPart": "annotation_page",
-    }))
+    })
   })
 
   test('creates an API Gateway Resource (annotation)', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::ApiGateway::Resource', {
       "PathPart": "annotation",
-    }))
+    })
   })
 
   test('creates an Route53 Recordset', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::Route53::RecordSet', {
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::Route53::RecordSet', {
       "Name": "test-iiif-manifest.test.edu.",
-    }))
+    })
   })
 
 
   test('creates a Lambda', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::Lambda::Function', {
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::Lambda::Function', {
       "Description": "Appends API keys and queries named AppSync resolvers",
-    }))
+    })
   })
 
 
   test('creates an API Gateway Resource (query)', () => {
-    expectCDK(stack).to(haveResourceLike('AWS::ApiGateway::Resource', {
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::ApiGateway::Resource', {
       "PathPart": "query",
-    }))
+    })
   })
 
 
@@ -147,7 +156,8 @@ describe('ManifestLambdaStack', () => {
         createDns: false,
       },
     })
-    expectCDK(testStack).notTo(haveResourceLike('AWS::Route53::RecordSet'))
+    const template = Template.fromStack(testStack)
+    template.resourceCountIs('AWS::Route53::RecordSet', 0)
   })
 
 }) /* end of describe ManifestPipelineStack */

@@ -1,8 +1,7 @@
-import { expect as expectCDK, haveResource, haveResourceLike, MatchStyle, matchTemplate, anything } from '@aws-cdk/assert'
+import { Template } from '@aws-cdk/assertions'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
 import helpers = require('../helpers')
-import { Vpc } from '@aws-cdk/aws-ec2'
 
 describe('FoundationStack', () => {
   describe('VPC', () => {
@@ -16,54 +15,58 @@ describe('FoundationStack', () => {
 
       test('creates a VPC', () => {
         const subject = stack()
-        expectCDK(subject).to(haveResource('AWS::EC2::VPC'))
+        const template = Template.fromStack(subject)
+        template.resourceCountIs('AWS::EC2::VPC', 1)
       })
 
       test('creates an internet gateway', () => {
         const subject = stack()
-        expectCDK(subject).to(haveResource('AWS::EC2::InternetGateway'))
+        const template = Template.fromStack(subject)
+        template.resourceCountIs('AWS::EC2::InternetGateway', 1)
       })
 
       test('creates two private subnets and two public subnets', () => {
         const subject = stack()
-        expectCDK(subject).to(haveResourceLike('AWS::EC2::Subnet', {
+        const template = Template.fromStack(subject)
+        template.hasResourceProperties('AWS::EC2::Subnet', {
           AvailabilityZone: {
             "Fn::Select": [0, { "Fn::GetAZs": "" }],
           },
           "MapPublicIpOnLaunch": false,
-        }))
-        expectCDK(subject).to(haveResourceLike('AWS::EC2::Subnet', {
+        })
+       template.hasResourceProperties('AWS::EC2::Subnet', {
           AvailabilityZone: {
             "Fn::Select": [1, { "Fn::GetAZs": "" }],
           },
           "MapPublicIpOnLaunch": false,
-        }))
-        expectCDK(subject).to(haveResourceLike('AWS::EC2::Subnet', {
+        })
+       template.hasResourceProperties('AWS::EC2::Subnet', {
           AvailabilityZone: {
             "Fn::Select": [0, { "Fn::GetAZs": "" }],
           },
           "MapPublicIpOnLaunch": true,
-        }))
-        expectCDK(subject).to(haveResourceLike('AWS::EC2::Subnet', {
+        })
+       template.hasResourceProperties('AWS::EC2::Subnet', {
           AvailabilityZone: {
             "Fn::Select": [1, { "Fn::GetAZs": "" }],
           },
           "MapPublicIpOnLaunch": true,
-        }))
+        })
       })
 
       test('creates a NAT gateway for each public subnet', () => {
         const subject = stack()
-        expectCDK(subject).to(haveResourceLike('AWS::EC2::NatGateway', {
+        const template = Template.fromStack(subject)
+        template.hasResourceProperties('AWS::EC2::NatGateway', {
           "SubnetId": {
             "Ref": "VPCPublicSubnet1SubnetB4246D30",
           },
-        }))
-        expectCDK(subject).to(haveResourceLike('AWS::EC2::NatGateway', {
+        })
+       template.hasResourceProperties('AWS::EC2::NatGateway', {
           "SubnetId": {
             "Ref": "VPCPublicSubnet2Subnet74179F39",
           },
-        }))
+        })
       })
     })
 
@@ -82,22 +85,27 @@ describe('FoundationStack', () => {
 
       test('does not create a VPC', () => {
         const subject = stack()
-        expectCDK(subject).notTo(haveResource('AWS::EC2::VPC'))
+        const template = Template.fromStack(subject)
+        template.resourceCountIs('AWS::EC2::VPC', 0)
+
       })
 
       test('does not create an internet gateway', () => {
         const subject = stack()
-        expectCDK(subject).notTo(haveResource('AWS::EC2::InternetGateway'))
+        const template = Template.fromStack(subject)
+        template.resourceCountIs('AWS::EC2::InternetGateway', 0)
       })
 
       test('does not create any subnets', () => {
         const subject = stack()
-        expectCDK(subject).notTo(haveResource('AWS::EC2::Subnet'))
+        const template = Template.fromStack(subject)
+        template.resourceCountIs('AWS::EC2::Subnet', 0)
       })
 
       test('creates a NAT gateway for each public subnet', () => {
         const subject = stack()
-        expectCDK(subject).notTo(haveResource('AWS::EC2::NatGateway'))
+        const template = Template.fromStack(subject)
+        template.resourceCountIs('AWS::EC2::NatGateway', 0)
       })
     })
   })
@@ -114,7 +122,8 @@ describe('FoundationStack', () => {
 
       test('creates a wildcard certificate for the domain using the zone as validation', () => {
         const subject = stack()
-        expectCDK(subject).to(haveResourceLike('AWS::CertificateManager::Certificate', {
+        const template = Template.fromStack(subject)
+        template.hasResourceProperties('AWS::CertificateManager::Certificate', {
           DomainName: '*.test.edu',
           DomainValidationOptions: [{
             DomainName: '*.test.edu',
@@ -123,14 +132,15 @@ describe('FoundationStack', () => {
             },
           }],
           ValidationMethod: "DNS",
-        }))
+        })
       })
 
       test('creates a Route53 for the domain', () => {
         const subject = stack()
-        expectCDK(subject).to(haveResourceLike('AWS::Route53::HostedZone', {
+        const template = Template.fromStack(subject)
+        template.hasResourceProperties('AWS::Route53::HostedZone', {
           Name: 'test.edu.',
-        }))
+        })
       })
     })
 
@@ -153,15 +163,17 @@ describe('FoundationStack', () => {
         /* https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-certificatemanager.CertificateValidation.html
         IMPORTANT: If hostedZone is not specified, DNS records must be added manually and the stack will not complete creating until the records are added. 
         */
-        expectCDK(subject).to(haveResourceLike('AWS::CertificateManager::Certificate', {
+        const template = Template.fromStack(subject)
+        template.hasResourceProperties('AWS::CertificateManager::Certificate', {
           DomainName: '*.test.edu',
           ValidationMethod: "DNS",
-        }))
+        })
       })
 
       test('does not create a Route53 for the domain', () => {
         const subject = stack()
-        expectCDK(subject).notTo(haveResource('AWS::Route53::HostedZone'))
+        const template = Template.fromStack(subject)
+        template.resourceCountIs('AWS::Route53::HostedZone', 0)
       })
 
     })
@@ -175,7 +187,8 @@ describe('FoundationStack', () => {
         domainName: 'test.edu',
       })
       // THEN
-      expectCDK(stack).to(haveResource('AWS::ECS::Cluster'))
+      const template = Template.fromStack(stack)
+      template.resourceCountIs('AWS::ECS::Cluster', 1)
     })
   })
 
@@ -187,7 +200,8 @@ describe('FoundationStack', () => {
         domainName: 'test.edu',
       })
       // THEN
-      expectCDK(stack).to(haveResourceLike('AWS::S3::Bucket', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::S3::Bucket', {
         AccessControl: "LogDeliveryWrite",
         LifecycleConfiguration: {
           Rules: [{
@@ -196,7 +210,7 @@ describe('FoundationStack', () => {
             NoncurrentVersionExpirationInDays: 1,
           }],
         },
-      }))
+      })
     })
 
     test('creates a shared log group with one year retention', () => {
@@ -206,9 +220,10 @@ describe('FoundationStack', () => {
         domainName: 'test.edu',
       })
       // THEN
-      expectCDK(stack).to(haveResourceLike('AWS::Logs::LogGroup', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::Logs::LogGroup', {
         RetentionInDays: 365,
-      }))
+      })
     })
   })
 
@@ -220,7 +235,8 @@ describe('FoundationStack', () => {
         domainName: 'test.edu',
       })
       // THEN
-      expectCDK(stack).to(haveResourceLike('AWS::S3::Bucket', {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::S3::Bucket', {
         CorsConfiguration: {
           CorsRules: [
             {
@@ -246,7 +262,7 @@ describe('FoundationStack', () => {
         WebsiteConfiguration: {
           IndexDocument: "index.html",
         },
-      }))
+      })
 
     })
   })

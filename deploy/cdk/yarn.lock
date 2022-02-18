@@ -10,16 +10,6 @@
     "@aws-cdk/core" "1.141.0"
     constructs "^3.3.69"
 
-"@aws-cdk/assert@1.141.0":
-  version "1.141.0"
-  resolved "https://registry.yarnpkg.com/@aws-cdk/assert/-/assert-1.141.0.tgz#653d3f4ce74499ba728fb89eba7ba4c6c32bea78"
-  integrity sha512-pQh/XUzHt2+6NQ4Ix8EehZJHw5oIli2z3kGkXmKPyeNZ/U9h7IAPL6x03Q6TqETXI4eogFXyl5tDIFSF4eNEcA==
-  dependencies:
-    "@aws-cdk/cloudformation-diff" "1.141.0"
-    "@aws-cdk/core" "1.141.0"
-    "@aws-cdk/cx-api" "1.141.0"
-    constructs "^3.3.69"
-
 "@aws-cdk/assertions@^1.141.0":
   version "1.141.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/assertions/-/assertions-1.141.0.tgz#656e3989dc812c257f78be9045b0a4cf6c40a21d"

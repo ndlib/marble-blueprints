@@ -13,7 +13,6 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "1.141.0",
     "@aws-cdk/cx-api": "1.141.0",
     "@types/jest": "^27.0.3",
     "@typescript-eslint/eslint-plugin": "^5.10.1",

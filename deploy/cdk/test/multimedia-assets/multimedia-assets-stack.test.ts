@@ -1,4 +1,4 @@
-import { expect as expectCDK, haveResourceLike, stringLike } from '@aws-cdk/assert'
+import { Match, Template } from '@aws-cdk/assertions'
 import cdk = require('@aws-cdk/core')
 import { FoundationStack } from '../../lib/foundation'
 import { MultimediaAssetsStack } from '../../lib/multimedia-assets'
@@ -27,76 +27,73 @@ describe('MultimediaAssetsStack', () => {
   })
 
   test('creates an s3 bucket for assets', () => {
-    expectCDK(stack).to(
-      haveResourceLike('AWS::S3::Bucket', {
-        BucketName: 'my-happy-place-multimedia-123456789',
-        CorsConfiguration: {
-          CorsRules: [
-            {
-              AllowedHeaders: [
-                '*',
-              ],
-              AllowedMethods: [
-                'GET',
-              ],
-              AllowedOrigins: [
-                '*.fake.domain',
-              ],
-              MaxAge: 3600,
-            }
-          ]
-        },
-        LoggingConfiguration: {
-          DestinationBucketName: {
-            'Fn::ImportValue': stringLike('FoundationStack:ExportsOutputRefLogBucket*'),
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::S3::Bucket', {
+      BucketName: 'my-happy-place-multimedia-123456789',
+      CorsConfiguration: {
+        CorsRules: [
+          {
+            AllowedHeaders: [
+              '*',
+            ],
+            AllowedMethods: [
+              'GET',
+            ],
+            AllowedOrigins: [
+              '*.fake.domain',
+            ],
+            MaxAge: 3600,
           },
-          LogFilePrefix: 's3/data-broker/',
+        ],
+      },
+      LoggingConfiguration: {
+        DestinationBucketName: {
+          'Fn::ImportValue': Match.stringLikeRegexp('^FoundationStack:ExportsOutputRefLogBucket*'),
         },
-        PublicAccessBlockConfiguration: {
-          BlockPublicAcls: true,
-          BlockPublicPolicy: true,
-          IgnorePublicAcls: true,
-          RestrictPublicBuckets: true,
-        },
-      }),
-    )
+        LogFilePrefix: 's3/data-broker/',
+      },
+      PublicAccessBlockConfiguration: {
+        BlockPublicAcls: true,
+        BlockPublicPolicy: true,
+        IgnorePublicAcls: true,
+        RestrictPublicBuckets: true,
+      },
+    })
   })
 
   test('creates a cloudfront with an appropriate domain name', () => {
-    expectCDK(stack).to(
-      haveResourceLike('AWS::CloudFront::Distribution', {
-        DistributionConfig: {
-          Aliases: [
-            'my-happy-place-multimedia.fake.domain',
-          ],
-          DefaultCacheBehavior: {
-            DefaultTTL: 9001,
-            ViewerProtocolPolicy: 'redirect-to-https',
-          },
-          ViewerCertificate: {
-            AcmCertificateArn: {
-              'Fn::ImportValue': stringLike('FoundationStack:ExportsOutputRefCertificate*'),
-            },
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        Aliases: [
+          'my-happy-place-multimedia.fake.domain',
+        ],
+        DefaultCacheBehavior: {
+          DefaultTTL: 9001,
+          ViewerProtocolPolicy: 'redirect-to-https',
+        },
+        ViewerCertificate: {
+          AcmCertificateArn: {
+            'Fn::ImportValue': Match.stringLikeRegexp('^FoundationStack:ExportsOutputRefCertificate*'),
           },
         },
-      }),
-    )
+      },
+    })
   })
 
   test('creates a route53 record for the domain', () => {
-    expectCDK(stack).to(
-      haveResourceLike('AWS::Route53::RecordSet', {
-        Name: 'my-happy-place-multimedia.fake.domain.',
-        Type: 'CNAME',
-        HostedZoneId: {
-          'Fn::ImportValue': stringLike('FoundationStack:ExportsOutputRefHostedZone*'),
+    const template = Template.fromStack(stack)
+    template.hasResourceProperties('AWS::Route53::RecordSet', {
+      Name: 'my-happy-place-multimedia.fake.domain.',
+      Type: 'CNAME',
+      HostedZoneId: {
+        'Fn::ImportValue': Match.stringLikeRegexp('^FoundationStack:ExportsOutputRefHostedZone*'),
+      },
+      ResourceRecords: [
+        {
+          'Fn::GetAtt': ['DistributionCFDistribution882A7313', 'DomainName'],
         },
-        ResourceRecords: [
-          {
-            'Fn::GetAtt': ['DistributionCFDistribution882A7313', 'DomainName'],
-          },
-        ],
-      }),
-    )
+      ],
+    })
   })
 })

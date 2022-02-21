@@ -162,7 +162,7 @@ export class CDKPipelineDeploy extends Construct {
         's3:GetBucketLocation',
         's3:GetBucketPolicy',
       ],
-      resources: [ 'arn:aws:s3:::cdktoolkit-stagingbucket-*' ],
+      resources: ['arn:aws:s3:::cdktoolkit-stagingbucket-*', 'arn:aws:s3:::cdk*' ],
     }))
 
     this.action = new CodeBuildAction({

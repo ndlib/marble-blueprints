@@ -324,6 +324,14 @@ describe('MaintainMetadataStack', () => {
       })
     })
 
+    test('creates MutationRemoveItemToProcessResolver', () => {
+      const template = Template.fromStack(stack)
+      template.hasResourceProperties('AWS::AppSync::Resolver', {
+        TypeName: "Mutation",
+        FieldName: "removeItemToProcess",
+      })
+    })
+
     test('creates MutationRemoveDefaultImageForWebsiteResolver', () => {
       const template = Template.fromStack(stack)
       template.hasResourceProperties('AWS::AppSync::Resolver', {

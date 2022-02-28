@@ -1151,6 +1151,30 @@ def _delete_expired_api_keys(graphql_api_id: str):
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+    new Resolver(this, 'MutationRemoveItemToProcessResolver', {
+        api: this.api,
+        typeName: 'Mutation',
+        fieldName: 'removeItemToProcess',
+        dataSource: websiteMetadataDynamoDataSource,
+        requestMappingTemplate: MappingTemplate.fromString(`
+          #set($itemId = $ctx.args.itemId)
+          #set($itemId = $util.defaultIfNullOrBlank($itemId, ""))
+          #set($itemId = $util.str.toUpper($itemId))
+          #set($itemId = $util.str.toReplace($itemId, " ", ""))
+          #set($pk = "FILETOPROCESS")
+          #set($sk = "FILEPATH#$itemId")
+  
+          {
+            "version": "2017-02-28",
+            "operation": "DeleteItem",
+            "key": {
+              "PK": $util.dynamodb.toDynamoDBJson($pk),
+              "SK": $util.dynamodb.toDynamoDBJson($sk),
+            }
+          }`),
+        responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
     new Resolver(this, 'MutationRemoveDefaultImageForWebsiteResolver', {
       api: this.api,
       typeName: 'Mutation',

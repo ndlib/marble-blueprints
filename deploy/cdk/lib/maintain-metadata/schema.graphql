@@ -247,6 +247,7 @@ type Mutation @aws_oidc @aws_api_key {
 	addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
 	addItemToHarvest(harvestItemId: String!, sourceSystem: String!): ItemToHarvestRecord
 	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
+    removeItemToProcess(itemId: String!): RecordsDeleted
 	removeDefaultImageForWebsite(itemId: String!, websiteId: String): ItemMetadata
 	removeMediaGroupForWebsite(itemId: String!, websiteId: String): ItemMetadata
 	removePortfolioCollection(portfolioCollectionId: String!): RecordsDeleted @aws_oidc

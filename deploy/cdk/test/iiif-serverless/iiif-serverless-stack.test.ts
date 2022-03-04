@@ -8,11 +8,11 @@ import * as path from 'path'
 describe('IiifServerlessStack', () => {
   describe('calculate', function() {
     it('add', function() {
-      let result = 1+1;
-      expect(result).toEqual(2);
-    }); 
-  });
-}
+      const result = 1+1
+      expect(result).toEqual(2)
+    })
+  })
+})
 
 //   describe('DomainStack', () => {
 //     const stack = (createDns?: boolean) => {

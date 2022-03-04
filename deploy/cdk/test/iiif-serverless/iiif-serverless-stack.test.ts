@@ -1,14 +1,18 @@
-// import { Template } from '@aws-cdk/assertions'
-// import cdk = require('@aws-cdk/core')
-// import { FoundationStack } from '../../lib/foundation'
-// import { IiifServerlessStack } from '../../lib/iiif-serverless'
-// import helpers = require('../helpers')
-// import * as path from 'path'
+import { Template } from '@aws-cdk/assertions'
+import cdk = require('@aws-cdk/core')
+import { FoundationStack } from '../../lib/foundation'
+import { IiifServerlessStack } from '../../lib/iiif-serverless'
+import helpers = require('../helpers')
+import * as path from 'path'
 
-// describe('IiifServerlessStack', () => {
-//   beforeEach(() => {
-//     helpers.mockFoundationStack()
-//   })
+describe('IiifServerlessStack', () => {
+  describe('calculate', function() {
+    it('add', function() {
+      let result = 1+1;
+      expect(result).toEqual(2);
+    }); 
+  });
+}
 
 //   describe('DomainStack', () => {
 //     const stack = (createDns?: boolean) => {

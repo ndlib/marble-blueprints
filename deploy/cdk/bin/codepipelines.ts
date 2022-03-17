@@ -59,7 +59,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const siteInstances : siteInstance[] = [
     { name: 'website', props: { ...commonSitePipelineProps, prodAdditionalAliases: 'marble.library.nd.edu' } },
     { name: 'redbox', props: commonSitePipelineProps },
-    //{ name: 'seaside', props: commonSitePipelineProps },
+    { name: 'seaside', props: commonSitePipelineProps },
     { name: 'inquisitions', props: commonSitePipelineProps },
     { name: 'viewer', props: commonSitePipelineProps },
   ]

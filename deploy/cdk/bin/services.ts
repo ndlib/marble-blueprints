@@ -43,6 +43,9 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
 
   const redboxProps = mapContextToProps<IStaticHostStackProps>('redbox', commonProps, staticHostTypeHints)
   const redbox = new staticHost.StaticHostStack(app, `${namespace}-redbox`, redboxProps)
+  
+  const seasideProps = mapContextToProps<IStaticHostStackProps>('seaside', commonProps, staticHostTypeHints)
+  const seaside = new staticHost.StaticHostStack(app, `${namespace}-seaside`, seasideProps)
 
   const inquisitionsProps = mapContextToProps<IStaticHostStackProps>('inquisitions', commonProps, staticHostTypeHints)
   const inquisitions = new staticHost.StaticHostStack(app, `${namespace}-inquisitions`, inquisitionsProps)
@@ -95,6 +98,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     redbox,
     inquisitions,
     viewer,
+    seaside,
     iiifServerlessStack,
     imageProcessingStack,
     openSearchStack,

@@ -89,6 +89,17 @@
   "redbox:authClientUrl": "https://okta.nd.edu",
   "redbox:authClientId": "0oa4tlda8nvJGLv9i357",
 
+  "seaside:hostnamePrefix": "seaside",
+  "seaside:appRepoOwner": "ndlib",
+  "seaside:appRepoName": "seaside",
+  "seaside:appSourceBranch": "deployment",
+  "seaside:buildScriptsDir": "scripts/codebuild",
+  "seaside:lambdaCodePath": "../../src/unifiedEdgeLambda",
+  "seaside:qaSpecPath": "test/newman/smoke_tests.postman_collection.json",
+  "seaside:searchIndex": "seaside",
+  "seaside:siteDirectory": "",
+  "seaside:workspaceName": "",
+
   "inquisitions:hostnamePrefix": "inquisition",
   "inquisitions:appRepoOwner": "ndlib",
   "inquisitions:appRepoName": "marble-website-starter",

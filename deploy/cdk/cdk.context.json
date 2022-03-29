@@ -99,6 +99,9 @@
   "seaside:searchIndex": "seaside",
   "seaside:siteDirectory": "",
   "seaside:workspaceName": "",
+  "seaside:authClientIssuer": "",
+  "seaside:authClientUrl": "",
+  "seaside:authClientId": "",
 
   "inquisitions:hostnamePrefix": "inquisition",
   "inquisitions:appRepoOwner": "ndlib",

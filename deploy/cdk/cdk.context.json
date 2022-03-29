@@ -92,7 +92,7 @@
   "seaside:hostnamePrefix": "seaside",
   "seaside:appRepoOwner": "ndlib",
   "seaside:appRepoName": "seaside",
-  "seaside:appSourceBranch": "deployment",
+  "seaside:appSourceBranch": "main",
   "seaside:buildScriptsDir": "scripts/codebuild",
   "seaside:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "seaside:qaSpecPath": "test/newman/smoke_tests.postman_collection.json",

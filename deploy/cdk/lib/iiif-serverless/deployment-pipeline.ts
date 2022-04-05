@@ -1,16 +1,15 @@
-import { BuildEnvironmentVariableType, BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
+import { BuildEnvironmentVariableType, BuildSpec, PipelineProject } from '@aws-cdk/aws-codebuild'
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import cdk = require('@aws-cdk/core')
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { Topic } from '@aws-cdk/aws-sns'
-import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { Fn } from '@aws-cdk/core'
 import { SlackApproval, NewmanRunner, PipelineNotifications } from '@ndlib/ndlib-cdk'
-import { DockerhubImage } from '../dockerhub-image'
 import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
@@ -53,33 +52,33 @@ export class DeploymentPipelineStack extends cdk.Stack {
     // Source Actions
     const appSourceArtifact = new codepipeline.Artifact('AppCode')
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
-        actionName: 'AppCode',
-        branch: props.appSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
-        output: appSourceArtifact,
-        owner: props.appRepoOwner,
-        repo: props.appRepoName,
-        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
+      actionName: 'AppCode',
+      branch: props.appSourceBranch,
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      output: appSourceArtifact,
+      owner: props.appRepoOwner,
+      repo: props.appRepoName,
+      trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
     const qaSourceArtifact = new codepipeline.Artifact('QACode')
     const qaSourceAction = new codepipelineActions.GitHubSourceAction({
-        actionName: 'QACode',
-        branch: props.qaSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
-        output: qaSourceArtifact,
-        owner: props.qaRepoOwner,
-        repo: props.qaRepoName,
-        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
+      actionName: 'QACode',
+      branch: props.qaSourceBranch,
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      output: qaSourceArtifact,
+      owner: props.qaRepoOwner,
+      repo: props.qaRepoName,
+      trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
     const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
-        actionName: 'InfraCode',
-        branch: props.infraSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
-        output: infraSourceArtifact,
-        owner: props.infraRepoOwner,
-        repo: props.infraRepoName,
-        trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
+      actionName: 'InfraCode',
+      branch: props.infraSourceBranch,
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      output: infraSourceArtifact,
+      owner: props.infraRepoOwner,
+      repo: props.infraRepoName,
+      trigger: props.createGithubWebhooks ? GitHubTrigger.WEBHOOK : GitHubTrigger.POLL,
     })
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
@@ -118,17 +117,17 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
       // TODO: For some reason the dependencies layer doesn't get the stack name when deployed through this pipeline
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
-        resources: [ Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:Dependencies*') ],
+        resources: [Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:Dependencies*')],
         actions: ['lambda:*'],
       }))
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['ssm:GetParameters'],
-        resources:[
+        resources: [
           cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramPath + '/*'),
         ],
       }))
 
-      if(props.createDns){
+      if (props.createDns) {
         cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
       }
       return cdkDeploy
@@ -191,7 +190,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
       ],
     })
-    if(props.slackNotifyStackName !== undefined){
+    if (props.slackNotifyStackName !== undefined) {
       const slackApproval = new SlackApproval(this, 'SlackApproval', {
         approvalTopic,
         notifyStackName: props.slackNotifyStackName,
@@ -238,7 +237,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       ],
     })
 
-    if(props.notificationReceivers){
+    if (props.notificationReceivers) {
       new PipelineNotifications(this, 'PipelineNotifications', {
         pipeline,
         receivers: props.notificationReceivers,

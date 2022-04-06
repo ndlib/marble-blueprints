@@ -4,6 +4,7 @@ import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { Construct, Fn, Duration } from '@aws-cdk/core'
 import { NamespacedPolicy } from '../namespaced-policy'
+import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
    * The name of the stack that this project will deploy to. Will add
@@ -64,6 +65,11 @@ export class PipelineS3Sync extends Construct {
     console.log("props.openSearchMasterPasswordKeyPath=", props.openSearchMasterPasswordKeyPath)    
     console.log("props.openSearchReadOnlyUserNameKeyPath=", props.openSearchReadOnlyUserNameKeyPath)
     console.log("props.openSearchReadOnlyPasswordKeyPath=", props.openSearchReadOnlyPasswordKeyPath)
+    console.log("openSearchEndpoint=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchEndpoint', { parameterName: props.openSearchEndpointKeyPath }).stringValue)
+    console.log("openSearchMasterUserName=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchMasterUserName', { parameterName: props.openSearchMasterUserNameKeyPath }).stringValue)
+    console.log("openSearchMasterPassword=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchMasterPassword', { parameterName: props.openSearchMasterPasswordKeyPath }).stringValue)
+    console.log("openSearchReadOnlyUserName=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchReadOnlyUserName', { parameterName: props.openSearchReadOnlyUserNameKeyPath }).stringValue)
+    console.log("openSearchReadOnlyPassword=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchReadOnlyPassword', { parameterName: props.openSearchReadOnlyPasswordKeyPath }).stringValue)
 
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',

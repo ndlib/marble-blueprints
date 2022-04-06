@@ -59,6 +59,12 @@ export class PipelineS3Sync extends Construct {
     const staticHostPath = `/all/static-host/${props.targetStack}/`
     const subModName = props.extraBuildArtifacts?.find(x=>x!==undefined)?.artifactName
 
+    console.log("props.openSearchEndpointKeyPath=", props.openSearchEndpointKeyPath)
+    console.log("props.openSearchMasterUserNameKeyPath=", props.openSearchMasterUserNameKeyPath)
+    console.log("props.openSearchMasterPasswordKeyPath=", props.openSearchMasterPasswordKeyPath)    
+    console.log("props.openSearchReadOnlyUserNameKeyPath=", props.openSearchReadOnlyUserNameKeyPath)
+    console.log("props.openSearchReadOnlyPasswordKeyPath=", props.openSearchReadOnlyPasswordKeyPath)
+
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
       timeout: Duration.minutes(30),

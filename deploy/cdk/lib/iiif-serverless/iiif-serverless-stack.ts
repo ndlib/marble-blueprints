@@ -114,6 +114,7 @@ class ApiStack extends NestedStack {
         cacheClusterSize: '0.5',
         cacheTtl: Duration.seconds(3600),
       },
+      binaryMediaTypes: ["image/png"],
     }
 
     const iiifApi = new apigateway.LambdaRestApi(this, 'IiifApi', apiProps)
@@ -123,17 +124,14 @@ class ApiStack extends NestedStack {
     // /iiif/2/{id}
     const idPath = twoPath.addResource('{id}')
     idPath.addMethod('GET')
-    // idPath.addMethod('OPTIONS')  // Added 2022-04-01
 
     // /iiif2/{id}/info.json
     const infoPath = idPath.addResource('info.json')
     infoPath.addMethod('GET')
-    // infoPath.addMethod('OPTIONS') // Added 2022-04-01
 
     // /iiif/2/{id}/{proxy+}
     const idProxyPath = idPath.addProxy({ anyMethod: false })
     idProxyPath.addMethod('GET')
-    // idProxyPath.addMethod('OPTIONS')  // Added 2022-04-01
 
     if (props.createDns) {
       new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {

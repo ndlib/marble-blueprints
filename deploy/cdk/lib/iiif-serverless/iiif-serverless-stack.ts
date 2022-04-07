@@ -136,10 +136,11 @@ class ApiStack extends NestedStack {
     if (props.createDns) {
       console.log('fqdn=', fqdn)
       console.log('iiifApi.domainName', iiifApi.domainName + '')
+      console.log('iiifApi.restApiName', iiifApi.restApiName)
       new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {
         recordName: props.hostnamePrefix,
         // domainName: fqdn,
-        domainName: iiifApi.domainName + '',
+        domainName: iiifApi.restApiName + '',
         zone: props.foundationStack.hostedZone,
         ttl: Duration.minutes(15),
       })

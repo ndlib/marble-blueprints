@@ -134,9 +134,12 @@ class ApiStack extends NestedStack {
     idProxyPath.addMethod('GET')
 
     if (props.createDns) {
+      console.log('fqdn=', fqdn)
+      console.log('iiifApi.domainName', iiifApi.domainName + '')
       new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {
         recordName: props.hostnamePrefix,
-        domainName: fqdn,
+        // domainName: fqdn,
+        domainName: iiifApi.domainName + '',
         zone: props.foundationStack.hostedZone,
         ttl: Duration.minutes(15),
       })

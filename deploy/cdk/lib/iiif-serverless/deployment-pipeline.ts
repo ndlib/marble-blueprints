@@ -90,7 +90,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         infraSourceArtifact,
         appSourceArtifact,
         appBuildCommands: [
-          'cd $CODEBUILD_SRC_DIR_AppCode/dependencies/nodejs',
+          'cd $CODEBUILD_SRC_DIR_AppCode/src',
           'npm install',
         ],
         cdkDirectory: 'deploy/cdk',

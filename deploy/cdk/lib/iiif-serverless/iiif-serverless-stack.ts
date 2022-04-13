@@ -134,6 +134,7 @@ class ApiStack extends NestedStack {
     const integration = new apigateway.Integration({
       type: apigateway.IntegrationType.AWS,
       options: {
+        passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
         contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,
       },
     })

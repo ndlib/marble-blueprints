@@ -134,7 +134,7 @@ class ApiStack extends NestedStack {
     const integration = new apigateway.Integration({
       type: apigateway.IntegrationType.AWS_PROXY,
       integrationHttpMethod: 'GET',
-      uri: Fn.sub('arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/' + iiifFunc.functionArn + '/invocations'),
+      uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + iiifFunc.functionArn + '/invocations',
       options: {
         passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
         contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,

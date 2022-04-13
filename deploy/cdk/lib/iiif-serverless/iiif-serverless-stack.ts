@@ -1,5 +1,5 @@
 import apigateway = require('@aws-cdk/aws-apigateway')
-import { CfnOutput, Construct, Duration, NestedStack, NestedStackProps, Stack, StackProps } from "@aws-cdk/core"
+import { CfnOutput, Construct, Duration, Fn, NestedStack, NestedStackProps, Stack, StackProps } from "@aws-cdk/core"
 import { FoundationStack } from "../foundation"
 import { CnameRecord } from "@aws-cdk/aws-route53"
 import { Function, Runtime } from "@aws-cdk/aws-lambda"
@@ -133,7 +133,8 @@ class ApiStack extends NestedStack {
     const idProxyPath = idPath.addProxy({ anyMethod: false })
     const integration = new apigateway.Integration({
       type: apigateway.IntegrationType.AWS_PROXY,
-      integrationHttpMethod: "ANY",
+      integrationHttpMethod: 'GET',
+      uri: Fn.sub('arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/' + iiifFunc.functionArn + '/invocations'),
       options: {
         passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
         contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,

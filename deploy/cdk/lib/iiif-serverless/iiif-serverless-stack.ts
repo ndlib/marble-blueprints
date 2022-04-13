@@ -133,6 +133,7 @@ class ApiStack extends NestedStack {
     const idProxyPath = idPath.addProxy({ anyMethod: false })
     const integration = new apigateway.Integration({
       type: apigateway.IntegrationType.AWS_PROXY,
+      integrationHttpMethod: "ANY",
       options: {
         passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
         contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,

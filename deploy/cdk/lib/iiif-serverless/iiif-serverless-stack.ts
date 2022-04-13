@@ -114,7 +114,7 @@ class ApiStack extends NestedStack {
         cacheClusterSize: '0.5',
         cacheTtl: Duration.seconds(3600),
       },
-      binaryMediaTypes: ["image/png"],
+      binaryMediaTypes: ["*/*"],
     }
 
     const iiifApi = new apigateway.LambdaRestApi(this, 'IiifApi', apiProps)
@@ -131,7 +131,13 @@ class ApiStack extends NestedStack {
 
     // /iiif/2/{id}/{proxy+}
     const idProxyPath = idPath.addProxy({ anyMethod: false })
-    idProxyPath.addMethod('GET')
+    const integration = new apigateway.Integration({
+      type: apigateway.IntegrationType.AWS,
+      options: {
+        contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,
+      },
+    })
+    idProxyPath.addMethod('GET', integration)
 
     if (props.createDns) {
       new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {

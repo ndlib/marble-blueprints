@@ -99,8 +99,8 @@ class ApiStack extends NestedStack {
       handler: iiifFunc,
       proxy: false,
       defaultCorsPreflightOptions: {
-        allowOrigins: ['*'],
-        allowMethods: ['GET'],
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: ['GET', 'OPTIONS'],
       },
       endpointConfiguration: {
         types: [apigateway.EndpointType.REGIONAL],
@@ -131,17 +131,42 @@ class ApiStack extends NestedStack {
 
     // /iiif/2/{id}/{proxy+}
     const idProxyPath = idPath.addProxy({ anyMethod: false })
-    const integration = new apigateway.Integration({
-      type: apigateway.IntegrationType.AWS_PROXY,
-      integrationHttpMethod: 'GET',
-      uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + iiifFunc.functionArn + '/invocations',
-      options: {
-        passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
-        contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,
-      },
+    const integration = new apigateway.LambdaIntegration(iiifFunc,
+      {
+        proxy: true,
+        // contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,
+        // passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
+      //   integrationResponses: [{
+      //     'statusCode': '200',
+      //     'responseParameters': {
+      //         'method.response.header.Access-Control-Allow-Origin': "'*'",
+      //     },
+      // }],
     })
-    idProxyPath.addMethod('GET', integration)
-
+    // const integration = new apigateway.Integration({
+    //   type: apigateway.IntegrationType.AWS_PROXY,
+    //   integrationHttpMethod: 'GET',
+    //   uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + iiifFunc.functionArn + '/invocations',
+    //   options: {
+    //     passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
+    //     contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,
+    //   },
+    // })
+    idProxyPath.addMethod('GET', integration, {
+      methodResponses: [{
+        'statusCode': '200',
+        'responseParameters': {
+            // 'method.response.header.Access-Control-Allow-Origin': false,
+            // 'method.response.header.Access-Control-Allow-Headers': false,
+            // 'method.response.header.Access-Control-Allow-Credentials': false,
+            // 'method.response.header.Set-Cookie': false,
+            'method.response.header.Authorization': false,
+            'method.response.header.Cookie': false,
+            'method.response.header.Origin': false,
+        },
+        'responseModels': { 'application/json': apigateway.Model.EMPTY_MODEL },
+      }],
+    })
     if (props.createDns) {
       new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {
         recordName: props.hostnamePrefix,

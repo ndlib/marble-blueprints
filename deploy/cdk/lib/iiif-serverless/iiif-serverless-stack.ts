@@ -118,6 +118,10 @@ class ApiStack extends NestedStack {
     }
 
     const iiifApi = new apigateway.LambdaRestApi(this, 'IiifApi', apiProps)
+    const integration = new apigateway.LambdaIntegration(iiifFunc,
+      {
+        proxy: true,
+    })
     const rootPath = iiifApi.root.addResource('iiif')
     const twoPath = rootPath.addResource('2')
 
@@ -127,39 +131,14 @@ class ApiStack extends NestedStack {
 
     // /iiif2/{id}/info.json
     const infoPath = idPath.addResource('info.json')
-    infoPath.addMethod('GET')
+    infoPath.addMethod('GET', integration)
 
     // /iiif/2/{id}/{proxy+}
     const idProxyPath = idPath.addProxy({ anyMethod: false })
-    const integration = new apigateway.LambdaIntegration(iiifFunc,
-      {
-        proxy: true,
-        // contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,
-        // passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
-      //   integrationResponses: [{
-      //     'statusCode': '200',
-      //     'responseParameters': {
-      //         'method.response.header.Access-Control-Allow-Origin': "'*'",
-      //     },
-      // }],
-    })
-    // const integration = new apigateway.Integration({
-    //   type: apigateway.IntegrationType.AWS_PROXY,
-    //   integrationHttpMethod: 'GET',
-    //   uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + iiifFunc.functionArn + '/invocations',
-    //   options: {
-    //     passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
-    //     contentHandling: apigateway.ContentHandling.CONVERT_TO_BINARY,
-    //   },
-    // })
     idProxyPath.addMethod('GET', integration, {
       methodResponses: [{
         'statusCode': '200',
         'responseParameters': {
-            // 'method.response.header.Access-Control-Allow-Origin': false,
-            // 'method.response.header.Access-Control-Allow-Headers': false,
-            // 'method.response.header.Access-Control-Allow-Credentials': false,
-            // 'method.response.header.Set-Cookie': false,
             'method.response.header.Authorization': false,
             'method.response.header.Cookie': false,
             'method.response.header.Origin': false,

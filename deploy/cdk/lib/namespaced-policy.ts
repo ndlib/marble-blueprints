@@ -164,6 +164,7 @@ export class NamespacedPolicy {
         'route53:GetHostedZone',
         'route53:ChangeResourceRecordSets',
         'route53:GetChange',
+        'route53:ListResourceRecordSets',
       ],
       resources: [
         `arn:aws:route53:::hostedzone/${zone}`,

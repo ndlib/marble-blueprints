@@ -6,7 +6,7 @@ import {
 } from "@ndlib/ndlib-cdk2"
 import { CfnDashboard } from "aws-cdk-lib/aws-cloudwatch"
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions"
-import { AnySLO } from "@ndlib/ndlib-cdk/lib/slos/types"
+import { AnySLO } from "@ndlib/ndlib-cdk2/lib/slos/types"
 import { Construct } from "constructs"
 import { ServiceStacks } from "../types"
 

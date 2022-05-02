@@ -1,5 +1,5 @@
-import { Template } from '@aws-cdk/assertions'
-import cdk = require('@aws-cdk/core')
+import { Template } from 'aws-cdk-lib/assertions'
+import cdk = require('aws-cdk-lib')
 import { FoundationStack } from '../../lib/foundation'
 import { IiifServerlessStack } from '../../lib/iiif-serverless'
 import helpers = require('../helpers')

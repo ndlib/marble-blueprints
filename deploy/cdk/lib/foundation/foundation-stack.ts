@@ -1,11 +1,12 @@
-import { Certificate, CertificateValidation, ICertificate } from "@aws-cdk/aws-certificatemanager"
-import { IVpc, Vpc } from "@aws-cdk/aws-ec2"
-import { Cluster } from "@aws-cdk/aws-ecs"
-import { ILogGroup, LogGroup, RetentionDays } from "@aws-cdk/aws-logs"
-import { HostedZone, IHostedZone } from "@aws-cdk/aws-route53"
-import { Bucket, BucketAccessControl, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
-import { Construct, Duration, RemovalPolicy, Stack, StackProps, CfnOutput } from "@aws-cdk/core"
-import { StringParameter } from "@aws-cdk/aws-ssm"
+import { Certificate, CertificateValidation, ICertificate } from "aws-cdk-lib/aws-certificatemanager"
+import { IVpc, Vpc } from "aws-cdk-lib/aws-ec2"
+import { Cluster } from "aws-cdk-lib/aws-ecs"
+import { ILogGroup, LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs"
+import { HostedZone, IHostedZone } from "aws-cdk-lib/aws-route53"
+import { Bucket, BucketAccessControl, HttpMethods, IBucket } from "aws-cdk-lib/aws-s3"
+import { Duration, RemovalPolicy, Stack, StackProps, CfnOutput } from "aws-cdk-lib"
+import { StringParameter } from "aws-cdk-lib/aws-ssm"
+import { Construct } from "constructs"
 
 
 export interface IBaseStackProps extends StackProps {

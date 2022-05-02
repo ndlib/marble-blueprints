@@ -1,15 +1,16 @@
-import * as ecs from '@aws-cdk/aws-ecs'
-import { Rule, Schedule } from '@aws-cdk/aws-events'
-import { EcsTask } from '@aws-cdk/aws-events-targets'
-import * as iam from '@aws-cdk/aws-iam'
-import * as s3 from '@aws-cdk/aws-s3'
-import cdk = require('@aws-cdk/core')
+import * as ecs from 'aws-cdk-lib/aws-ecs'
+import { Rule, Schedule } from 'aws-cdk-lib/aws-events'
+import { EcsTask } from 'aws-cdk-lib/aws-events-targets'
+import * as iam from 'aws-cdk-lib/aws-iam'
+import * as s3 from 'aws-cdk-lib/aws-s3'
+import { Fn, Stack, StackProps } from 'aws-cdk-lib'
+import { Construct } from "constructs"
 import { FoundationStack } from '../foundation'
 import { ManifestPipelineStack } from '../manifest-pipeline'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { AssetHelpers } from '../asset-helpers'
 
-export interface ImagesStackProps extends cdk.StackProps {
+export interface ImagesStackProps extends StackProps {
   readonly dockerfilePath: string;
   readonly rbscBucketName: string;
   readonly marbleContentBucketName: string;
@@ -18,8 +19,8 @@ export interface ImagesStackProps extends cdk.StackProps {
   readonly maintainMetadataStack: MaintainMetadataStack;
 }
 
-export class ImagesStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: ImagesStackProps) {
+export class ImagesStack extends Stack {
+  constructor(scope: Construct, id: string, props: ImagesStackProps) {
     super(scope, id, props)
 
     const rbscBucketName = props.rbscBucketName
@@ -48,7 +49,7 @@ export class ImagesStack extends cdk.Stack {
     taskRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       resources: [
-        cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/marble*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/marble*'),
       ],
       actions: ["ssm:Get*"],
     }))
@@ -65,8 +66,8 @@ export class ImagesStack extends cdk.Stack {
     taskRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       resources: [
-        cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + graphqlApiUrlKeyPath),
-        cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + graphqlApiKeyKeyPath),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + graphqlApiUrlKeyPath),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + graphqlApiKeyKeyPath),
       ],
       actions: ["ssm:Get*"],
     }))

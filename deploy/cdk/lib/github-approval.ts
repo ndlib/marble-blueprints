@@ -1,4 +1,4 @@
-import { GitHubSourceAction, ManualApprovalAction, ManualApprovalActionProps } from "@aws-cdk/aws-codepipeline-actions"
+import { GitHubSourceAction, ManualApprovalAction, ManualApprovalActionProps } from "aws-cdk-lib/aws-codepipeline-actions"
 
 export interface GithubSourceProps {
   /**

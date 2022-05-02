@@ -1,14 +1,15 @@
-import apigateway = require('@aws-cdk/aws-apigateway')
-import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
-import { Function, Runtime } from "@aws-cdk/aws-lambda"
-import { CnameRecord } from "@aws-cdk/aws-route53"
-import { Construct, Duration, Fn, Stack, StackProps, Annotations } from "@aws-cdk/core"
+import apigateway = require('aws-cdk-lib/aws-apigateway')
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
+import { CnameRecord } from "aws-cdk-lib/aws-route53"
+import { Duration, Fn, Stack, StackProps, Annotations } from "aws-cdk-lib"
+import { Construct } from "constructs"
 import path = require('path')
-import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
+import { ParameterType, StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { FoundationStack } from '../foundation'
 import { AssetHelpers } from '../asset-helpers'
 import { MaintainMetadataStack } from '../maintain-metadata'
-import { RestApi } from '@aws-cdk/aws-apigateway'
+import { RestApi } from 'aws-cdk-lib/aws-apigateway'
 
 export interface IBaseStackProps extends StackProps {
 

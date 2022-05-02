@@ -1,17 +1,18 @@
-import codepipeline = require('@aws-cdk/aws-codepipeline')
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
-import { CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
-import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Topic } from '@aws-cdk/aws-sns'
-import cdk = require('@aws-cdk/core')
-import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import codepipeline = require('aws-cdk-lib/aws-codepipeline')
+import codepipelineActions = require('aws-cdk-lib/aws-codepipeline-actions')
+import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableType } from 'aws-cdk-lib/aws-codebuild'
+import { CodeBuildAction, GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions'
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Topic } from 'aws-cdk-lib/aws-sns'
+import { Fn, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
+import { Construct } from 'constructs'
+import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk2'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation'
 import { GithubApproval } from '../github-approval'
 
-export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
   readonly oauthTokenPath: string; // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
   readonly appRepoOwner: string;
@@ -40,8 +41,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly prodFilesTimeToLiveDays: string;
 }
 
-export class DeploymentPipelineStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
+export class DeploymentPipelineStack extends Stack {
+  constructor(scope: Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props)
 
     const testStackName = `${props.namespace}-test-manifest`
@@ -96,8 +97,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['ssm:GetParameters'],
         resources:[
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/' + imageServiceStackName + '/hostname'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + dataProcessingKeyPath),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/stacks/' + imageServiceStackName + '/hostname'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + dataProcessingKeyPath),
         ],
       }))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.api())
@@ -111,8 +112,8 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['lambda:*'],
         resources: [
-          cdk.Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*-manifest-layer'),
-          cdk.Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*-sentry-layer'),
+          Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*-manifest-layer'),
+          Fn.sub('arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*-sentry-layer'),
         ],
       }))
       // Allow target stack to describe state machines
@@ -120,7 +121,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
         actions: ['states:DescribeStateMachine',
         ],
         resources: [
-          cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:' + targetStack + '-*'),
+          Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:' + targetStack + '-*'),
         ],
       }))
       // Replicating manifest-pipeline-pipeline.yml to implement 178 - 186
@@ -132,7 +133,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
           'states:UntagResource',
         ],
         resources: [
-          cdk.Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'),
+          Fn.sub('arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*'),
         ],
       }))
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
@@ -188,7 +189,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
         branch: props.appSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
@@ -198,7 +199,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'InfraCode',
         branch: props.infraSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,

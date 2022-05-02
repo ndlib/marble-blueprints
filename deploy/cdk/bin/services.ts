@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { App } from '@aws-cdk/core'
+import { App } from 'aws-cdk-lib'
 import 'source-map-support/register'
 import { FoundationStack } from '../lib/foundation'
 import IIIF = require('../lib/iiif-serverless')
@@ -16,7 +16,7 @@ import { ServiceStacks } from '../lib/types'
 import { ServiceLevelsStack } from '../lib/monitoring/service-levels-stack'
 import { IStaticHostStackProps } from '../lib/static-host'
 import { BackupStack } from '../lib/backup/backup-stack'
-import { Bucket } from '@aws-cdk/aws-s3'
+import { Bucket } from 'aws-cdk-lib/aws-s3'
 import { DashboardsStack } from '../lib/monitoring/dashboards-stack'
 
 export const instantiateStacks = (app: App, namespace: string, contextEnv: ContextEnv): ServiceStacks => {

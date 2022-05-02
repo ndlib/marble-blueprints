@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { App, Aspects } from '@aws-cdk/core'
-import { StackTags } from '@ndlib/ndlib-cdk'
+import { App, Aspects } from 'aws-cdk-lib'
+import { StackTags } from '@ndlib/ndlib-cdk2'
 import 'source-map-support/register'
 import { getRequiredContext } from '../lib/context-helpers'
 import * as services from './services'

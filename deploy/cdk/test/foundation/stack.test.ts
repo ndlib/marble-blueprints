@@ -1,5 +1,5 @@
-import { Template } from '@aws-cdk/assertions'
-import cdk = require('@aws-cdk/core')
+import { Template } from 'aws-cdk-lib/assertions'
+import { App } from 'aws-cdk-lib'
 import { FoundationStack } from '../../lib/foundation'
 import helpers = require('../helpers')
 
@@ -7,7 +7,7 @@ describe('FoundationStack', () => {
   describe('VPC', () => {
     describe('when not given an existing VPC', () => {
       const stack = () => {
-        const app = new cdk.App()
+        const app = new App()
         return new FoundationStack(app, 'MyTestStack', {
           domainName: 'test.edu',
         })
@@ -76,7 +76,7 @@ describe('FoundationStack', () => {
       })
 
       const stack = () => {
-        const app = new cdk.App()
+        const app = new App()
         return new FoundationStack(app, 'MyTestStack', {
           domainName: 'test.edu',
           useVpcId: 'abc123',
@@ -113,7 +113,7 @@ describe('FoundationStack', () => {
   describe('Domain', () => {
     describe('when useExistingDnsZone is false', () => {
       const stack = () => {
-        const app = new cdk.App()
+        const app = new App()
         return new FoundationStack(app, 'MyTestStack', {
           domainName: 'test.edu',
           useExistingDnsZone: false,
@@ -150,7 +150,7 @@ describe('FoundationStack', () => {
       })
 
       const stack = () => {
-        const app = new cdk.App()
+        const app = new App()
         return new FoundationStack(app, 'MyTestStack', {
           domainName: 'test.edu',
           useExistingDnsZone: true,
@@ -160,7 +160,7 @@ describe('FoundationStack', () => {
       test('creates a wildcard certificate for the domain using DNS validation', () => {
         const subject = stack()
         // THEN
-        /* https://docs.aws.amazon.com/cdk/api/latest/docs/@aws-cdk_aws-certificatemanager.CertificateValidation.html
+        /* https://docs.aws.amazon.com/cdk/api/latest/docs/aws-cdk-lib_aws-certificatemanager.CertificateValidation.html
         IMPORTANT: If hostedZone is not specified, DNS records must be added manually and the stack will not complete creating until the records are added. 
         */
         const template = Template.fromStack(subject)
@@ -181,7 +181,7 @@ describe('FoundationStack', () => {
  
   describe('Cluster', () => {
     test('creates a cluster', () => {
-      const app = new cdk.App()
+      const app = new App()
       // WHEN
       const stack = new FoundationStack(app, 'MyTestStack', {
         domainName: 'test.edu',
@@ -194,7 +194,7 @@ describe('FoundationStack', () => {
 
   describe('Logs', () => {
     test('creates a shared log bucket with 90 day retention and one version for backup', () => {
-      const app = new cdk.App()
+      const app = new App()
       // WHEN
       const stack = new FoundationStack(app, 'MyTestStack', {
         domainName: 'test.edu',
@@ -214,7 +214,7 @@ describe('FoundationStack', () => {
     })
 
     test('creates a shared log group with one year retention', () => {
-      const app = new cdk.App()
+      const app = new App()
       // WHEN
       const stack = new FoundationStack(app, 'MyTestStack', {
         domainName: 'test.edu',
@@ -229,7 +229,7 @@ describe('FoundationStack', () => {
 
   describe('Public S3 Bucket', () => {
     test('creates an s3 bucket that is accessible to specific sites', () => {
-      const app = new cdk.App()
+      const app = new App()
       // WHEN
       const stack = new FoundationStack(app, 'MyTestStack', {
         domainName: 'test.edu',

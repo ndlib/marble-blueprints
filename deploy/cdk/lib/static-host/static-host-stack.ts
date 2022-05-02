@@ -7,17 +7,18 @@ import {
   SSLMethod,
   ViewerCertificate,
   ViewerProtocolPolicy,
-} from '@aws-cdk/aws-cloudfront'
-import lambda = require('@aws-cdk/aws-lambda')
-import s3 = require('@aws-cdk/aws-s3')
-import ssm = require('@aws-cdk/aws-ssm')
-import cdk = require('@aws-cdk/core')
-import { FoundationStack } from '../foundation'
-import { CnameRecord } from '@aws-cdk/aws-route53'
-import { Certificate, ICertificate } from '@aws-cdk/aws-certificatemanager'
-import { AssetHelpers } from '../asset-helpers'
+} from 'aws-cdk-lib/aws-cloudfront'
+import lambda = require('aws-cdk-lib/aws-lambda')
+import s3 = require('aws-cdk-lib/aws-s3')
+import ssm = require('aws-cdk-lib/aws-ssm')
+import { CfnOutput, Duration, Stack, StackProps } from 'aws-cdk-lib'
 
-export interface IStaticHostStackProps extends cdk.StackProps {
+import { FoundationStack } from '../foundation'
+import { CnameRecord } from 'aws-cdk-lib/aws-route53'
+import { Certificate, ICertificate } from 'aws-cdk-lib/aws-certificatemanager'
+import { AssetHelpers } from '../asset-helpers'
+import { Construct } from 'constructs'
+export interface IStaticHostStackProps extends StackProps {
   readonly contextEnvName: string
   readonly foundationStack: FoundationStack
   readonly namespace: string
@@ -39,7 +40,7 @@ export interface IStaticHostStackProps extends cdk.StackProps {
   readonly additionalAliases?: Array<string>
 }
 
-export class StaticHostStack extends cdk.Stack {
+export class StaticHostStack extends Stack {
   /**
    * The S3 bucket that will hold website contents.
    */
@@ -60,14 +61,14 @@ export class StaticHostStack extends cdk.Stack {
    */
   public readonly spaRedirectionLambda: lambda.Function
 
-  constructor(scope: cdk.Construct, id: string, props: IStaticHostStackProps) {
+  constructor(scope: Construct, id: string, props: IStaticHostStackProps) {
     super(scope, id, props)
 
     this.spaRedirectionLambda = new lambda.Function(this, 'SPARedirectionLambda', {
       code: AssetHelpers.codeFromAsset(this, props.lambdaCodePath),
       description: 'Basic rewrite rule to send directory requests to appropriate locations in the SPA.',
       handler: 'handler.handler',
-      runtime: lambda.Runtime.NODEJS_12_X,
+      runtime: lambda.Runtime.NODEJS_14_X,
     })
 
     const domainName = props.domainNameOverride || props.foundationStack.hostedZone.zoneName
@@ -125,7 +126,7 @@ export class StaticHostStack extends cdk.Stack {
             {
               allowedMethods: CloudFrontAllowedMethods.GET_HEAD_OPTIONS,
               compress: true,
-              defaultTtl: (props.contextEnvName === 'dev') ? cdk.Duration.seconds(0) : cdk.Duration.days(1),
+              defaultTtl: (props.contextEnvName === 'dev') ? Duration.seconds(0) : Duration.days(1),
               isDefaultBehavior: true,
               lambdaFunctionAssociations: [
                 {
@@ -161,7 +162,7 @@ export class StaticHostStack extends cdk.Stack {
         comment: this.hostname,
         domainName: this.cloudfront.distributionDomainName,
         zone: props.foundationStack.hostedZone,
-        ttl: cdk.Duration.minutes(15),
+        ttl: Duration.minutes(15),
       })
     }
 
@@ -177,7 +178,7 @@ export class StaticHostStack extends cdk.Stack {
       stringValue: this.cloudfront.distributionId,
     })
 
-    new cdk.CfnOutput(this, 'DistributionDomainName', {
+    new CfnOutput(this, 'DistributionDomainName', {
       value: this.cloudfront.distributionDomainName,
       description: 'The cloudfront distribution domain name.',
     })

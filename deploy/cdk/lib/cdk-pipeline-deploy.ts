@@ -1,8 +1,9 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
-import { Artifact } from '@aws-cdk/aws-codepipeline'
-import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
-import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Construct, Fn } from '@aws-cdk/core'
+import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from 'aws-cdk-lib/aws-codebuild'
+import { Artifact } from 'aws-cdk-lib/aws-codepipeline'
+import { CodeBuildAction } from 'aws-cdk-lib/aws-codepipeline-actions'
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Fn } from 'aws-cdk-lib'
+import { Construct } from "constructs"
 
 export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   /**
@@ -52,7 +53,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly outputArtifact?: Artifact;
 
   /**
-   * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '12.x')  e.g. `python: '3.8'`
+   * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '14.x')  e.g. `python: '3.9'`
    */
   readonly additionalRuntimeEnvironments?: { [key: string]: string };
 }
@@ -162,7 +163,30 @@ export class CDKPipelineDeploy extends Construct {
         's3:GetBucketLocation',
         's3:GetBucketPolicy',
       ],
-      resources: ['arn:aws:s3:::cdktoolkit-stagingbucket-*', 'arn:aws:s3:::cdk*' ],
+      resources: [ 'arn:aws:s3:::cdk*' ],
+    }))
+
+    // Add permission for CDK 2 deployments
+    this.project.addToRolePolicy(new PolicyStatement({
+      actions: [
+        'sts:AssumeRole',
+        'iam:PassRole',
+      ],
+      resources: [
+        'arn:aws:iam::*:role/cdk-readOnlyRole',
+        'arn:aws:iam::*:role/cdk-hnb659fds-deploy-role-*',
+        'arn:aws:iam::*:role/cdk-hnb659fds-file-publishing-*',
+        'arn:aws:iam::*:role/cdk-hnb659fds-image-publishing-*',
+      ],
+    }))
+    // Allow getting bootstrap SSM parameter
+    this.project.addToRolePolicy(new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/cdk-bootstrap/*'),
+      ],
+      actions: [
+        'ssm:GetParameter',
+      ],
     }))
 
     this.action = new CodeBuildAction({

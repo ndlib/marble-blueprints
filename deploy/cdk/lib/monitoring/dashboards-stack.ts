@@ -1,5 +1,6 @@
-import { App, IConstruct, Stack, StackProps } from '@aws-cdk/core'
-import { CloudfrontDashboard, ServerlessApiDashboard, SummaryDashboard } from '@ndlib/ndlib-cdk'
+import { App, Stack, StackProps } from 'aws-cdk-lib'
+import { CloudfrontDashboard, ServerlessApiDashboard, SummaryDashboard } from '@ndlib/ndlib-cdk2'
+import { IConstruct } from "constructs"
 import { ServiceStacks } from '../../lib/types'
 
 export interface DashboardsStackProps extends StackProps {

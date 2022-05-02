@@ -1,11 +1,12 @@
-import codepipeline = require('@aws-cdk/aws-codepipeline')
-import { Artifact } from '@aws-cdk/aws-codepipeline'
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
-import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
-import { Topic } from '@aws-cdk/aws-sns'
-import cdk = require('@aws-cdk/core')
-import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
+import codepipeline = require('aws-cdk-lib/aws-codepipeline')
+import { Artifact } from 'aws-cdk-lib/aws-codepipeline'
+import codepipelineActions = require('aws-cdk-lib/aws-codepipeline-actions')
+import { GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions'
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Topic } from 'aws-cdk-lib/aws-sns'
+import { Fn, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
+import { Construct } from 'constructs'
+import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk2'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
@@ -15,7 +16,7 @@ import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
 import { GithubApproval } from '../github-approval'
 
-export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
   readonly contextEnvName: string
   readonly oauthTokenPath: string
@@ -58,8 +59,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly authClientIssuer: string
 }
 
-export class DeploymentPipelineStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
+export class DeploymentPipelineStack extends Stack {
+  constructor(scope: Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props)
 
     const testStackName = `${props.namespace}-test-${props.instanceName}`
@@ -125,16 +126,16 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         effect: Effect.ALLOW,
         resources: [
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testMaintainMetadataStack.maintainMetadataKeyBase + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.maintainMetadataKeyBase + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainNameKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainEndpointKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainReadOnlyUserNameKeyPath + '*'),
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainReadOnlyPasswordKeyPath + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testMaintainMetadataStack.maintainMetadataKeyBase + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.maintainMetadataKeyBase + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainNameKeyPath + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainEndpointKeyPath + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainReadOnlyUserNameKeyPath + '*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainReadOnlyPasswordKeyPath + '*'),
         ],
         actions: ["ssm:Get*"],
       }))
@@ -149,7 +150,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
             'ssm:GetParameters',
           ],
           resources: [
-            cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + certificateArnPath),
+            Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + certificateArnPath),
           ],
         }))
       }
@@ -161,7 +162,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
         branch: props.appSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
@@ -175,7 +176,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       subAppSourceAction = new codepipelineActions.GitHubSourceAction({
           actionName: 'SubAppCode',
           branch: props.submoduleSourceBranch,
-          oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+          oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
           output: subAppSourceArtifact,
           owner: props.appRepoOwner,
           repo: props.submoduleRepoName,
@@ -186,7 +187,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'InfraCode',
         branch: props.infraSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,

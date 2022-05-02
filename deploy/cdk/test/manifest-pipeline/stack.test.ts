@@ -1,6 +1,6 @@
-import { Match, Template } from '@aws-cdk/assertions'
-import { Bucket } from '@aws-cdk/aws-s3'
-import cdk = require('@aws-cdk/core')
+import { Match, Template } from 'aws-cdk-lib/assertions'
+import { Bucket } from 'aws-cdk-lib/aws-s3'
+import { App, Stack } from 'aws-cdk-lib'
 import { FoundationStack } from '../../lib/foundation'
 import { ManifestPipelineStack } from '../../lib/manifest-pipeline'
 
@@ -36,12 +36,12 @@ const manifestPipelineContext = {
 }
 
 const setup = (context: any) => {
-  const app = new cdk.App()
+  const app = new App()
 
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
     domainName,
   })
-  const multimediaStack = new cdk.Stack(app, 'MultimediaStack')
+  const multimediaStack = new Stack(app, 'MultimediaStack')
   const multimediaBucket = new Bucket(multimediaStack, 'MultimediaBucket')
   const stack = new ManifestPipelineStack(app, 'MyTestStack', {
     foundationStack,
@@ -52,7 +52,7 @@ const setup = (context: any) => {
 }
 
 describe('ManifestPipelineStack', () => {
-  let stack: cdk.Stack
+  let stack: Stack
 
   // Only synthesize once since we are only using one set of props
   beforeAll(() => {
@@ -484,12 +484,12 @@ describe('ManifestPipelineStack', () => {
     })
 
     test('creates tags for DynamoDB table', () => {
-      const app = new cdk.App()
+      const app = new App()
 
       const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
         domainName,
       })
-      const multimediaStack = new cdk.Stack(app, 'MultimediaStack')
+      const multimediaStack = new Stack(app, 'MultimediaStack')
       const multimediaBucket = new Bucket(multimediaStack, 'MultimediaBucket')
       const stack = new ManifestPipelineStack(app, 'MyTestStack', {
         foundationStack,

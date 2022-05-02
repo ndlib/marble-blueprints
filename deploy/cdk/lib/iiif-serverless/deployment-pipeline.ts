@@ -1,18 +1,19 @@
-import { BuildEnvironmentVariableType, BuildSpec, PipelineProject } from '@aws-cdk/aws-codebuild'
-import codepipeline = require('@aws-cdk/aws-codepipeline')
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { PolicyStatement } from '@aws-cdk/aws-iam'
-import cdk = require('@aws-cdk/core')
+import { BuildEnvironmentVariableType, BuildSpec, PipelineProject } from 'aws-cdk-lib/aws-codebuild'
+import codepipeline = require('aws-cdk-lib/aws-codepipeline')
+import codepipelineActions = require('aws-cdk-lib/aws-codepipeline-actions')
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
+// import cdk = require('aws-cdk-lib')
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
-import { Topic } from '@aws-cdk/aws-sns'
-import { CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
+import { Topic } from 'aws-cdk-lib/aws-sns'
+import { CodeBuildAction, GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
-import { Fn } from '@aws-cdk/core'
-import { SlackApproval, NewmanRunner, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { Fn, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
+import { Construct } from "constructs"
+import { SlackApproval, NewmanRunner, PipelineNotifications } from '@ndlib/ndlib-cdk2'
 import { GithubApproval } from '../github-approval'
 
-export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
   readonly oauthTokenPath: string;
   readonly appRepoOwner: string;
@@ -38,8 +39,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly paramPathPrefix: string;
 }
 
-export class DeploymentPipelineStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
+export class DeploymentPipelineStack extends Stack {
+  constructor(scope: Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props)
 
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -54,7 +55,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
       actionName: 'AppCode',
       branch: props.appSourceBranch,
-      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: appSourceArtifact,
       owner: props.appRepoOwner,
       repo: props.appRepoName,
@@ -64,7 +65,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const qaSourceAction = new codepipelineActions.GitHubSourceAction({
       actionName: 'QACode',
       branch: props.qaSourceBranch,
-      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: qaSourceArtifact,
       owner: props.qaRepoOwner,
       repo: props.qaRepoName,
@@ -74,7 +75,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
       actionName: 'InfraCode',
       branch: props.infraSourceBranch,
-      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: infraSourceArtifact,
       owner: props.infraRepoOwner,
       repo: props.infraRepoName,
@@ -123,7 +124,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
       cdkDeploy.project.addToRolePolicy(new PolicyStatement({
         actions: ['ssm:GetParameters'],
         resources: [
-          cdk.Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramPath + '/*'),
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramPath + '/*'),
         ],
       }))
 

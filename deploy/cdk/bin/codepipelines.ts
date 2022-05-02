@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { App } from '@aws-cdk/core'
+import { App } from 'aws-cdk-lib'
 import 'source-map-support/register'
 import IIIF = require('../lib/iiif-serverless')
 import imageProcessing = require('../lib/image-processing')

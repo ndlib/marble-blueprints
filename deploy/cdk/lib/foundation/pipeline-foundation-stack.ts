@@ -1,6 +1,7 @@
-import { Construct, Stack, StackProps } from "@aws-cdk/core"
-import { ArtifactBucket } from '@ndlib/ndlib-cdk'
-import { BucketEncryption } from "@aws-cdk/aws-s3"
+import { Stack, StackProps } from "aws-cdk-lib"
+import { ArtifactBucket } from '@ndlib/ndlib-cdk2'
+import { BucketEncryption } from "aws-cdk-lib/aws-s3"
+import { Construct } from "constructs"
 
 export class PipelineFoundationStack extends Stack {
   /**

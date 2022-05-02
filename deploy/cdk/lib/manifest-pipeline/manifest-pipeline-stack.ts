@@ -1,16 +1,17 @@
-import { CloudFrontWebDistribution, OriginAccessIdentity } from '@aws-cdk/aws-cloudfront'
-import { SfnStateMachine } from "@aws-cdk/aws-events-targets"
-import { CanonicalUserPrincipal, Effect, PolicyStatement } from '@aws-cdk/aws-iam'
-import { Function, Runtime } from "@aws-cdk/aws-lambda"
-import { Bucket, HttpMethods, IBucket } from "@aws-cdk/aws-s3"
-import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
-import { Choice, Condition, Errors, Fail, JsonPath, LogLevel, Parallel, Pass, Result, StateMachine, Succeed } from '@aws-cdk/aws-stepfunctions'
-import * as tasks from '@aws-cdk/aws-stepfunctions-tasks'
-import { Construct, Duration, Fn, Stack, StackProps, CfnOutput, Annotations, Tags } from "@aws-cdk/core"
+import { CloudFrontWebDistribution, OriginAccessIdentity } from 'aws-cdk-lib/aws-cloudfront'
+import { SfnStateMachine } from "aws-cdk-lib/aws-events-targets"
+import { CanonicalUserPrincipal, Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
+import { Bucket, HttpMethods, IBucket } from "aws-cdk-lib/aws-s3"
+import { ParameterType, StringParameter } from 'aws-cdk-lib/aws-ssm'
+import { Choice, Condition, Errors, Fail, JsonPath, LogLevel, Parallel, Pass, Result, StateMachine, Succeed } from 'aws-cdk-lib/aws-stepfunctions'
+import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks'
+import { Duration, Fn, Stack, StackProps, CfnOutput, Annotations, Tags } from "aws-cdk-lib"
+import { Construct } from "constructs"
 import path = require('path')
 import { FoundationStack } from '../foundation'
-import { Rule, Schedule } from "@aws-cdk/aws-events"
-import dynamodb = require('@aws-cdk/aws-dynamodb')
+import { Rule, Schedule } from "aws-cdk-lib/aws-events"
+import dynamodb = require('aws-cdk-lib/aws-dynamodb')
 import { AssetHelpers } from '../asset-helpers'
 import { S3NotificationToLambdaCustomResource } from './s3ToLambda'
 

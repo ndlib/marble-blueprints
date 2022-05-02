@@ -1,4 +1,4 @@
-import { ConstructNode } from "@aws-cdk/core"
+import { Node } from "constructs"
 
 const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? "{}")
 
@@ -16,7 +16,7 @@ export const getContextByNamespace = (ns: string): any => {
   return result
 }
 
-export const getRequiredContext = (node: ConstructNode, key: string) => {
+export const getRequiredContext = (node: Node, key: string) => {
   const value = node.tryGetContext(key)
   if(value === undefined || value === null) {
     throw new Error(`Context key '${key}' is required.`)

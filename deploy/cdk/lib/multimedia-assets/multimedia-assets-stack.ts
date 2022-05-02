@@ -4,14 +4,15 @@ import {
   OriginAccessIdentity,
   ViewerCertificate,
   ViewerProtocolPolicy,
-} from '@aws-cdk/aws-cloudfront'
-import { PolicyStatement, Effect, CanonicalUserPrincipal } from '@aws-cdk/aws-iam'
-import { CnameRecord } from '@aws-cdk/aws-route53'
-import { Bucket, IBucket, BlockPublicAccess, HttpMethods } from '@aws-cdk/aws-s3'
-import * as cdk from '@aws-cdk/core'
+} from 'aws-cdk-lib/aws-cloudfront'
+import { PolicyStatement, Effect, CanonicalUserPrincipal } from 'aws-cdk-lib/aws-iam'
+import { CnameRecord } from 'aws-cdk-lib/aws-route53'
+import { Bucket, IBucket, BlockPublicAccess, HttpMethods } from 'aws-cdk-lib/aws-s3'
+import { Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib'
+import { Construct } from "constructs"
 import { FoundationStack } from '../foundation/foundation-stack'
 
-export interface IMultimediaAssetsStackProps extends cdk.StackProps {
+export interface IMultimediaAssetsStackProps extends StackProps {
   /**
    * Foundation stack which provides the log bucket and certificate to use.
    */
@@ -48,7 +49,7 @@ export interface IMultimediaAssetsStackProps extends cdk.StackProps {
   readonly marbleContentBucketName: string
 }
 
-export class MultimediaAssetsStack extends cdk.Stack {
+export class MultimediaAssetsStack extends Stack {
   /**
    * Audio and video files go here. The bucket is not public, but the CloudFront will treat them as public for now.
    * Some may be private later with a lambda authorizer.
@@ -65,7 +66,7 @@ export class MultimediaAssetsStack extends cdk.Stack {
    */
   public readonly hostname: string
 
-  constructor(scope: cdk.Construct, id: string, props: IMultimediaAssetsStackProps) {
+  constructor(scope: Construct, id: string, props: IMultimediaAssetsStackProps) {
     super(scope, id, props)
 
     const prefix = props.hostnamePrefix || `${props.namespace}-multimedia`
@@ -76,7 +77,7 @@ export class MultimediaAssetsStack extends cdk.Stack {
       bucketName: `${prefix}-${this.account}`, // Bucket names must be unique, so account id helps ensure that
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY,
       cors: [
         {
           allowedHeaders: ['*'],
@@ -134,7 +135,7 @@ export class MultimediaAssetsStack extends cdk.Stack {
               isDefaultBehavior: true,
               allowedMethods: CloudFrontAllowedMethods.GET_HEAD_OPTIONS,
               compress: true,
-              defaultTtl: cdk.Duration.seconds(props.cacheTtl),
+              defaultTtl: Duration.seconds(props.cacheTtl),
             },
           ],
         },
@@ -151,7 +152,7 @@ export class MultimediaAssetsStack extends cdk.Stack {
         comment: this.hostname,
         domainName: this.cloudfront.distributionDomainName,
         zone: props.foundationStack.hostedZone,
-        ttl: cdk.Duration.minutes(15),
+        ttl: Duration.minutes(15),
       })
     }
   }

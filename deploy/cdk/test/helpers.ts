@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { Vpc } from "@aws-cdk/aws-ec2"
-import cxapi = require('@aws-cdk/cx-api')
-import { HostedZone } from "@aws-cdk/aws-route53"
+import { Vpc } from "aws-cdk-lib/aws-ec2"
+import cxapi = require('aws-cdk-lib/cx-api')
+import { HostedZone } from "aws-cdk-lib/aws-route53"
 
 export const mockVpcFromLookup = (response?: any) => {
-  jest.mock('@aws-cdk/aws-ec2')
+  jest.mock('aws-cdk-lib/aws-ec2')
   const mockFromLookup = jest.spyOn(Vpc, 'fromLookup')
   mockFromLookup.mockImplementation((scope, id, options) => {
     return response ?? {
@@ -50,7 +50,7 @@ export const mockVpcFromLookup = (response?: any) => {
 }
 
 export const mockHostedZoneFromLookup = (response?: any) => {
-  jest.mock('@aws-cdk/aws-route53')
+  jest.mock('aws-cdk-lib/aws-route53')
   const mockFromLookup = jest.spyOn(HostedZone, 'fromLookup')
   mockFromLookup.mockImplementation((scope, id, query) => {
     return response ?? {

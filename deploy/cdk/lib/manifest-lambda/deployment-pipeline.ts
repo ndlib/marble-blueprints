@@ -1,17 +1,18 @@
-import codepipeline = require('@aws-cdk/aws-codepipeline')
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
-import { ManualApprovalAction, CodeBuildAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
-import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Topic } from '@aws-cdk/aws-sns'
-import cdk = require('@aws-cdk/core')
-import { NewmanRunner, SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
+import codepipeline = require('aws-cdk-lib/aws-codepipeline')
+import codepipelineActions = require('aws-cdk-lib/aws-codepipeline-actions')
+import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableType } from 'aws-cdk-lib/aws-codebuild'
+import { CodeBuildAction, GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions'
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Topic } from 'aws-cdk-lib/aws-sns'
+import { SecretValue, Stack, StackProps } from 'aws-cdk-lib'
+import { Construct } from 'constructs'
+import { NewmanRunner, SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk2'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { GithubApproval } from '../github-approval'
 
-export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack;
   readonly oauthTokenPath: string; // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
   readonly appRepoOwner: string;
@@ -36,8 +37,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
  }
 
 
-export class DeploymentPipelineStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
+export class DeploymentPipelineStack extends Stack {
+  constructor(scope: Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props)
 
     const testStackName = `${props.namespace}-test-manifest-lambda`
@@ -106,7 +107,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
       actionName: 'AppCode',
       branch: props.appSourceBranch,
-      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: appSourceArtifact,
       owner: props.appRepoOwner,
       repo: props.appRepoName,
@@ -116,7 +117,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'InfraCode',
         branch: props.infraSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,

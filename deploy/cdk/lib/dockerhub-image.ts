@@ -1,6 +1,6 @@
-import { IBuildImage, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
-import { Secret } from '@aws-cdk/aws-secretsmanager'
-import { Construct } from '@aws-cdk/core'
+import { IBuildImage, LinuxBuildImage } from 'aws-cdk-lib/aws-codebuild'
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager'
+import { Construct } from 'constructs'
 import { getRequiredContext } from './context-helpers'
 
 /**

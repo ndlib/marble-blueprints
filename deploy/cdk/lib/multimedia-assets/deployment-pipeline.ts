@@ -1,16 +1,17 @@
-import codepipeline = require('@aws-cdk/aws-codepipeline')
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { ManualApprovalAction, GitHubTrigger } from '@aws-cdk/aws-codepipeline-actions'
-import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Topic } from '@aws-cdk/aws-sns'
-import cdk = require('@aws-cdk/core')
-import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
+import codepipeline = require('aws-cdk-lib/aws-codepipeline')
+import codepipelineActions = require('aws-cdk-lib/aws-codepipeline-actions')
+import { GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions'
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Topic } from 'aws-cdk-lib/aws-sns'
+import { SecretValue, Stack, StackProps } from 'aws-cdk-lib'
+import { Construct } from 'constructs'
+import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk2'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { GithubApproval } from '../github-approval'
 
-export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
   readonly contextEnvName: string
   readonly oauthTokenPath: string
@@ -31,8 +32,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean
 }
 
-export class DeploymentPipelineStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
+export class DeploymentPipelineStack extends Stack {
+  constructor(scope: Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props)
 
     const testStackName = `${props.namespace}-test-multimedia-assets`
@@ -89,7 +90,7 @@ export class DeploymentPipelineStack extends cdk.Stack {
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'InfraCode',
         branch: props.infraSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,

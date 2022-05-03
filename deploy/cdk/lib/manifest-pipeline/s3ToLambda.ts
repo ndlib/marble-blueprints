@@ -1,9 +1,9 @@
-import * as cr from '@aws-cdk/custom-resources'
-import * as logs from '@aws-cdk/aws-logs'
-import * as s3 from '@aws-cdk/aws-s3'
-import * as lambda from '@aws-cdk/aws-lambda'
-import * as iam from '@aws-cdk/aws-iam'
-import { Construct } from '@aws-cdk/core'
+import * as cr from 'aws-cdk-lib/custom-resources'
+import * as logs from 'aws-cdk-lib/aws-logs'
+import * as s3 from 'aws-cdk-lib/aws-s3'
+import * as lambda from 'aws-cdk-lib/aws-lambda'
+import * as iam from 'aws-cdk-lib/aws-iam'
+import { Construct } from 'constructs'
 
 
 export class S3NotificationToLambdaCustomResource extends Construct {

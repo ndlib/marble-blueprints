@@ -1,10 +1,11 @@
-import apigateway = require('@aws-cdk/aws-apigateway')
-import { CfnOutput, Construct, Duration, Fn, NestedStack, NestedStackProps, Stack, StackProps } from "@aws-cdk/core"
+import apigateway = require('aws-cdk-lib/aws-apigateway')
+import { CfnOutput, Duration, NestedStack, NestedStackProps, Stack, StackProps } from "aws-cdk-lib"
 import { FoundationStack } from "../foundation"
-import { CnameRecord } from "@aws-cdk/aws-route53"
-import { Function, Runtime } from "@aws-cdk/aws-lambda"
+import { CnameRecord } from "aws-cdk-lib/aws-route53"
+import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
+import { Construct } from "constructs"
 import { AssetHelpers } from '../asset-helpers'
-import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import * as path from "path"
 
 
@@ -45,7 +46,7 @@ export interface IIiifApiStackProps extends NestedStackProps {
 }
 
 /**
- * Creates an Api stack using the template from the source repo
+ * Creates an Api stack using CDK code defined here (formerly from the template from the source repo)
  */
 class ApiStack extends NestedStack {
   readonly apiName: string
@@ -56,7 +57,7 @@ class ApiStack extends NestedStack {
     this.apiName = `${this.stackName}-api`
 
     const iiifFunc = new Function(this, "IiifFunction", {
-      runtime: Runtime.NODEJS_12_X,
+      runtime: Runtime.NODEJS_14_X,
       code: AssetHelpers.codeFromAsset(this, path.join(props.serverlessIiifSrcPath, 'src/')),
       handler: 'index.handler',
       timeout: Duration.seconds(10),

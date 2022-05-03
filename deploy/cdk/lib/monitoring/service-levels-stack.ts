@@ -1,12 +1,13 @@
-import { Fn, StackProps, Construct, Stack } from "@aws-cdk/core"
+import { Fn, StackProps, Stack } from "aws-cdk-lib"
 import {
   SLOAlarms,
   SLOAlarmsDashboard,
   SLOPerformanceDashboard,
-} from "@ndlib/ndlib-cdk"
-import { CfnDashboard } from "@aws-cdk/aws-cloudwatch"
-import * as subs from "@aws-cdk/aws-sns-subscriptions"
-import { AnySLO } from "@ndlib/ndlib-cdk/lib/slos/types"
+} from "@ndlib/ndlib-cdk2"
+import { CfnDashboard } from "aws-cdk-lib/aws-cloudwatch"
+import * as subs from "aws-cdk-lib/aws-sns-subscriptions"
+import { AnySLO } from "@ndlib/ndlib-cdk2/lib/slos/types"
+import { Construct } from "constructs"
 import { ServiceStacks } from "../types"
 
 export interface IServiceLevelsStackProps extends StackProps {

@@ -1,10 +1,11 @@
-import { Construct, Duration, Expiration, Fn, Stack, StackProps } from "@aws-cdk/core"
-import { AppsyncFunction, AuthorizationType, DynamoDbDataSource, FieldLogLevel, GraphqlApi, MappingTemplate, Resolver, Schema } from '@aws-cdk/aws-appsync'
-import { Rule, Schedule } from "@aws-cdk/aws-events"
-import { LambdaFunction } from "@aws-cdk/aws-events-targets"
-import { Effect, PolicyStatement } from '@aws-cdk/aws-iam'
-import { Code, Function, Runtime } from "@aws-cdk/aws-lambda"
-import { ParameterType, StringParameter } from '@aws-cdk/aws-ssm'
+import { Duration, Expiration, Fn, Stack, StackProps } from "aws-cdk-lib"
+import { AppsyncFunction, AuthorizationType, DynamoDbDataSource, FieldLogLevel, GraphqlApi, MappingTemplate, Resolver, Schema } from '@aws-cdk/aws-appsync-alpha'
+import { Rule, Schedule } from "aws-cdk-lib/aws-events"
+import { LambdaFunction } from "aws-cdk-lib/aws-events-targets"
+import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda"
+import { ParameterType, StringParameter } from 'aws-cdk-lib/aws-ssm'
+import { Construct } from "constructs"
 import { FoundationStack } from '../foundation'
 import { ManifestPipelineStack } from '../manifest-pipeline'
 import path = require('path')

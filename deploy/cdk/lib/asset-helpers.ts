@@ -1,9 +1,10 @@
-import { ContainerImage } from '@aws-cdk/aws-ecs'
-import { DockerImageAsset, DockerImageAssetProps } from '@aws-cdk/aws-ecr-assets'
+import { ContainerImage } from 'aws-cdk-lib/aws-ecs'
+import { DockerImageAsset, DockerImageAssetProps } from 'aws-cdk-lib/aws-ecr-assets'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Annotations, Construct } from '@aws-cdk/core'
-import { Code } from '@aws-cdk/aws-lambda'
+import { Annotations } from 'aws-cdk-lib'
+import { Code } from 'aws-cdk-lib/aws-lambda'
+import { Construct } from "constructs"
 
 export class AssetHelpers {
   /**

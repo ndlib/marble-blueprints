@@ -1,15 +1,16 @@
-import cdk = require('@aws-cdk/core')
-import { CfnServiceLinkedRole } from '@aws-cdk/aws-iam'
-import { Domain, EngineVersion } from '@aws-cdk/aws-opensearchservice'
-import { StringParameter } from '@aws-cdk/aws-ssm'
-import { EbsDeviceVolumeType } from '@aws-cdk/aws-ec2'
+import { Stack, StackProps } from 'aws-cdk-lib'
+import { CfnServiceLinkedRole } from 'aws-cdk-lib/aws-iam'
+import { Domain, EngineVersion } from 'aws-cdk-lib/aws-opensearchservice'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
+import { EbsDeviceVolumeType } from 'aws-cdk-lib/aws-ec2'
+import { Construct } from "constructs"
 
-export interface OpenSearchStackProps extends cdk.StackProps {
+export interface OpenSearchStackProps extends StackProps {
   readonly namespace: string
   readonly contextEnvName: string
 }
 
-export class OpenSearchStack extends cdk.Stack {
+export class OpenSearchStack extends Stack {
   readonly domainName: string
   readonly domain: Domain
   readonly domainEndpointKeyPath: string
@@ -20,7 +21,7 @@ export class OpenSearchStack extends cdk.Stack {
   readonly domainReadOnlyUserNameKeyPath: string
   readonly domainReadOnlyPasswordKeyPath: string
 
-  constructor(scope: cdk.Construct, id: string, props: OpenSearchStackProps) {
+  constructor(scope: Construct, id: string, props: OpenSearchStackProps) {
     super(scope, id, props)
 
     const masterNodes = this.isProd(props.contextEnvName) ? 3 : 0

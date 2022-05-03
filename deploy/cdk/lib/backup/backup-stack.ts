@@ -1,6 +1,6 @@
-import { BackupPlan, BackupResource, BackupVault } from "@aws-cdk/aws-backup"
-
-import { StackProps, Construct, Stack } from "@aws-cdk/core"
+import { BackupPlan, BackupResource, BackupVault } from "aws-cdk-lib/aws-backup"
+import { StackProps, Stack } from "aws-cdk-lib"
+import { Construct } from "constructs"
 
 export interface IBackupStackProps extends StackProps {
   readonly backupPlanName?: string

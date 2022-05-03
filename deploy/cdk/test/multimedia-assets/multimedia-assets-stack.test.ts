@@ -1,5 +1,5 @@
-import { Match, Template } from '@aws-cdk/assertions'
-import cdk = require('@aws-cdk/core')
+import { Match, Template } from 'aws-cdk-lib/assertions'
+import { App } from 'aws-cdk-lib'
 import { FoundationStack } from '../../lib/foundation'
 import { MultimediaAssetsStack } from '../../lib/multimedia-assets'
 
@@ -10,7 +10,7 @@ describe('MultimediaAssetsStack', () => {
   }
   const domainName = 'fake.domain'
 
-  const app = new cdk.App()
+  const app = new App()
   const foundationStack = new FoundationStack(app, 'FoundationStack', {
     env,
     domainName,

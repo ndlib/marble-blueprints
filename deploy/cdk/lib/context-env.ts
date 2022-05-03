@@ -1,5 +1,5 @@
-import { Environment } from "@aws-cdk/cx-api"
-import { ConstructNode } from "@aws-cdk/core"
+import { Environment } from "aws-cdk-lib/cx-api"
+import { Node } from "constructs"
 import { getRequiredContext } from "./context-helpers"
 
 export class ContextEnv {
@@ -17,7 +17,7 @@ export class ContextEnv {
   readonly marbleContentBucketName: string
   readonly marbleContentFileShareId: string
 
-  static fromContext = (node: ConstructNode, name: string): ContextEnv => {
+  static fromContext = (node: Node, name: string): ContextEnv => {
     const contextEnv = getRequiredContext(node, 'environments')[name]
     if(contextEnv === undefined || contextEnv === null) {
       throw new Error(`Context key 'environments.${name}' is required.`)

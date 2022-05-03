@@ -1,10 +1,10 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps, BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
-import { Artifact } from '@aws-cdk/aws-codepipeline'
-import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
-import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Construct, Fn, Duration } from '@aws-cdk/core'
+import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps, BuildEnvironmentVariableType } from 'aws-cdk-lib/aws-codebuild'
+import { Artifact } from 'aws-cdk-lib/aws-codepipeline'
+import { CodeBuildAction } from 'aws-cdk-lib/aws-codepipeline-actions'
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
+import { Fn, Duration } from 'aws-cdk-lib'
+import { Construct } from 'constructs'
 import { NamespacedPolicy } from '../namespaced-policy'
-import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
    * The name of the stack that this project will deploy to. Will add

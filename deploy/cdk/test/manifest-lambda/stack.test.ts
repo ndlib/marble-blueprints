@@ -1,6 +1,6 @@
-import { Template } from '@aws-cdk/assertions'
-import { Bucket } from '@aws-cdk/aws-s3'
-import cdk = require('@aws-cdk/core')
+import { Template } from 'aws-cdk-lib/assertions'
+import { Bucket } from 'aws-cdk-lib/aws-s3'
+import { App, Stack } from 'aws-cdk-lib'
 import { FoundationStack } from '../../lib/foundation'
 import { MaintainMetadataStack } from '../../lib/maintain-metadata'
 import { ManifestLambdaStack } from '../../lib/manifest-lambda'
@@ -48,12 +48,12 @@ const manifestLambdaContext = {
 }
 
 const setup = (props: { manifestPipelineContext: any, maintainMetadataContext: any, manifestLambdaContext: any }) => {
-  const app = new cdk.App()
+  const app = new App()
 
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
     domainName,
   })
-  const multimediaStack = new cdk.Stack(app, 'MultimediaStack')
+  const multimediaStack = new Stack(app, 'MultimediaStack')
   const multimediaBucket = new Bucket(multimediaStack, 'MultimediaBucket')
 
   const manifestPipelineStack = new ManifestPipelineStack(app, `${namespace}-manifest`, {

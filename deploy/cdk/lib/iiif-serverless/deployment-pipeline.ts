@@ -37,6 +37,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
   readonly paramPathPrefix: string;
+  readonly dockerhubCredentialsPath: string;
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -97,6 +98,7 @@ export class DeploymentPipelineStack extends Stack {
         cdkDirectory: 'deploy/cdk',
         namespace,
         contextEnvName: props.contextEnvName,
+        dockerhubCredentialsPath: props.dockerhubCredentialsPath,
         additionalContext: {
           description: "IIIF Serverless API",
           projectName: "marble",

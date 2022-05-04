@@ -34,6 +34,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly publicGraphqlHostnamePrefix: string;
   readonly testFoundationStack: FoundationStack
   readonly prodFoundationStack: FoundationStack
+  readonly dockerhubCredentialsPath: string;
  }
 
 
@@ -66,6 +67,7 @@ export class DeploymentPipelineStack extends Stack {
         cdkDirectory: 'deploy/cdk',
         namespace: `${namespace}`,
         contextEnvName: props.contextEnvName,
+        dockerhubCredentialsPath: props.dockerhubCredentialsPath,
         additionalContext: {
           description: "data pipeline for creating manifest lambda",
           projectName: "marble",

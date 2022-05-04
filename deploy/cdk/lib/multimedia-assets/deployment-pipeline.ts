@@ -30,6 +30,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
   readonly createDns: boolean
+  readonly dockerhubCredentialsPath: string;
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -51,6 +52,7 @@ export class DeploymentPipelineStack extends Stack {
         cdkDirectory: 'deploy/cdk',
         namespace,
         contextEnvName: props.contextEnvName,
+        dockerhubCredentialsPath: props.dockerhubCredentialsPath,
         additionalContext: {
           description: props.description,
           projectName: props.projectName,

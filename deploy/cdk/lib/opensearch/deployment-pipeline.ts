@@ -23,6 +23,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly createGithubWebhooks: boolean;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
+  readonly dockerhubCredentialsPath: string;
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -42,6 +43,7 @@ export class DeploymentPipelineStack extends Stack {
         cdkDirectory: 'deploy/cdk',
         namespace: `${namespace}`,
         contextEnvName: contextEnvName,
+        dockerhubCredentialsPath: props.dockerhubCredentialsPath,
         additionalContext: {
           description: "Opensearch cluster",
           projectName: "marble",

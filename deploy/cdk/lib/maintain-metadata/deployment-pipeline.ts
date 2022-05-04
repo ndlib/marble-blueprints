@@ -25,6 +25,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
   readonly createGithubWebhooks: boolean;
+  readonly dockerhubCredentialsPath: string;
  }
 
 
@@ -51,6 +52,7 @@ export class DeploymentPipelineStack extends Stack {
         cdkDirectory: 'deploy/cdk',
         namespace: `${namespace}`,
         contextEnvName: props.contextEnvName,
+        dockerhubCredentialsPath: props.dockerhubCredentialsPath,
         additionalContext: {
           description: "data pipeline for maintaining metadata",
           projectName: "marble",

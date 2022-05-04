@@ -34,7 +34,7 @@ export class OpenSearchStack extends Stack {
 
     this.domain = new Domain(this, `${props.namespace}-domain`, {
       enableVersionUpgrade: true,
-      version: EngineVersion.OPENSEARCH_1_0,
+      version: EngineVersion.OPENSEARCH_1_2,
       capacity: {
         masterNodes: masterNodes,
         masterNodeInstanceType: masterNodeInstanceType,

@@ -1,4 +1,4 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from 'aws-cdk-lib/aws-codebuild'
+import { BuildEnvironmentVariableType, BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from 'aws-cdk-lib/aws-codebuild'
 import { Artifact } from 'aws-cdk-lib/aws-codepipeline'
 import { CodeBuildAction } from 'aws-cdk-lib/aws-codepipeline-actions'
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
@@ -51,7 +51,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly outputDirectory?: string;
   readonly outputFiles?: string[];
   readonly outputArtifact?: Artifact;
-
+  readonly dockerhubCredentialsPath: string;
   /**
    * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '14.x')  e.g. `python: '3.9'`
    */
@@ -106,6 +106,7 @@ export class CDKPipelineDeploy extends Construct {
           pre_build: {
             commands: [
               `cd ${appSourceDir}`,
+              'echo $DOCKERHUB_PASSWORD | docker login --username $DOCKERHUB_USERNAME --password-stdin',
               ...(props.appBuildCommands || []),
             ],
           },
@@ -196,6 +197,20 @@ export class CDKPipelineDeploy extends Construct {
       project: this.project,
       runOrder: 1,
       outputs: (props.outputArtifact ? [props.outputArtifact] : []),
-    })
+      environmentVariables: {
+        DOCKERHUB_CREDENTIALS_PATH: {
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+          value: props.dockerhubCredentialsPath || '',
+        },
+        DOCKERHUB_USERNAME: {
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+          value: `${props.dockerhubCredentialsPath}:username`,
+        },
+        DOCKERHUB_PASSWORD: {
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+          value: `${props.dockerhubCredentialsPath}:password`,
+        },
+      },
+})
   }
 }

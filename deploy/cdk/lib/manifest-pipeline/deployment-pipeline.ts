@@ -39,6 +39,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly prodMetadataTimeToLiveDays: string;
   readonly filesTimeToLiveDays: string;
   readonly prodFilesTimeToLiveDays: string;
+  readonly dockerhubCredentialsPath: string;
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -70,6 +71,7 @@ export class DeploymentPipelineStack extends Stack {
         cdkDirectory: 'deploy/cdk',
         namespace: `${namespace}`,
         contextEnvName: props.contextEnvName,
+        dockerhubCredentialsPath: props.dockerhubCredentialsPath,
         additionalContext: {
           description: "data pipeline for IIIF Manifests",
           projectName: "marble",

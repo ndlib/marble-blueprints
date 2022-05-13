@@ -1482,6 +1482,8 @@ def _delete_expired_api_keys(graphql_api_id: str):
         $!{expValues.put(":layout", $util.dynamodb.toDynamoDB($layout))}
         $!{expValues.put(":title", $util.dynamodb.toDynamoDB($title))}
         $!{expValues.put(":privacy", $util.dynamodb.toDynamoDB($privacy))}
+        $!{expValues.put(":GSI1PK", $util.dynamodb.toDynamoDB("PORTFOLIOCOLLECTION"))}
+        $!{expValues.put(":GSI1SK", $util.dynamodb.toDynamoDB("PORTFOLIOCOLLECTION#$portfolioCollectionId"))}
 
         #if( $privacy == "private" )
           #set($GSI2PK = "")

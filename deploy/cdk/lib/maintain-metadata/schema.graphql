@@ -1,476 +1,580 @@
 type CreationPlaceObject @aws_oidc @aws_api_key {
-	city: String
-	continent: String
-	country: String
-	county: String
-	historic: String
-	state: String
+  city: String
+  continent: String
+  country: String
+  county: String
+  historic: String
+  state: String
 }
 
 type FileToProcess @aws_oidc @aws_api_key {
-	id: String
-	copyrightStatus: String
-	dateAddedToDynamo: String
-	dateLastProcessed: String
-	dateModifiedInDynamo: String
-	description: String
-	digitalAccess: String
-	eTag: String
-	filePath: String
-	height: Int
-	md5Checksum: String
-	mimeType: String
-	modifiedDate: String
-	size: Int
-	sourceBucketName: String
-	sourceFilePath: String
-	sourceSystem: String
-	sourceType: String
-	sourceUri: String
-	storageSystem: String
-	TYPE: String
-	width: Int
+  id: String
+  copyrightStatus: String
+  dateAddedToDynamo: String
+  dateLastProcessed: String
+  dateModifiedInDynamo: String
+  description: String
+  digitalAccess: String
+  eTag: String
+  filePath: String
+  height: Int
+  md5Checksum: String
+  mimeType: String
+  modifiedDate: String
+  size: Int
+  sourceBucketName: String
+  sourceFilePath: String
+  sourceSystem: String
+  sourceType: String
+  sourceUri: String
+  storageSystem: String
+  TYPE: String
+  width: Int
 }
 
 type FilesToProcessConnection @aws_oidc @aws_api_key {
-	items: [FileToProcess]
-	nextToken: String
+  items: [FileToProcess]
+  nextToken: String
 }
 
 type Image @aws_oidc @aws_api_key {
-	id: String
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	description: String
-	digitalAccess: String
-	eTag: String
-	filePath: String
-	height: Int
-	lastModified: String
-	mediaResourceId: String
-	mediaServer: String
-	mimeType: String
-	imageGroupId: String
-	imageGroup: ImageGroup
-	sequence: Int
-	size: Int
-	sourceSystem: String
-	sourceType: String
-	sourceUri: String
-	title: String
-	treePath: String
-	TYPE: String
-	typeOfData: String
-	width: Int
+  id: String
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  description: String
+  digitalAccess: String
+  eTag: String
+  filePath: String
+  height: Int
+  lastModified: String
+  mediaResourceId: String
+  mediaServer: String
+  mimeType: String
+  imageGroupId: String
+  imageGroup: ImageGroup
+  sequence: Int
+  size: Int
+  sourceSystem: String
+  sourceType: String
+  sourceUri: String
+  title: String
+  treePath: String
+  TYPE: String
+  typeOfData: String
+  width: Int
 }
 
 type ImageGroup @aws_oidc @aws_api_key {
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	imageGroupId: String
-	storageSystem: String
-	typeOfData: String
-	TYPE: String
-	images: ImagesConnection
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  imageGroupId: String
+  storageSystem: String
+  typeOfData: String
+  TYPE: String
+  images: ImagesConnection
 }
 
 type ImageGroupsConnection @aws_oidc @aws_api_key {
-	items: [ImageGroup]
-	nextToken: String
+  items: [ImageGroup]
+  nextToken: String
 }
 
 type ImagesConnection @aws_oidc @aws_api_key {
-	items: [Image]
-	nextToken: String
+  items: [Image]
+  nextToken: String
 }
 
 type ItemMetadata @aws_oidc @aws_api_key {
-	id: String
-	access: String
-	additionalNotes: String
-	childIds: [MetadataChildObject]
-	collectionId: String
-	collections: [MetadataObjectWithDisplayField]
-	contributors: [MetadataObjectWithDisplayField]
-	copyrightStatement: String
-	copyrightStatus: String
-	copyrightUrl: String
-	createdDate: String
-	creationPlace: CreationPlaceObject
-	creators: [MetadataObjectWithDisplayField]
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	dedication: String
-	defaultFilePath: String
-	defaultImage: Image
-	description: String
-	digitalAccess: String
-	digitizationSource: String
-	dimensions: String
-	expireTime: Int
-	fileCreatedDate: String
-	format: String
-	geographicLocations: [MetadataObjectWithDisplayField]
-	iiifResourceId: String
-	imageGroupId: String
-	images(limit: Int, nextToken: String): ImagesConnection
-	languages: [MetadataObjectWithDisplayField]
-	level: String
-	linkToSource: String
-	media(limit: Int, nextToken: String): MediaConnection
-	mediaGroupId: String
-	medium: String
-	parentId: String
-	parent: ItemMetadata
-	partiallyDigitized: Boolean
-	physicalAccess: String
-	publishers: [MetadataObjectWithDisplayField]
-	relatedIds: [MetadataRelatedObject]
-	repository: String
-	sequence: Int
-	sourceSystem: String
-	subjects: [MetadataSubject]
-	suppliedWebsiteId: String
-	title: String
-	treePath: String
-	TYPE: String
-	uniqueIdentifier: String
-	workType: String
-	children(limit: Int, nextToken: String): MinimumItemMetadataConnection
-	root: ItemMetadata
+  id: String
+  access: String
+  additionalNotes: String
+  childIds: [MetadataChildObject]
+  collectionId: String
+  collections: [MetadataObjectWithDisplayField]
+  contributors: [MetadataObjectWithDisplayField]
+  copyrightStatement: String
+  copyrightStatus: String
+  copyrightUrl: String
+  createdDate: String
+  creationPlace: CreationPlaceObject
+  creators: [MetadataObjectWithDisplayField]
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  dedication: String
+  defaultFilePath: String
+  defaultImage: Image
+  description: String
+  digitalAccess: String
+  digitizationSource: String
+  dimensions: String
+  expireTime: Int
+  fileCreatedDate: String
+  format: String
+  geographicLocations: [MetadataObjectWithDisplayField]
+  iiifResourceId: String
+  imageGroupId: String
+  images(limit: Int, nextToken: String): ImagesConnection
+  languages: [MetadataObjectWithDisplayField]
+  level: String
+  linkToSource: String
+  media(limit: Int, nextToken: String): MediaConnection
+  mediaGroupId: String
+  medium: String
+  parentId: String
+  parent: ItemMetadata
+  partiallyDigitized: Boolean
+  physicalAccess: String
+  publishers: [MetadataObjectWithDisplayField]
+  relatedIds: [MetadataRelatedObject]
+  repository: String
+  sequence: Int
+  sourceSystem: String
+  subjects: [MetadataSubject]
+  suppliedWebsiteId: String
+  title: String
+  treePath: String
+  TYPE: String
+  uniqueIdentifier: String
+  workType: String
+  children(limit: Int, nextToken: String): MinimumItemMetadataConnection
+  root: ItemMetadata
 }
 
 type ItemMetadataConnection @aws_oidc @aws_api_key {
-	items: [ItemMetadata]
-	limit: Int
-	nextToken: String
+  items: [ItemMetadata]
+  limit: Int
+  nextToken: String
 }
 
 type ItemToHarvestRecord @aws_oidc @aws_api_key {
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	harvestItemId: String
-	PK: String
-	SK: String
-	sourceSystem: String
-	TYPE: String
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  harvestItemId: String
+  PK: String
+  SK: String
+  sourceSystem: String
+  TYPE: String
 }
 
 type Media @aws_oidc @aws_api_key {
-	id: String
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	description: String
-	digitalAccess: String
-	eTag: String
-	filePath: String
-	lastModified: String
-	mediaGroup: MediaGroup
-	mediaGroupId: String
-	mediaResourceId: String
-	mediaServer: String
-	mimeType: String
-	sequence: Int
-	size: Int
-	sourceSystem: String
-	sourceType: String
-	sourceUri: String
-	title: String
-	treePath: String
-	TYPE: String
-	typeOfData: String
+  id: String
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  description: String
+  digitalAccess: String
+  eTag: String
+  filePath: String
+  lastModified: String
+  mediaGroup: MediaGroup
+  mediaGroupId: String
+  mediaResourceId: String
+  mediaServer: String
+  mimeType: String
+  sequence: Int
+  size: Int
+  sourceSystem: String
+  sourceType: String
+  sourceUri: String
+  title: String
+  treePath: String
+  TYPE: String
+  typeOfData: String
 }
 
 type MediaGroup @aws_oidc @aws_api_key {
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	mediaGroupId: String
-	storageSystem: String
-	typeOfData: String
-	TYPE: String
-	media: MediaConnection
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  mediaGroupId: String
+  storageSystem: String
+  typeOfData: String
+  TYPE: String
+  media: MediaConnection
 }
 
 type MediaGroupsConnection @aws_oidc @aws_api_key {
-	items: [MediaGroup]
-	nextToken: String
+  items: [MediaGroup]
+  nextToken: String
 }
 
 type MediaConnection @aws_oidc @aws_api_key {
-	items: [Media]
-	nextToken: String
+  items: [Media]
+  nextToken: String
 }
 
-
 type MetadataChildObject @aws_oidc @aws_api_key {
-	id: String
-	sequence: Int
-	item: ItemMetadata
+  id: String
+  sequence: Int
+  item: ItemMetadata
 }
 
 type MetadataObjectWithDisplayField @aws_oidc @aws_api_key {
-	display: String
+  display: String
 }
 
 type MetadataRelatedObject @aws_oidc @aws_api_key {
-	id: String
-	sequence: Int
-	item: ItemMetadata
+  id: String
+  sequence: Int
+  item: ItemMetadata
 }
 
 type MetadataSubject @aws_oidc @aws_api_key {
-	term: String
-	uri: String
-	authority: String
-	broaderTerms: [MetadataSubject]
-	description: String
-	display: String
-	parentTerm: String
-	variants: [String]
+  term: String
+  uri: String
+  authority: String
+  broaderTerms: [MetadataSubject]
+  description: String
+  display: String
+  parentTerm: String
+  variants: [String]
 }
 
 type MinimumItemMetadata @aws_oidc @aws_api_key {
-	id: String
-	level: String
-	title: String
-	description: String
+  id: String
+  level: String
+  title: String
+  description: String
 }
 
-
 type MinimumItemMetadataConnection @aws_oidc @aws_api_key {
-	items: [MinimumItemMetadata]
-	limit: Int
-	nextToken: String
+  items: [MinimumItemMetadata]
+  limit: Int
+  nextToken: String
 }
 
 type Mutation @aws_oidc @aws_api_key {
-	addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
-	addItemToHarvest(harvestItemId: String!, sourceSystem: String!): ItemToHarvestRecord
-	removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
-    	removeItemToProcess(itemId: String!): RecordsDeleted
-	removeDefaultImageForWebsite(itemId: String!, websiteId: String): ItemMetadata
-	removeMediaGroupForWebsite(itemId: String!, websiteId: String): ItemMetadata
-	removePortfolioCollection(portfolioCollectionId: String!): RecordsDeleted @aws_oidc
-	removePortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): RecordsDeleted @aws_oidc
-	removePortfolioUser: RecordsDeleted @aws_oidc
-	saveCopyrightForWebsite(itemId: String!, websiteId: String, copyrightStatement: String, additionalNotes: String inCopyright: Boolean, copyrightUrl: String, copyrightStatus: String): ItemMetadata
-	saveDefaultImageForWebsite(itemId: String!, websiteId: String, defaultFilePath: String!, imageGroupId: String): ItemMetadata
-	saveFileLastProcessedDate(itemId: String!, height: Int, width: Int): FileToProcess
-	saveMediaGroupForWebsite(itemId: String!, websiteId: String, mediaGroupId: String!): ItemMetadata
-	savePartiallyDigitizedForWebsite(itemId: String!, websiteId: String, partiallyDigitized: Boolean!): ItemMetadata
-	savePortfolioCollection(portfolioCollectionId: String, description: String, imageUri: String, layout: String, privacy: PortfolioPrivacy, highlightedCollection: Boolean, featuredCollection: Boolean, title: String): PortfolioCollection @aws_oidc
-	savePortfolioItem(portfolioItemId: String, portfolioCollectionId: String!, annotation: String, description: String,	imageUri: String,	internalItemId: String,	itemType: PortfolioItemType, sequence: Int,	title: String): PortfolioItem @aws_oidc
-	savePortfolioUser(bio: String, fullName: String, email: String): PortfolioUser @aws_oidc
+  addItemToWebsite(itemId: String!, websiteId: String!): WebsiteItem
+  addItemToHarvest(
+    harvestItemId: String!
+    sourceSystem: String!
+  ): ItemToHarvestRecord
+  blessPortfolioCollection(
+    netid: String
+    portfolioCollectionId: String
+    description: String
+    imageUri: String
+    privacy: PortfolioPrivacy
+    highlightedCollection: Boolean
+    featuredCollection: Boolean
+  ): PortfolioCollection @aws_oidc
+  removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
+  removeItemToProcess(itemId: String!): RecordsDeleted
+  removeDefaultImageForWebsite(itemId: String!, websiteId: String): ItemMetadata
+  removeMediaGroupForWebsite(itemId: String!, websiteId: String): ItemMetadata
+  removePortfolioCollection(portfolioCollectionId: String!): RecordsDeleted
+    @aws_oidc
+  removePortfolioItem(
+    portfolioCollectionId: String!
+    portfolioItemId: String!
+  ): RecordsDeleted @aws_oidc
+  removePortfolioUser: RecordsDeleted @aws_oidc
+  saveCopyrightForWebsite(
+    itemId: String!
+    websiteId: String
+    copyrightStatement: String
+    additionalNotes: String
+    inCopyright: Boolean
+    copyrightUrl: String
+    copyrightStatus: String
+  ): ItemMetadata
+  saveDefaultImageForWebsite(
+    itemId: String!
+    websiteId: String
+    defaultFilePath: String!
+    imageGroupId: String
+  ): ItemMetadata
+  saveFileLastProcessedDate(
+    itemId: String!
+    height: Int
+    width: Int
+  ): FileToProcess
+  saveMediaGroupForWebsite(
+    itemId: String!
+    websiteId: String
+    mediaGroupId: String!
+  ): ItemMetadata
+  savePartiallyDigitizedForWebsite(
+    itemId: String!
+    websiteId: String
+    partiallyDigitized: Boolean!
+  ): ItemMetadata
+  savePortfolioCollection(
+    portfolioCollectionId: String
+    description: String
+    imageUri: String
+    layout: String
+    privacy: PortfolioPrivacy
+    highlightedCollection: Boolean
+    featuredCollection: Boolean
+    title: String
+  ): PortfolioCollection @aws_oidc
+  savePortfolioItem(
+    portfolioItemId: String
+    portfolioCollectionId: String!
+    annotation: String
+    description: String
+    imageUri: String
+    internalItemId: String
+    itemType: PortfolioItemType
+    sequence: Int
+    title: String
+  ): PortfolioItem @aws_oidc
+  savePortfolioUser(
+    bio: String
+    fullName: String
+    email: String
+  ): PortfolioUser @aws_oidc
 }
 
 type RecordsDeleted @aws_oidc @aws_api_key {
-	recordsDeleted: Int
+  recordsDeleted: Int
 }
 
 type PortfolioCollection @aws_oidc @aws_api_key {
-	portfolioCollectionId: String
-	portfolioUserId: String
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	description: String
-	imageUri: String
-	featuredCollection: Boolean
-	highlightedCollection: Boolean
-	layout: String
-	privacy: PortfolioPrivacy
-	portfolioItems: PortfolioItemsConnection
-	title: String
-	creator: PortfolioUser
+  portfolioCollectionId: String
+  portfolioUserId: String
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  description: String
+  imageUri: String
+  featuredCollection: Boolean
+  highlightedCollection: Boolean
+  layout: String
+  privacy: PortfolioPrivacy
+  portfolioItems: PortfolioItemsConnection
+  title: String
+  creator: PortfolioUser
 }
 
 type PortfolioCollectionsConnection @aws_oidc @aws_api_key {
-	items: [PortfolioCollection]
-	limit: Int
-	nextToken: String
+  items: [PortfolioCollection]
+  limit: Int
+  nextToken: String
 }
 
 type PortfolioItem @aws_oidc @aws_api_key {
-	portfolioItemId: String
-	portfolioCollectionId: String
-	portfolioUserId: String
-	annotation: String
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	description: String
-	imageUri: String
-	internalItemId: String
-	itemType: PortfolioItemType
-	sequence: Int
-	title: String
-	uri: String
+  portfolioItemId: String
+  portfolioCollectionId: String
+  portfolioUserId: String
+  annotation: String
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  description: String
+  imageUri: String
+  internalItemId: String
+  itemType: PortfolioItemType
+  sequence: Int
+  title: String
+  uri: String
 }
 
 type PortfolioItemsConnection @aws_oidc @aws_api_key {
-	items: [PortfolioItem]
-	limit: Int
-	nextToken: String
+  items: [PortfolioItem]
+  limit: Int
+  nextToken: String
 }
 
 enum PortfolioItemType @aws_oidc @aws_api_key {
-	internal
-	iiif
-	uri
+  internal
+  iiif
+  uri
 }
 
 enum PortfolioPrivacy @aws_oidc @aws_api_key {
-	private
-	public
-	shared
+  private
+  public
+  shared
 }
 
 type PortfolioUser @aws_oidc @aws_api_key {
-	portfolioUserId: String
-	bio: String
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	department: String
-	fullName: String
-	email: String
-	primaryAffiliation: String
-	portfolioCollections: PortfolioCollectionsConnection
+  portfolioUserId: String
+  bio: String
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  department: String
+  fullName: String
+  email: String
+  primaryAffiliation: String
+  portfolioCollections: PortfolioCollectionsConnection
 }
 
 type Query @aws_oidc @aws_api_key {
-	getExposedPortfolioCollection(portfolioCollectionId: String!): PortfolioCollection
-	getFileToProcessRecord(filePath: String!): FileToProcess
-	getImage(id: String!): Image
-	getImageGroup(id: String!): ImageGroup
-	getItem(id: String!, websiteId: String): ItemMetadata
-	getMedia(id: String!): Media
-	getMediaGroup(id: String!): MediaGroup
-	getPortfolioCollection(portfolioCollectionId: String!): PortfolioCollection  @aws_oidc @aws_api_key
-	getPortfolioItem(portfolioCollectionId: String!, portfolioItemId: String!): PortfolioItem  @aws_oidc
-	getPortfolioUser(portfolioUserId: String!): PortfolioUser  @aws_oidc @aws_api_key
-	getWebsite(id: String!): Website
-	listFilesToProcess(dateLastProcessedBefore: String, limit: Int, nextToken: String): FilesToProcessConnection
-	listImageGroups(limit: Int, nextToken: String, storageSystem: StorageSystem): ImageGroupsConnection
-	listImageGroupsForS3(limit: Int, nextToken: String): ImageGroupsConnection
-	listImageGroupsReferenced(limit: Int, nextToken: String): ImageGroupsConnection
-	listItemsBySourceSystem(id: String!, limit: Int, nextToken: String): ItemMetadataConnection
-	listItemsByWebsite(id: String!, limit: Int, nextToken: String): WebsiteItemsConnection
-	listMediaGroups(limit: Int, nextToken: String, storageSystem: StorageSystem): MediaGroupsConnection
-	listMediaGroupsForS3(limit: Int, nextToken: String): MediaGroupsConnection
-	listMediaGroupsReferenced(limit: Int, nextToken: String): MediaGroupsConnection
-	listPublicFeaturedPortfolioCollections: PortfolioCollectionsConnection
-	listPublicHighlightedPortfolioCollections: PortfolioCollectionsConnection
-	listPublicPortfolioCollections: PortfolioCollectionsConnection
-	listSupplementalDataRecords(id: String, websiteId: String): SupplementalDataConnection
-	listWebsites(filter: WebsiteFilterInput, limit: Int, nextToken: String): WebsiteConnection
-	showItemByWebsite(itemId: String!, websiteId: String): ItemMetadata
+  getExposedPortfolioCollection(
+    portfolioCollectionId: String!
+  ): PortfolioCollection
+  getFileToProcessRecord(filePath: String!): FileToProcess
+  getImage(id: String!): Image
+  getImageGroup(id: String!): ImageGroup
+  getItem(id: String!, websiteId: String): ItemMetadata
+  getMedia(id: String!): Media
+  getMediaGroup(id: String!): MediaGroup
+  getPortfolioCollection(portfolioCollectionId: String!): PortfolioCollection
+    @aws_oidc
+    @aws_api_key
+  getPortfolioItem(
+    portfolioCollectionId: String!
+    portfolioItemId: String!
+  ): PortfolioItem @aws_oidc
+  getPortfolioUser(portfolioUserId: String!): PortfolioUser
+    @aws_oidc
+    @aws_api_key
+  getWebsite(id: String!): Website
+  listFilesToProcess(
+    dateLastProcessedBefore: String
+    limit: Int
+    nextToken: String
+  ): FilesToProcessConnection
+  listImageGroups(
+    limit: Int
+    nextToken: String
+    storageSystem: StorageSystem
+  ): ImageGroupsConnection
+  listImageGroupsForS3(limit: Int, nextToken: String): ImageGroupsConnection
+  listImageGroupsReferenced(
+    limit: Int
+    nextToken: String
+  ): ImageGroupsConnection
+  listItemsBySourceSystem(
+    id: String!
+    limit: Int
+    nextToken: String
+  ): ItemMetadataConnection
+  listItemsByWebsite(
+    id: String!
+    limit: Int
+    nextToken: String
+  ): WebsiteItemsConnection
+  listMediaGroups(
+    limit: Int
+    nextToken: String
+    storageSystem: StorageSystem
+  ): MediaGroupsConnection
+  listMediaGroupsForS3(limit: Int, nextToken: String): MediaGroupsConnection
+  listMediaGroupsReferenced(
+    limit: Int
+    nextToken: String
+  ): MediaGroupsConnection
+  listPublicFeaturedPortfolioCollections: PortfolioCollectionsConnection
+  listPublicHighlightedPortfolioCollections: PortfolioCollectionsConnection
+  listPublicPortfolioCollections: PortfolioCollectionsConnection
+  listSupplementalDataRecords(
+    id: String
+    websiteId: String
+  ): SupplementalDataConnection
+  listWebsites(
+    filter: WebsiteFilterInput
+    limit: Int
+    nextToken: String
+  ): WebsiteConnection
+  showItemByWebsite(itemId: String!, websiteId: String): ItemMetadata
 }
 
 enum StorageSystem @aws_oidc @aws_api_key {
-	Curate
-	Google
-	S3
-	Uri
+  Curate
+  Google
+  S3
+  Uri
 }
 
 type SupplementalDataConnection @aws_oidc @aws_api_key {
-	items: [SupplementalDataRecord]
-	nextToken: String
+  items: [SupplementalDataRecord]
+  nextToken: String
 }
 
 type SupplementalDataRecord @aws_oidc @aws_api_key {
-	id: String
-	additionalNotes: String
-	copyrightStatement: String
-	copyrightStatus: String
-	copyrightUrl: String
-	dateAddedToDynamo: String
-	dateModifiedInDynamo: String
-	defaultFilePath: String
-	digitalAccess: String
-	inCopyright: Boolean
-	partiallyDigitized: Boolean
-	title: String
-	TYPE: String
-	websiteId: String
+  id: String
+  additionalNotes: String
+  copyrightStatement: String
+  copyrightStatus: String
+  copyrightUrl: String
+  dateAddedToDynamo: String
+  dateModifiedInDynamo: String
+  defaultFilePath: String
+  digitalAccess: String
+  inCopyright: Boolean
+  partiallyDigitized: Boolean
+  title: String
+  TYPE: String
+  websiteId: String
 }
 
 input TableBooleanFilterInput {
-	ne: Boolean
-	eq: Boolean
+  ne: Boolean
+  eq: Boolean
 }
 
 input TableFloatFilterInput {
-	ne: Float
-	eq: Float
-	le: Float
-	lt: Float
-	ge: Float
-	gt: Float
-	contains: Float
-	notContains: Float
-	between: [Float]
+  ne: Float
+  eq: Float
+  le: Float
+  lt: Float
+  ge: Float
+  gt: Float
+  contains: Float
+  notContains: Float
+  between: [Float]
 }
 
 input TableIDFilterInput {
-	ne: ID
-	eq: ID
-	le: ID
-	lt: ID
-	ge: ID
-	gt: ID
-	contains: ID
-	notContains: ID
-	between: [ID]
-	beginsWith: ID
+  ne: ID
+  eq: ID
+  le: ID
+  lt: ID
+  ge: ID
+  gt: ID
+  contains: ID
+  notContains: ID
+  between: [ID]
+  beginsWith: ID
 }
 
 input TableIntFilterInput {
-	ne: Int
-	eq: Int
-	le: Int
-	lt: Int
-	ge: Int
-	gt: Int
-	contains: Int
-	notContains: Int
-	between: [Int]
+  ne: Int
+  eq: Int
+  le: Int
+  lt: Int
+  ge: Int
+  gt: Int
+  contains: Int
+  notContains: Int
+  between: [Int]
 }
 
 input TableStringFilterInput {
-	ne: String
-	eq: String
-	le: String
-	lt: String
-	ge: String
-	gt: String
-	contains: String
-	notContains: String
-	between: [String]
-	beginsWith: String
+  ne: String
+  eq: String
+  le: String
+  lt: String
+  ge: String
+  gt: String
+  contains: String
+  notContains: String
+  between: [String]
+  beginsWith: String
 }
 
 type Website @aws_oidc @aws_api_key {
-	id: String
-	title: String
-	TYPE: String
-	websiteItems(limit: Int, nextToken: String): WebsiteItemsConnection
+  id: String
+  title: String
+  TYPE: String
+  websiteItems(limit: Int, nextToken: String): WebsiteItemsConnection
 }
 
 type WebsiteConnection @aws_oidc @aws_api_key {
-	items: [Website]
-	nextToken: String
+  items: [Website]
+  nextToken: String
 }
 
 input WebsiteFilterInput {
-	title: String
+  title: String
 }
 
 type WebsiteItem @aws_oidc @aws_api_key {
-	itemId: String
-	websiteId: String
-	ItemMetadata: ItemMetadata
+  itemId: String
+  websiteId: String
+  ItemMetadata: ItemMetadata
 }
 
 type WebsiteItemsConnection @aws_oidc @aws_api_key {
-	items: [WebsiteItem]
-	nextToken: String
+  items: [WebsiteItem]
+  nextToken: String
 }

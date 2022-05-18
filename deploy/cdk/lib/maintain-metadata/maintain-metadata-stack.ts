@@ -1167,12 +1167,9 @@ def _delete_expired_api_keys(graphql_api_id: str):
           $!{expValues.put(":portfolioUserId", $util.dynamodb.toDynamoDB($portfolioUserId))}
           $!{expValues.put(":rowType", $util.dynamodb.toDynamoDB("PortfolioCollection"))}
           $!{expValues.put(":dateAddedToDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
-          $!{expValues.put(":dateModifiedInDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
-          $!{expValues.put(":description", $util.dynamodb.toDynamoDB($ctx.args.description))}
-          $!{expValues.put(":imageUri", $util.dynamodb.toDynamoDB($ctx.args.imageUri))}
+          $!{expValues.put(":dateModifiedInDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))
           $!{expValues.put(":featuredCollection", $util.dynamodb.toDynamoDB($featuredCollection))}
           $!{expValues.put(":highlightedCollection", $util.dynamodb.toDynamoDB($highlightedCollection))}
-
           $!{expValues.put(":privacy", $util.dynamodb.toDynamoDB($privacy))}
           $!{expValues.put(":GSI1PK", $util.dynamodb.toDynamoDB("PORTFOLIOCOLLECTION"))}
           $!{expValues.put(":GSI1SK", $util.dynamodb.toDynamoDB("PORTFOLIOCOLLECTION#$portfolioCollectionId"))}
@@ -1197,9 +1194,9 @@ def _delete_expired_api_keys(graphql_api_id: str):
             },
             "update": {
               #if( $privacy == "private" )
-              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, privacy = :privacy,  GSI1PK = :GSI1PK, GSI1SK = :GSI1SK REMOVE GSI2PK, GSI2SK",
+              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, privacy = :privacy,  GSI1PK = :GSI1PK, GSI1SK = :GSI1SK REMOVE GSI2PK, GSI2SK",
               #else
-                "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection,privacy = :privacy,GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
+                "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection,privacy = :privacy,GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
               #end
               "expressionNames": {"#TYPE": "TYPE"},
               "expressionValues": $util.toJson($expValues)

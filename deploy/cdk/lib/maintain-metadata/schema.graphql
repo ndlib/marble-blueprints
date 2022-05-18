@@ -250,8 +250,6 @@ type Mutation @aws_oidc @aws_api_key {
   blessPortfolioCollection(
     netid: String
     portfolioCollectionId: String
-    description: String
-    imageUri: String
     privacy: PortfolioPrivacy
     highlightedCollection: Boolean
     featuredCollection: Boolean

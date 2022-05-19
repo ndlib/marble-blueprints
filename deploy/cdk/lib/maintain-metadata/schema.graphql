@@ -248,11 +248,11 @@ type Mutation @aws_oidc @aws_api_key {
     sourceSystem: String!
   ): ItemToHarvestRecord
   blessPortfolioCollection(
-    netid: String
-    portfolioCollectionId: String
-    privacy: PortfolioPrivacy
-    highlightedCollection: Boolean
-    featuredCollection: Boolean
+    netid: String!
+    portfolioCollectionId: String!
+    privacy: PortfolioPrivacy!
+    highlightedCollection: Boolean!
+    featuredCollection: Boolean!
   ): PortfolioCollection @aws_oidc
   removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
   removeItemToProcess(itemId: String!): RecordsDeleted

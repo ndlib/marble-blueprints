@@ -250,9 +250,13 @@ type Mutation @aws_oidc @aws_api_key {
   blessPortfolioCollection(
     netid: String
     portfolioCollectionId: String
+    description: String
+    imageUri: String
+    layout: String
     privacy: PortfolioPrivacy
     highlightedCollection: Boolean
     featuredCollection: Boolean
+    title: String
   ): PortfolioCollection @aws_oidc
   removeItemFromWebsite(itemId: String!, websiteId: String!): WebsiteItem
   removeItemToProcess(itemId: String!): RecordsDeleted

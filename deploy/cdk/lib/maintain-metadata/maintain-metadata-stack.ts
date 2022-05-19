@@ -1131,6 +1131,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
       fieldName: 'blessPortfolioCollection',
       dataSource: websiteMetadataDynamoDataSource,
       requestMappingTemplate: MappingTemplate.fromString(`
+        ## Adding a comment
        	#if($ctx.identity.claims.primary_affiliation == "staff" || $ctx.identity.claims.primary_affiliation == "faculty")
           #if($ctx.identity.claims.department == "Hesburgh Libraries")
             #set($portfolioUserId = $ctx.args.netid)
@@ -1205,7 +1206,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
             }
           #end
         #end
-        }`),
+        `),
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 

@@ -1199,7 +1199,11 @@ def _delete_expired_api_keys(graphql_api_id: str):
                 "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection,privacy = :privacy,GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
               #end
               "expressionNames": {"#TYPE": "TYPE"},
-              "expressionValues": $util.toJson($expValues)
+              "expressionValues":{
+                ":featuredCollection" : $util.dynamodb.toDynamoDBJson($ctx.args.featuredCollection),
+                ":highlightedCollection" : $util.dynamodb.toDynamoDBJson($ctx.args.highlightedCollection),
+                ":privacy" : $util.dynamodb.toDynamoDBJson($ctx.args.privacy),
+              }
             #end
           }
         }`),

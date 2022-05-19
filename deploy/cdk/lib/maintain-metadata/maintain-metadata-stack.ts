@@ -1128,7 +1128,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
    new Resolver(this, 'MutationBlessPortfolioCollectionResolver', {
      api: this.api,
       typeName: 'Mutation',
-      fieldName: 'savePortfolioCollection',
+      fieldName: 'blessPortfolioCollection',
       dataSource: websiteMetadataDynamoDataSource,
       requestMappingTemplate: MappingTemplate.fromString(`
         #set($portfolioUserId = $ctx.args.netid)

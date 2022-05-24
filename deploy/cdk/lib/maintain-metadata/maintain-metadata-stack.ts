@@ -1124,6 +1124,93 @@ def _delete_expired_api_keys(graphql_api_id: str):
       responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
     })
 
+
+   new Resolver(this, 'MutationBlessPortfolioCollectionResolver', {
+     api: this.api,
+      typeName: 'Mutation',
+      fieldName: 'blessPortfolioCollection',
+      dataSource: websiteMetadataDynamoDataSource,
+      requestMappingTemplate: MappingTemplate.fromString(`
+       	#if($ctx.identity.claims.primary_affiliation == "staff" || $ctx.identity.claims.primary_affiliation == "faculty")
+          #if($ctx.identity.claims.department == "Hesburgh Libraries")
+            #set($portfolioUserId = $ctx.args.netid)
+            #set($portfolioCollectionId = $util.defaultIfNullOrBlank($ctx.args.portfolioCollectionId, $util.autoId()))
+            #set($portfolioCollectionId = $util.defaultIfNullOrBlank($portfolioCollectionId, ""))
+            #set($portfolioCollectionId = $util.str.toUpper($portfolioCollectionId))
+            #set($portfolioCollectionId = $util.str.toReplace($portfolioCollectionId, " ", ""))
+
+            #set($privacy = $util.defaultIfNullOrBlank($ctx.args.privacy, "private"))
+            #if( $util.isBoolean($ctx.args.featuredCollection) )
+              #set($featuredCollection = $ctx.args.featuredCollection)
+            #else
+              #set($featuredCollection = false)
+            #end
+            #if( $util.isBoolean($ctx.args.highlightedCollection) )
+              #set($highlightedCollection = $ctx.args.highlightedCollection)
+            #else
+              #set($highlightedCollection = false)
+            #end
+
+            #if( $privacy != "public")
+              #set($featuredCollection = false)
+              #set($highlightedCollection = false)
+            #end
+
+            #set($layout = $util.defaultIfNullOrBlank($ctx.args.layout, "default"))
+
+            #set($title = $util.defaultIfNullOrBlank($ctx.args.title, $null))
+
+            #set($pk = "PORTFOLIO")
+            #set($sk = $util.str.toUpper("USER#$portfolioUserId#$portfolioCollectionId"))
+
+            #set( $expValues = {})
+            $!{expValues.put(":portfolioCollectionId", $util.dynamodb.toDynamoDB($portfolioCollectionId))}
+            $!{expValues.put(":portfolioUserId", $util.dynamodb.toDynamoDB($portfolioUserId))}
+            $!{expValues.put(":rowType", $util.dynamodb.toDynamoDB("PortfolioCollection"))}
+            $!{expValues.put(":dateAddedToDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
+            $!{expValues.put(":dateModifiedInDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
+            $!{expValues.put(":featuredCollection", $util.dynamodb.toDynamoDB($featuredCollection))}
+            $!{expValues.put(":highlightedCollection", $util.dynamodb.toDynamoDB($highlightedCollection))}
+            $!{expValues.put(":privacy", $util.dynamodb.toDynamoDB($privacy))}
+            $!{expValues.put(":GSI1PK", $util.dynamodb.toDynamoDB("PORTFOLIOCOLLECTION"))}
+            $!{expValues.put(":GSI1SK", $util.dynamodb.toDynamoDB("PORTFOLIOCOLLECTION#$portfolioCollectionId"))}
+
+            #if( $privacy == "private" )
+              #set($GSI2PK = "")
+              #set($GSI2SK = "")
+            #else
+              #set($GSI2PK = "PORTFOLIOCOLLECTION")
+              #set($GSI2SK = $util.str.toUpper("$privacy#$portfolioCollectionId"))
+
+              $!{expValues.put(":GSI2PK", $util.dynamodb.toDynamoDB($GSI2PK))}
+              $!{expValues.put(":GSI2SK", $util.dynamodb.toDynamoDB($GSI2SK))}
+            #end
+
+            {
+              "version": "2017-02-28",
+              "operation": "UpdateItem",
+              "key": {
+                "PK": $util.dynamodb.toDynamoDBJson($pk),
+                "SK": $util.dynamodb.toDynamoDBJson($sk),
+              },
+              "update": {
+                #if( $privacy == "private" )
+                "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, privacy = :privacy, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK REMOVE GSI2PK, GSI2SK",
+                #else
+                  "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, privacy = :privacy, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
+                #end
+                "expressionNames": {"#TYPE": "TYPE"},
+                "expressionValues": $util.toJson($expValues)
+              }
+            }
+          #end
+        #end
+        `),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+
+
+
     new Resolver(this, 'MutationRemoveItemFromWebsiteResolver', {
       api: this.api,
       typeName: 'Mutation',

@@ -30,7 +30,8 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
   readonly createDns: boolean
-  readonly dockerhubCredentialsPath: string;
+  readonly dockerhubCredentialsPath: string
+  readonly domainName: string
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -102,7 +103,7 @@ export class DeploymentPipelineStack extends Stack {
     // Deploy to Test
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.testFoundationStack)
 
-    const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
+    const testHostname = `${testHostnamePrefix}.${props.domainName}`
     const newmanRunnerTest = new NewmanRunner(this, 'NewmanRunnerTest', {
       sourceArtifact: infraSourceArtifact,
       collectionPath: 'deploy/cdk/test/multimedia-assets/smokeTests.json',
@@ -115,7 +116,7 @@ export class DeploymentPipelineStack extends Stack {
     // Deploy to Production
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, props.prodFoundationStack)
 
-    const prodHostname = `${prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
+    const prodHostname = `${prodHostnamePrefix}.${props.domainName}`
     const newmanRunnerProd = new NewmanRunner(this, 'NewmanRunnerProd', {
       sourceArtifact: infraSourceArtifact,
       collectionPath: 'deploy/cdk/test/multimedia-assets/smokeTests.json',

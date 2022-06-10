@@ -54,6 +54,11 @@ export interface IBaseStackProps extends StackProps {
    * The name of the maintain metadata stack upon which this stack is dependent
    */
   readonly maintainMetadataStack: MaintainMetadataStack;
+
+  /**
+   * Domain name to use when creating DNS entries
+   */
+  readonly domainName: string
 }
 
 export class ManifestLambdaStack extends Stack {
@@ -88,8 +93,8 @@ export class ManifestLambdaStack extends Stack {
     const graphqlApiUrlKeyPath = props.maintainMetadataStack.graphqlApiUrlKeyPath
     const graphqlApiKeyKeyPath = props.maintainMetadataStack.graphqlApiKeyKeyPath
 
-    const iiifApiBaseUrl = props.hostnamePrefix + '.' + props.foundationStack.hostedZone.zoneName
-    const graphqlApiBaseUrl = this.publicApiName + '.' + props.foundationStack.hostedZone.zoneName
+    const iiifApiBaseUrl = props.hostnamePrefix + '.' + props.domainName
+    const graphqlApiBaseUrl = this.publicApiName + '.' + props.domainName
 
     // Create iiifManifestLambda and associated api and endpoints
     const iiifManifestLambda = new Function(this, 'IiifManifestLambdaFunction', {

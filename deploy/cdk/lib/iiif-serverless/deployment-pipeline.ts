@@ -38,17 +38,16 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly notificationReceivers?: string;
   readonly paramPathPrefix: string;
   readonly dockerhubCredentialsPath: string;
+  readonly domainName: string
 }
 
 export class DeploymentPipelineStack extends Stack {
   constructor(scope: Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props)
 
-    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
-    const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`
-    const testHost = `${props.hostnamePrefix}-test.${props.testFoundationStack.hostedZone.zoneName}`
+    const testHost = `${props.hostnamePrefix}-test.${props.domainName}`
     const testStackName = `${props.namespace}-test-image-service`
-    const prodHost = `${props.hostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
+    const prodHost = `${props.hostnamePrefix}.${props.domainName}`
     const prodStackName = `${props.namespace}-prod-image-service`
 
     // Source Actions
@@ -85,7 +84,7 @@ export class DeploymentPipelineStack extends Stack {
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
     const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, paramPath: string, foundationStack: FoundationStack) => {
-      const fqdn = `${hostnamePrefix}.${foundationStack.hostedZone.zoneName}`
+      const fqdn = `${hostnamePrefix}.${props.domainName}`
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],

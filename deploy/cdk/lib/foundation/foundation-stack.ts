@@ -80,6 +80,11 @@ export class FoundationStack extends Stack {
    */
   public readonly publicBucketParam: string
 
+  /**
+   * Imported Wildcard certificateArn for all components of this application
+   */
+  public readonly certificateArn: string
+
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props)
 
@@ -105,6 +110,9 @@ export class FoundationStack extends Stack {
       domainName: `*.${props.domainName}`,
       validation: certificateValidation,
     })
+
+    const certificateArnPath = `/all/dns/${props.domainName}/certificateArn`
+    this.certificateArn = StringParameter.valueForStringParameter(this, certificateArnPath)
 
     this.cluster = new Cluster(this, 'Cluster', { vpc: this.vpc })
 

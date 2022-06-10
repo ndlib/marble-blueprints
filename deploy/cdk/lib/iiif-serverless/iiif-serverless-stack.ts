@@ -35,6 +35,7 @@ export interface IIiifServerlessStackProps extends StackProps {
    * Path in SSM where parameters for this stack are stored.
    */
   readonly paramPathPrefix: string
+  readonly domainName: string
 }
 
 export interface IIiifApiStackProps extends NestedStackProps {
@@ -43,6 +44,7 @@ export interface IIiifApiStackProps extends NestedStackProps {
   readonly paramPathPrefix: string
   readonly hostnamePrefix: string
   readonly createDns: boolean
+  readonly domainName: string
 }
 
 /**
@@ -94,7 +96,7 @@ class ApiStack extends NestedStack {
       ],
     })
 
-    const fqdn = `${props.hostnamePrefix}.${props.foundationStack.hostedZone.zoneName}`
+    const fqdn = `${props.hostnamePrefix}.${props.domainName}`
     const apiProps = {
       restApiName: this.apiName,
       handler: iiifFunc,

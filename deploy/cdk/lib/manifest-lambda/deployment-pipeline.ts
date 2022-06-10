@@ -59,6 +59,7 @@ export class DeploymentPipelineStack extends Stack {
           'chmod -R 755 ./scripts/codebuild/*',
           `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_${infraSourceArtifact.artifactName}"`,
           './scripts/codebuild/install.sh',
+          'pyenv versions',
           'pyenv version || { echo "Python version mismatch"; exit 1; }',
           'yarn',
         ],
@@ -137,7 +138,7 @@ export class DeploymentPipelineStack extends Stack {
         allow for the same patch version of python to be installed. If they differ
         then use this env var override .python-version files */
         PYENV_VERSION: {
-          value: `3.8.10`,
+          value: `3.8.13`,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
@@ -148,6 +149,7 @@ export class DeploymentPipelineStack extends Stack {
               python: '3.8',
             },
             commands: [
+              'pyenv versions',
               'pyenv version || { echo "Python version mismatch"; exit 1; }',
               'pip install -r dev-requirements.txt',
               'chmod -R 755 ./scripts/codebuild/*',

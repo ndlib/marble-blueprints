@@ -57,7 +57,8 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly authClientUrl: string
   readonly authClientId: string
   readonly authClientIssuer: string
-  readonly dockerhubCredentialsPath: string;
+  readonly dockerhubCredentialsPath: string
+  readonly domainName: string
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -228,7 +229,7 @@ export class DeploymentPipelineStack extends Stack {
     }
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', s3syncTestProps)
 
-    const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
+    const testHostname = `${testHostnamePrefix}.${props.domainName}`
     const smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
       sourceArtifact: appSourceArtifact,
       collectionPath: props.qaSpecPath,
@@ -273,7 +274,7 @@ export class DeploymentPipelineStack extends Stack {
     }
     const s3syncProd = new PipelineS3Sync(this, 'S3SyncProd', s3syncProdProps)
 
-    const domainName = domainNameOverride || props.prodFoundationStack.hostedZone.zoneName
+    const domainName = domainNameOverride || props.domainName
     const prodHostname = `${prodHostnamePrefix}.${domainName}`
     const smokeTestsProd = new NewmanRunner(this, 'StaticHostProdSmokeTests', {
       sourceArtifact: appSourceArtifact,

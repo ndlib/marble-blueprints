@@ -4,14 +4,15 @@
       "account": "333680067100",
       "region": "us-east-1",
       "useVpcId": "vpc-797fed1d",
-      "createDns": true,
+      "createDns": false,
       "domainName": "libraries.nd.edu",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "rBSCS3ImageBucketName": "rbsc-test-files",
       "createGithubWebhooks": false,
       "marbleContentBucketName": "testlibnd-smb-test",
-      "marbleContentFileShareId": "share-1112707B"
+      "marbleContentFileShareId": "share-1112707B",
+      "hostedZoneTypes": ["public"]
     },
     "prod": {
       "account": "230391840102",
@@ -25,7 +26,8 @@
       "rBSCS3ImageBucketName": "libnd-smb-rbsc",
       "createGithubWebhooks": true,
       "marbleContentBucketName": "libnd-smb-marble",
-      "marbleContentFileShareId": "share-3CDC3057"
+      "marbleContentFileShareId": "share-3CDC3057",
+      "hostedZoneTypes": ["private", "public"]
     }
   },
 

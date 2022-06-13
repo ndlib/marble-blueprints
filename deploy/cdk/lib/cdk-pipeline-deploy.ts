@@ -189,6 +189,16 @@ export class CDKPipelineDeploy extends Construct {
         'ssm:GetParameter',
       ],
     }))
+    
+    // Allow fetching DNS parameters from ssm
+    this.project.addToRolePolicy(
+      new PolicyStatement({
+        resources: [
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/dns/*'),
+        ],
+        actions: ['ssm:GetParametersByPath', 'ssm:GetParameter', 'ssm:GetParameters'],
+      }),
+    )
 
     this.action = new CodeBuildAction({
       actionName: 'DeployInfastructure',

@@ -16,6 +16,7 @@ export class ContextEnv {
   readonly alarmsEmail: string
   readonly marbleContentBucketName: string
   readonly marbleContentFileShareId: string
+  readonly hostedZoneTypes: string[]
 
   static fromContext = (node: Node, name: string): ContextEnv => {
     const contextEnv = getRequiredContext(node, 'environments')[name]

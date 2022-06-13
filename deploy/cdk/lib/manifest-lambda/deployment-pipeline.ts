@@ -35,6 +35,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly testFoundationStack: FoundationStack
   readonly prodFoundationStack: FoundationStack
   readonly dockerhubCredentialsPath: string;
+  readonly domainName: string
  }
 
 
@@ -58,6 +59,7 @@ export class DeploymentPipelineStack extends Stack {
           'chmod -R 755 ./scripts/codebuild/*',
           `export BLUEPRINTS_DIR="$CODEBUILD_SRC_DIR_${infraSourceArtifact.artifactName}"`,
           './scripts/codebuild/install.sh',
+          'pyenv versions',
           'pyenv version || { echo "Python version mismatch"; exit 1; }',
           'yarn',
         ],
@@ -136,7 +138,7 @@ export class DeploymentPipelineStack extends Stack {
         allow for the same patch version of python to be installed. If they differ
         then use this env var override .python-version files */
         PYENV_VERSION: {
-          value: `3.8.10`,
+          value: `3.8.13`,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
@@ -147,6 +149,7 @@ export class DeploymentPipelineStack extends Stack {
               python: '3.8',
             },
             commands: [
+              'pyenv versions',
               'pyenv version || { echo "Python version mismatch"; exit 1; }',
               'pip install -r dev-requirements.txt',
               'chmod -R 755 ./scripts/codebuild/*',
@@ -174,7 +177,7 @@ export class DeploymentPipelineStack extends Stack {
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
     const testPublicGraphqlHostnamePrefix = `${props.namespace}-test-${props.publicGraphqlHostnamePrefix}`
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, `${props.namespace}-manifest-lambda-deploy-test`, testPublicGraphqlHostnamePrefix)
-    const testHostname = `${testPublicGraphqlHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
+    const testHostname = `${testPublicGraphqlHostnamePrefix}.${props.domainName}`
 
     const newmanRunnerTest = new NewmanRunner(this, 'NewmanRunnerTest', {
       sourceArtifact: infraSourceArtifact,
@@ -206,7 +209,7 @@ export class DeploymentPipelineStack extends Stack {
     // Deploy to Production
     const prodPublicGraphqlHostnamePrefix = `${props.namespace}-prod-${props.publicGraphqlHostnamePrefix}`
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, `${props.namespace}-manifest-lambda-deploy-prod`, prodPublicGraphqlHostnamePrefix)
-    const prodHostname = `${prodPublicGraphqlHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
+    const prodHostname = `${prodPublicGraphqlHostnamePrefix}.${props.domainName}`
     const newmanRunnerProd = new NewmanRunner(this, 'NewmanRunnerProd', {
       sourceArtifact: infraSourceArtifact,
       collectionPath: 'deploy/cdk/test/manifest-lambda/smokeTests.json',

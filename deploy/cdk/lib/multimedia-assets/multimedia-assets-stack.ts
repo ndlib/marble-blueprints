@@ -70,7 +70,7 @@ export class MultimediaAssetsStack extends Stack {
     super(scope, id, props)
 
     const prefix = props.hostnamePrefix || `${props.namespace}-multimedia`
-    this.hostname = `${prefix}.${props.foundationStack.hostedZone.zoneName}`
+    this.hostname = `${prefix}.${props.domainName}`
 
     // TODO:  Once we have made the transition to using the MarbleContentBucket, the MultimediaBucket will need to be removed.
     this.multimediaBucket = new Bucket(this, 'MultimediaBucket', {

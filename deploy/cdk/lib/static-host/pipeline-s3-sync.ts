@@ -1,4 +1,4 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps, BuildEnvironmentVariableType } from 'aws-cdk-lib/aws-codebuild'
+import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps, BuildEnvironmentVariableType, ComputeType } from 'aws-cdk-lib/aws-codebuild'
 import { Artifact } from 'aws-cdk-lib/aws-codepipeline'
 import { CodeBuildAction } from 'aws-cdk-lib/aws-codepipeline-actions'
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
@@ -77,6 +77,7 @@ export class PipelineS3Sync extends Construct {
       environment: {
         buildImage: LinuxBuildImage.STANDARD_5_0,
         privileged: true,
+        computeType: ComputeType.LARGE,
       },
       environmentVariables: {
         BUILD_ENVIRONMENT: {

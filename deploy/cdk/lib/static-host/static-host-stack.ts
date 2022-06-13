@@ -25,6 +25,7 @@ export interface IStaticHostStackProps extends StackProps {
   readonly hostnamePrefix: string
   readonly lambdaCodePath: string
   readonly createDns: boolean
+  readonly domainName: string
   /**
    * Optional SSM path to certificateARN 
    */
@@ -71,7 +72,7 @@ export class StaticHostStack extends Stack {
       runtime: lambda.Runtime.NODEJS_14_X,
     })
 
-    const domainName = props.domainNameOverride || props.foundationStack.hostedZone.zoneName
+    const domainName = props.domainNameOverride || props.domainName
     this.hostname = `${props.hostnamePrefix || this.stackName}.${domainName}`
     const aliases = [
       this.hostname,

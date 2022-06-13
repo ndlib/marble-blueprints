@@ -19,11 +19,11 @@ describe('MultimediaAssetsStack', () => {
     env,
     foundationStack,
     domainName,
-    createDns: true,
     namespace: 'my-happy-place',
     cacheTtl: 9001,
     stackName: 'test-stack-name',
     marbleContentBucketName: 'libnd-smb-marble',
+    hostedZoneTypes: ['public'],
   })
 
   test('creates an s3 bucket for assets', () => {
@@ -74,7 +74,7 @@ describe('MultimediaAssetsStack', () => {
         },
         ViewerCertificate: {
           AcmCertificateArn: {
-            'Fn::ImportValue': Match.stringLikeRegexp('^FoundationStack:ExportsOutputRefCertificate*'),
+            'Fn::ImportValue': Match.stringLikeRegexp('^FoundationStack:ExportsOutputRefSsmParameterValuealldns*'),
           },
         },
       },
@@ -86,14 +86,16 @@ describe('MultimediaAssetsStack', () => {
     template.hasResourceProperties('AWS::Route53::RecordSet', {
       Name: 'my-happy-place-multimedia.fake.domain.',
       Type: 'CNAME',
+      Comment: 'my-happy-place-multimedia.fake.domain',
       HostedZoneId: {
-        'Fn::ImportValue': Match.stringLikeRegexp('^FoundationStack:ExportsOutputRefHostedZone*'),
+        'Ref': Match.stringLikeRegexp('^SsmParameterValuealldnsfakedomainpubliczone*'),
       },
       ResourceRecords: [
         {
           'Fn::GetAtt': ['DistributionCFDistribution882A7313', 'DomainName'],
         },
       ],
+      TTL: '900',
     })
   })
 })

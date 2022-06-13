@@ -5,9 +5,11 @@ import {
   ViewerCertificate,
   ViewerProtocolPolicy,
 } from 'aws-cdk-lib/aws-cloudfront'
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager'
 import { PolicyStatement, Effect, CanonicalUserPrincipal } from 'aws-cdk-lib/aws-iam'
-import { CnameRecord } from 'aws-cdk-lib/aws-route53'
+import { CnameRecord, HostedZone } from 'aws-cdk-lib/aws-route53'
 import { Bucket, IBucket, BlockPublicAccess, HttpMethods } from 'aws-cdk-lib/aws-s3'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib'
 import { Construct } from "constructs"
 import { FoundationStack } from '../foundation/foundation-stack'
@@ -22,11 +24,6 @@ export interface IMultimediaAssetsStackProps extends StackProps {
    * The domain where assets will be hosted.
    */
   readonly domainName: string
-
-  /**
-   * If true, will create record in Route53 for the CNAME
-   */
-  readonly createDns: boolean
 
   /**
    * The namespace used for naming stacks and resources.
@@ -47,6 +44,8 @@ export interface IMultimediaAssetsStackProps extends StackProps {
    * Bucket to hold marble-content to be exposed using this API
    */
   readonly marbleContentBucketName: string
+
+  readonly hostedZoneTypes: string[]
 }
 
 export class MultimediaAssetsStack extends Stack {
@@ -116,6 +115,7 @@ export class MultimediaAssetsStack extends Stack {
     //   }),
     // )
 
+    const certificate = Certificate.fromCertificateArn(this, 'WebsiteCertificate', props.foundationStack.certificateArn)
     this.cloudfront = new CloudFrontWebDistribution(this, 'Distribution', {
       comment: this.hostname,
       loggingConfig: {
@@ -140,20 +140,31 @@ export class MultimediaAssetsStack extends Stack {
           ],
         },
       ],
-      viewerCertificate: ViewerCertificate.fromAcmCertificate(props.foundationStack.certificate, {
+      viewerCertificate: ViewerCertificate.fromAcmCertificate(certificate, {
         aliases: [this.hostname],
       }),
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
     })
 
-    if (props.createDns) {
-      new CnameRecord(this, 'MultimediaAssetsCnameRecord', {
-        recordName: this.hostname,
-        comment: this.hostname,
-        domainName: this.cloudfront.distributionDomainName,
-        zone: props.foundationStack.hostedZone,
-        ttl: Duration.minutes(15),
-      })
+    // Create DNS entries for each hosted zone
+    for (const hostedZoneType of ['public', 'private']) {
+      if (props.hostedZoneTypes.includes(hostedZoneType)) {
+        const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
+        const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
+
+        new CnameRecord(this, `ServiceCNAME${hostedZoneType}`, {
+          recordName: this.hostname,
+          comment: this.hostname,
+          domainName: this.cloudfront.distributionDomainName,
+          zone: HostedZone.fromHostedZoneAttributes(this, `ImportedHostedZone${hostedZoneType}`, {
+            hostedZoneId: hostedZoneId as string,
+            zoneName: props.domainName,
+          }),
+          ttl: Duration.minutes(15),
+        })
+      }
     }
+
+
   }
 }

@@ -2,9 +2,9 @@ import { BuildEnvironmentVariableType, BuildSpec, PipelineProject } from 'aws-cd
 import codepipeline = require('aws-cdk-lib/aws-codepipeline')
 import codepipelineActions = require('aws-cdk-lib/aws-codepipeline-actions')
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
-// import cdk = require('aws-cdk-lib')
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { Topic } from 'aws-cdk-lib/aws-sns'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { CodeBuildAction, GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
@@ -15,30 +15,31 @@ import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
-  readonly oauthTokenPath: string;
-  readonly appRepoOwner: string;
-  readonly appRepoName: string;
-  readonly appSourceBranch: string;
-  readonly infraRepoOwner: string;
-  readonly infraRepoName: string;
-  readonly infraSourceBranch: string;
-  readonly qaRepoOwner: string;
-  readonly qaRepoName: string;
-  readonly qaSourceBranch: string;
-  readonly namespace: string;
-  readonly contextEnvName: string;
-  readonly owner: string;
-  readonly contact: string;
-  readonly testFoundationStack: FoundationStack;
-  readonly prodFoundationStack: FoundationStack;
-  readonly hostnamePrefix: string;
-  readonly createDns: boolean;
-  readonly createGithubWebhooks: boolean;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
-  readonly paramPathPrefix: string;
-  readonly dockerhubCredentialsPath: string;
+  readonly oauthTokenPath: string
+  readonly appRepoOwner: string
+  readonly appRepoName: string
+  readonly appSourceBranch: string
+  readonly infraRepoOwner: string
+  readonly infraRepoName: string
+  readonly infraSourceBranch: string
+  readonly qaRepoOwner: string
+  readonly qaRepoName: string
+  readonly qaSourceBranch: string
+  readonly namespace: string
+  readonly contextEnvName: string
+  readonly owner: string
+  readonly contact: string
+  readonly testFoundationStack: FoundationStack
+  readonly prodFoundationStack: FoundationStack
+  readonly hostnamePrefix: string
+  readonly createDns: boolean
+  readonly createGithubWebhooks: boolean
+  readonly slackNotifyStackName?: string
+  readonly notificationReceivers?: string
+  readonly paramPathPrefix: string
+  readonly dockerhubCredentialsPath: string
   readonly domainName: string
+  readonly hostedZoneTypes: string[]
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -129,8 +130,11 @@ export class DeploymentPipelineStack extends Stack {
         ],
       }))
 
-      if (props.createDns) {
-        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
+      // Grant permission for creating DNS
+      for (const hostedZoneType of props.hostedZoneTypes) {
+        const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
+        const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(hostedZoneId))
       }
       return cdkDeploy
     }

@@ -1,7 +1,8 @@
 import apigateway = require('aws-cdk-lib/aws-apigateway')
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
-import { CnameRecord } from "aws-cdk-lib/aws-route53"
+import { CnameRecord, HostedZone } from "aws-cdk-lib/aws-route53"
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager'
 import { Duration, Fn, Stack, StackProps, Annotations } from "aws-cdk-lib"
 import { Construct } from "constructs"
 import path = require('path')
@@ -29,11 +30,6 @@ export interface IBaseStackProps extends StackProps {
   readonly sentryDsn: string;
 
   /**
-   * If True, will attempt to create a Route 53 DNS record for the CloudFront.
-   */
-  readonly createDns: boolean;
-
-  /**
    * Hostname prefix for the manifest manifest lambda
    */
   readonly hostnamePrefix: string;
@@ -59,6 +55,7 @@ export interface IBaseStackProps extends StackProps {
    * Domain name to use when creating DNS entries
    */
   readonly domainName: string
+  hostedZoneTypes: string[]
 }
 
 export class ManifestLambdaStack extends Stack {
@@ -125,7 +122,7 @@ export class ManifestLambdaStack extends Stack {
       timeout: Duration.seconds(90),
       memorySize: 1024,
     })
-
+    const certificate = Certificate.fromCertificateArn(this, 'WebsiteCertificate', props.foundationStack.certificateArn)
     this.privateApi = new apigateway.RestApi(this, 'IIIFApiGateway', {
       restApiName: this.apiName,
       defaultCorsPreflightOptions: {
@@ -134,7 +131,7 @@ export class ManifestLambdaStack extends Stack {
         statusCode: 200,
       },
       domainName: {
-        certificate: props.foundationStack.certificate,
+        certificate: certificate,
         domainName: iiifApiBaseUrl,
       },
       endpointExportName: `${this.stackName}-api-url`,
@@ -142,14 +139,25 @@ export class ManifestLambdaStack extends Stack {
     })
     const iiifManifestIntegration = new apigateway.LambdaIntegration(iiifManifestLambda)
 
-    if (props.createDns) {
-      new CnameRecord(this, `${id}-Route53CnameRecord`, {
-        recordName: props.hostnamePrefix,
-        domainName: this.privateApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
-        zone: props.foundationStack.hostedZone,
-        ttl: Duration.minutes(15),
-      })
+    // Create DNS entries for each hosted zone
+    for (const hostedZoneType of ['public', 'private']) {
+      if (props.hostedZoneTypes.includes(hostedZoneType)) {
+        const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
+        const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
+
+        new CnameRecord(this, `ServiceCNAME${hostedZoneType}`, {
+          recordName: props.hostnamePrefix,
+          comment: props.hostnamePrefix,
+          domainName: this.privateApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+          zone: HostedZone.fromHostedZoneAttributes(this, `ImportedHostedZone${hostedZoneType}`, {
+            hostedZoneId: hostedZoneId as string,
+            zoneName: props.domainName,
+          }),
+          ttl: Duration.minutes(15),
+        })
+      }
     }
+
     // endpoints
     const manifest = this.privateApi.root.addResource('manifest')
     const manifestId = manifest.addResource('{id}')
@@ -206,7 +214,7 @@ export class ManifestLambdaStack extends Stack {
         statusCode: 200,
       },
       domainName: {
-        certificate: props.foundationStack.certificate,
+        certificate: certificate,
         domainName: graphqlApiBaseUrl,
       },
       endpointExportName: `${this.stackName}-graphql-api-url`,
@@ -214,14 +222,23 @@ export class ManifestLambdaStack extends Stack {
     })
     const publicGraphqlIntegration = new apigateway.LambdaIntegration(publicGraphqlLambda)
 
-    // Create DNS entry
-    if (props.createDns) {
-      new CnameRecord(this, `${this.publicApiName}-Route53CnameRecord`, {
-        recordName: props.publicGraphqlHostnamePrefix,
-        domainName: this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
-        zone: props.foundationStack.hostedZone,
-        ttl: Duration.minutes(15),
-      })
+    // Create DNS entries for each hosted zone
+    for (const hostedZoneType of ['public', 'private']) {
+      if (props.hostedZoneTypes.includes(hostedZoneType)) {
+        const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
+        const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
+
+        new CnameRecord(this, `PublicGraphqlCNAME${hostedZoneType}`, {
+          recordName: props.publicGraphqlHostnamePrefix,
+          comment: props.publicGraphqlHostnamePrefix,
+          domainName: this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+          zone: HostedZone.fromHostedZoneAttributes(this, `PublicGraphqlImportedHostedZone${hostedZoneType}`, {
+            hostedZoneId: hostedZoneId as string,
+            zoneName: props.domainName,
+          }),
+          ttl: Duration.minutes(15),
+        })
+      }
     }
 
     // Create endpoints

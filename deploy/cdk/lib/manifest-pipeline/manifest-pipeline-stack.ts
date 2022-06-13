@@ -21,12 +21,12 @@ export interface IBaseStackProps extends StackProps {
   /**
    * The name of the foundation stack upon which this stack is dependent
    */
-  readonly foundationStack: FoundationStack;
+  readonly foundationStack: FoundationStack
 
   /**
    * The domain name to use to reference and create Parameter Store parameters
    */
-  readonly domainName: string;
+  readonly domainName: string
 
   /**
    * The host name of the IIIF Image Server
@@ -36,99 +36,94 @@ export interface IBaseStackProps extends StackProps {
   /**
    * The ssm path to look for the marble data processing config from
    */
-  readonly marbleProcessingKeyPath: string;
+  readonly marbleProcessingKeyPath: string
 
   /**
    * Email address notification emails are sent from
    */
-  readonly noReplyEmailAddr: string;
+  readonly noReplyEmailAddr: string
 
   /**
    * The sentry data source name (DSN)
    */
-  readonly sentryDsn: string;
+  readonly sentryDsn: string
 
   /**
    * The name of the bucket that rarebooks images are in for the search process
    */
-  readonly rBSCS3ImageBucketName: string;
+  readonly rBSCS3ImageBucketName: string
 
   /**
    * The name of the bucket that contains marble content
    */
-  readonly marbleContentBucketName: string;
+  readonly marbleContentBucketName: string
 
   /**
    * S3 bucket where multimedia assets are stored (created by multimedia-assets stack)
    */
-  readonly multimediaBucket: Bucket;
+  readonly multimediaBucket: Bucket
 
   /**
    * The ssm path to look for the google team drive credentials and drive-id
    */
-  readonly googleKeyPath: string;
+  readonly googleKeyPath: string
 
   /**
    * The ssm path to look for the EmbARK museum credentials
    */
-  readonly museumKeyPath: string;
+  readonly museumKeyPath: string
 
   /**
    * The ssm path to look for the CurateND credentials
    */
-  readonly curateKeyPath: string;
-
-  /**
-   * If True, will attempt to create a Route 53 DNS record for the CloudFront.
-   */
-  readonly createDns: boolean;
+  readonly curateKeyPath: string
 
   /**
    * Hostname prefix for the manifest bucket CDN
    */
-  readonly hostnamePrefix: string;
+  readonly hostnamePrefix: string
 
   /**
    * If True, will attempt to create a Rule to harvest metadata and create standard json.
    */
-  readonly createEventRules: boolean;
+  readonly createEventRules: boolean
 
   /**
    * The filesystem root where we can find the source code for all our lambdas.
    * e.g.  /user/me/source/marble-manifest-pipeline/
    * The path for each individual lambda will be appended to this.
    */
-  readonly lambdaCodeRootPath: string;
+  readonly lambdaCodeRootPath: string
 
   /**
    * The ssm path to look for the application config from
    */
-  readonly appConfigPath: string;
+  readonly appConfigPath: string
 
   /**
    * The time to live for records in the metadata dynamodb table
    */
-  readonly metadataTimeToLiveDays: string;
+  readonly metadataTimeToLiveDays: string
 
   /**
    * The time to live for records in the files dynamodb table
    */
-  readonly filesTimeToLiveDays: string;
+  readonly filesTimeToLiveDays: string
 
   /**
    * This will create the CopyMediaContentLambda if true, otherwise it won't.
    */
-  readonly createCopyMediaContentLambda?: boolean;
+  readonly createCopyMediaContentLambda?: boolean
 
   /**
    * The fileShareId for the Marble Content Storage Gateway.  This will be used to create the File Share ARN to pass to the CopyMediaLambda
    */
-  readonly marbleContentFileShareId: string;
+  readonly marbleContentFileShareId: string
 
   /**
      * The flag to determine if a backup should be added to the dynamo table.
      */
-  readonly createBackup?: boolean;
+  readonly createBackup?: boolean
 }
 
 export class ManifestPipelineStack extends Stack {

@@ -32,6 +32,7 @@ const manifestPipelineContext = {
   metadataTimeToLiveDays: "365",
   filesTimeToLiveDays: "365",
   marbleContentFileShareId: "some fake arn",
+  hostedZoneTypes: ['public'],
 }
 
 const maintainMetadataContext = {
@@ -45,6 +46,7 @@ const manifestLambdaContext = {
   hostnamePrefix: 'test-iiif-manifest',
   lambdaCodeRootPath: "../../../marble-manifest-lambda",
   publicGraphqlHostnamePrefix: "sample-public-graphql",
+  hostedZoneTypes: ['public'],
 }
 
 const setup = (props: { manifestPipelineContext: any, maintainMetadataContext: any, manifestLambdaContext: any }) => {
@@ -144,20 +146,6 @@ describe('ManifestLambdaStack', () => {
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       "PathPart": "query",
     })
-  })
-
-
-  test('does not create an Route53 Recordset when createDns is false', () => {
-    const testStack = setup({
-      manifestPipelineContext,
-      maintainMetadataContext,
-      manifestLambdaContext: {
-        ...manifestLambdaContext,
-        createDns: false,
-      },
-    })
-    const template = Template.fromStack(testStack)
-    template.resourceCountIs('AWS::Route53::RecordSet', 0)
   })
 
 }) /* end of describe ManifestPipelineStack */

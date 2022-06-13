@@ -33,6 +33,7 @@ const manifestPipelineContext = {
   createCopyMediaContentLambda: true,
   marbleContentFileShareId: "some fake arn",
   createBackup: false,
+  hostedZoneTypes: ['public'],
 }
 
 const setup = (context: any) => {

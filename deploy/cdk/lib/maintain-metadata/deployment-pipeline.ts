@@ -12,20 +12,20 @@ import { PipelineFoundationStack } from '../foundation'
 import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
-  readonly pipelineFoundationStack: PipelineFoundationStack;
-  readonly oauthTokenPath: string; // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
-  readonly infraRepoOwner: string;
-  readonly infraRepoName: string;
-  readonly infraSourceBranch: string;
-  readonly namespace: string;
-  readonly contextEnvName: string;
-  readonly owner: string;
-  readonly contact: string;
-  readonly sentryDsn: string;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
-  readonly createGithubWebhooks: boolean;
-  readonly dockerhubCredentialsPath: string;
+  readonly pipelineFoundationStack: PipelineFoundationStack
+  readonly oauthTokenPath: string // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
+  readonly infraRepoOwner: string
+  readonly infraRepoName: string
+  readonly infraSourceBranch: string
+  readonly namespace: string
+  readonly contextEnvName: string
+  readonly owner: string
+  readonly contact: string
+  readonly sentryDsn: string
+  readonly slackNotifyStackName?: string
+  readonly notificationReceivers?: string
+  readonly createGithubWebhooks: boolean
+  readonly dockerhubCredentialsPath: string
  }
 
 

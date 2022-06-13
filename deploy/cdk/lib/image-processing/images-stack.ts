@@ -11,12 +11,12 @@ import { MaintainMetadataStack } from '../maintain-metadata'
 import { AssetHelpers } from '../asset-helpers'
 
 export interface ImagesStackProps extends StackProps {
-  readonly dockerfilePath: string;
-  readonly rbscBucketName: string;
-  readonly marbleContentBucketName: string;
-  readonly manifestPipelineStack: ManifestPipelineStack;
-  readonly foundationStack: FoundationStack;
-  readonly maintainMetadataStack: MaintainMetadataStack;
+  readonly dockerfilePath: string
+  readonly rbscBucketName: string
+  readonly marbleContentBucketName: string
+  readonly manifestPipelineStack: ManifestPipelineStack
+  readonly foundationStack: FoundationStack
+  readonly maintainMetadataStack: MaintainMetadataStack
 }
 
 export class ImagesStack extends Stack {

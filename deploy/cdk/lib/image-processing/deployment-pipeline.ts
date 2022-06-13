@@ -14,26 +14,26 @@ import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
-  readonly oauthTokenPath: string;
-  readonly namespace: string;
-  readonly contextEnvName: string;
-  readonly owner: string;
-  readonly contact: string;
-  readonly rbscBucketName: string;
-  readonly testFoundationStack: FoundationStack;
-  readonly prodFoundationStack: FoundationStack;
-  readonly lambdaCodePath: string;
-  readonly dockerfilePath: string;
-  readonly appRepoOwner: string;
-  readonly appRepoName: string;
-  readonly appSourceBranch: string;
-  readonly infraRepoOwner: string;
-  readonly infraRepoName: string;
-  readonly infraSourceBranch: string;
-  readonly createGithubWebhooks: boolean;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
-  readonly dockerhubCredentialsPath: string;
+  readonly oauthTokenPath: string
+  readonly namespace: string
+  readonly contextEnvName: string
+  readonly owner: string
+  readonly contact: string
+  readonly rbscBucketName: string
+  readonly testFoundationStack: FoundationStack
+  readonly prodFoundationStack: FoundationStack
+  readonly lambdaCodePath: string
+  readonly dockerfilePath: string
+  readonly appRepoOwner: string
+  readonly appRepoName: string
+  readonly appSourceBranch: string
+  readonly infraRepoOwner: string
+  readonly infraRepoName: string
+  readonly infraSourceBranch: string
+  readonly createGithubWebhooks: boolean
+  readonly slackNotifyStackName?: string
+  readonly notificationReceivers?: string
+  readonly dockerhubCredentialsPath: string
 }
 
 export class DeploymentPipelineStack extends Stack {

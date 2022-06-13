@@ -120,28 +120,6 @@ describe('FoundationStack', () => {
         })
       }
 
-      test('creates a wildcard certificate for the domain using the zone as validation', () => {
-        const subject = stack()
-        const template = Template.fromStack(subject)
-        template.hasResourceProperties('AWS::CertificateManager::Certificate', {
-          DomainName: '*.test.edu',
-          DomainValidationOptions: [{
-            DomainName: '*.test.edu',
-            HostedZoneId: {
-              Ref: "HostedZoneDB99F866",
-            },
-          }],
-          ValidationMethod: "DNS",
-        })
-      })
-
-      test('creates a Route53 for the domain', () => {
-        const subject = stack()
-        const template = Template.fromStack(subject)
-        template.hasResourceProperties('AWS::Route53::HostedZone', {
-          Name: 'test.edu.',
-        })
-      })
     })
 
     describe('when useExistingDnsZone is true', () => {
@@ -157,20 +135,7 @@ describe('FoundationStack', () => {
         })
       }
 
-      test('creates a wildcard certificate for the domain using DNS validation', () => {
-        const subject = stack()
-        // THEN
-        /* https://docs.aws.amazon.com/cdk/api/latest/docs/aws-cdk-lib_aws-certificatemanager.CertificateValidation.html
-        IMPORTANT: If hostedZone is not specified, DNS records must be added manually and the stack will not complete creating until the records are added. 
-        */
-        const template = Template.fromStack(subject)
-        template.hasResourceProperties('AWS::CertificateManager::Certificate', {
-          DomainName: '*.test.edu',
-          ValidationMethod: "DNS",
-        })
-      })
-
-      test('does not create a Route53 for the domain', () => {
+      test('does not create a Route53 Hosted Zone for the domain', () => {
         const subject = stack()
         const template = Template.fromStack(subject)
         template.resourceCountIs('AWS::Route53::HostedZone', 0)
@@ -207,7 +172,7 @@ describe('FoundationStack', () => {
           Rules: [{
             Status: "Enabled",
             ExpirationInDays: 90,
-            NoncurrentVersionExpirationInDays: 1,
+            NoncurrentVersionExpiration: { NoncurrentDays: 1 },
           }],
         },
       })

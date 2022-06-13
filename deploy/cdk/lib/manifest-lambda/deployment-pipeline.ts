@@ -14,7 +14,7 @@ import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
-  readonly pipelineFoundationStack: PipelineFoundationStack;
+  readonly pipelineFoundationStack: PipelineFoundationStack
   readonly oauthTokenPath: string // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
   readonly appRepoOwner: string
   readonly appRepoName: string

@@ -21,7 +21,6 @@ const manifestPipelineContext = {
   museumKeyPath: "/all/marble/museum",
   curateKeyPath: "/all/marble/curate",
   createEventRules: false,
-  createDns: false,
   lambdaCodeRootPath: '../../../marble-manifest-pipeline/',
   hostnamePrefix: 'presentation-iiif',
   domainName,
@@ -42,7 +41,6 @@ const maintainMetadataContext = {
 const manifestLambdaContext = {
   domainName,
   sentryDsn,
-  createDns: true,
   hostnamePrefix: 'test-iiif-manifest',
   lambdaCodeRootPath: "../../../marble-manifest-lambda",
   publicGraphqlHostnamePrefix: "sample-public-graphql",

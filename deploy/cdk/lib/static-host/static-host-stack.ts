@@ -10,11 +10,11 @@ import {
 } from 'aws-cdk-lib/aws-cloudfront'
 import lambda = require('aws-cdk-lib/aws-lambda')
 import s3 = require('aws-cdk-lib/aws-s3')
-import ssm = require('aws-cdk-lib/aws-ssm')
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { CfnOutput, Duration, Stack, StackProps } from 'aws-cdk-lib'
 
 import { FoundationStack } from '../foundation'
-import { CnameRecord } from 'aws-cdk-lib/aws-route53'
+import { CnameRecord, HostedZone } from 'aws-cdk-lib/aws-route53'
 import { Certificate, ICertificate } from 'aws-cdk-lib/aws-certificatemanager'
 import { AssetHelpers } from '../asset-helpers'
 import { Construct } from 'constructs'
@@ -24,7 +24,6 @@ export interface IStaticHostStackProps extends StackProps {
   readonly namespace: string
   readonly hostnamePrefix: string
   readonly lambdaCodePath: string
-  readonly createDns: boolean
   readonly domainName: string
   /**
    * Optional SSM path to certificateARN 
@@ -39,6 +38,7 @@ export interface IStaticHostStackProps extends StackProps {
    * Optional additional aliases
    */
   readonly additionalAliases?: Array<string>
+  readonly hostedZoneTypes: string[]
 }
 
 export class StaticHostStack extends Stack {
@@ -85,10 +85,10 @@ export class StaticHostStack extends Stack {
 
     let websiteCertificate: ICertificate
     if (props.certificateArnPath) {
-      const certificateArn = ssm.StringParameter.valueForStringParameter(this, props.certificateArnPath)
+      const certificateArn = StringParameter.valueForStringParameter(this, props.certificateArnPath)
       websiteCertificate = Certificate.fromCertificateArn(this, 'WebsiteCertificate', certificateArn)
     } else {
-      websiteCertificate = props.foundationStack.certificate
+      websiteCertificate = Certificate.fromCertificateArn(this, 'WebsiteCertificate', props.foundationStack.certificateArn)
     }
 
     // TODO: Enable additional metrics on all of these cloudfronts once https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/545
@@ -156,24 +156,32 @@ export class StaticHostStack extends Stack {
       viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
     })
 
-    // Create DNS record (conditionally)
-    if (props.createDns) {
-      new CnameRecord(this, 'ServiceCNAME', {
-        recordName: this.hostname,
-        comment: this.hostname,
-        domainName: this.cloudfront.distributionDomainName,
-        zone: props.foundationStack.hostedZone,
-        ttl: Duration.minutes(15),
-      })
+    // Create DNS entries for each hosted zone
+    for (const hostedZoneType of ['public', 'private']) {
+      if (props.hostedZoneTypes.includes(hostedZoneType)) {
+        const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
+        const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
+
+        new CnameRecord(this, `ServiceCNAME${hostedZoneType}`, {
+          recordName: this.hostname,
+          comment: this.hostname,
+          domainName: this.cloudfront.distributionDomainName,
+          zone: HostedZone.fromHostedZoneAttributes(this, `ImportedHostedZone${hostedZoneType}`, {
+            hostedZoneId: hostedZoneId as string,
+            zoneName: props.domainName,
+          }),
+          ttl: Duration.minutes(15),
+        })
+      }
     }
 
-    new ssm.StringParameter(this, 'BucketParameter', {
+    new StringParameter(this, 'BucketParameter', {
       parameterName: `/all/stacks/${this.stackName}/site-bucket-name`,
       description: 'Bucket where the stack website deploys to.',
       stringValue: this.bucket.bucketName,
     })
 
-    new ssm.StringParameter(this, 'DistributionParameter', {
+    new StringParameter(this, 'DistributionParameter', {
       parameterName: `/all/stacks/${this.stackName}/distribution-id`,
       description: 'ID of the CloudFront distribution.',
       stringValue: this.cloudfront.distributionId,

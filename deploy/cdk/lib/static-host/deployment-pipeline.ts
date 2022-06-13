@@ -4,6 +4,7 @@ import codepipelineActions = require('aws-cdk-lib/aws-codepipeline-actions')
 import { GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions'
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Topic } from 'aws-cdk-lib/aws-sns'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { Fn, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk2'
@@ -40,7 +41,6 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
   readonly buildScriptsDir: string
-  readonly createDns: boolean
   readonly prodOpenSearchStack: OpenSearchStack
   readonly searchIndex: string
   readonly siteDirectory: string
@@ -59,6 +59,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly authClientIssuer: string
   readonly dockerhubCredentialsPath: string
   readonly domainName: string
+  readonly hostedZoneTypes: string[]
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -143,8 +144,11 @@ export class DeploymentPipelineStack extends Stack {
         actions: ["ssm:Get*"],
       }))
 
-      if (props.createDns) {
-        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
+      // Grant permission for creating DNS
+      for (const hostedZoneType of props.hostedZoneTypes) {
+        const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
+        const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(hostedZoneId))
       }
 
       if (certificateArnPath) {

@@ -4,6 +4,7 @@ import { BuildSpec, LinuxBuildImage, PipelineProject, BuildEnvironmentVariableTy
 import { CodeBuildAction, GitHubTrigger } from 'aws-cdk-lib/aws-codepipeline-actions'
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Topic } from 'aws-cdk-lib/aws-sns'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { SecretValue, Stack, StackProps } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 import { NewmanRunner, SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk2'
@@ -14,28 +15,28 @@ import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack;
-  readonly oauthTokenPath: string; // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
-  readonly appRepoOwner: string;
-  readonly appRepoName: string;
-  readonly appSourceBranch: string;
-  readonly infraRepoOwner: string;
-  readonly infraRepoName: string;
-  readonly infraSourceBranch: string;
-  readonly namespace: string;
-  readonly contextEnvName: string;
-  readonly owner: string;
-  readonly contact: string;
-  readonly hostnamePrefix: string;
-  readonly createDns: boolean;
-  readonly sentryDsn: string;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
-  readonly createGithubWebhooks: boolean;
-  readonly publicGraphqlHostnamePrefix: string;
+  readonly oauthTokenPath: string // Note:  This is a secretstore value, not an ssm value /esu/github/ndlib-git
+  readonly appRepoOwner: string
+  readonly appRepoName: string
+  readonly appSourceBranch: string
+  readonly infraRepoOwner: string
+  readonly infraRepoName: string
+  readonly infraSourceBranch: string
+  readonly namespace: string
+  readonly contextEnvName: string
+  readonly owner: string
+  readonly contact: string
+  readonly hostnamePrefix: string
+  readonly sentryDsn: string
+  readonly slackNotifyStackName?: string
+  readonly notificationReceivers?: string
+  readonly createGithubWebhooks: boolean
+  readonly publicGraphqlHostnamePrefix: string
   readonly testFoundationStack: FoundationStack
   readonly prodFoundationStack: FoundationStack
-  readonly dockerhubCredentialsPath: string;
+  readonly dockerhubCredentialsPath: string
   readonly domainName: string
+  readonly hostedZoneTypes: string[]
  }
 
 
@@ -99,8 +100,11 @@ export class DeploymentPipelineStack extends Stack {
         ],
       }))
 
-      if (props.createDns) {
-        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet('*'))
+      // Grant permission for creating DNS
+      for (const hostedZoneType of props.hostedZoneTypes) {
+        const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
+        const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
+        cdkDeploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(hostedZoneId))
       }
 
       return cdkDeploy

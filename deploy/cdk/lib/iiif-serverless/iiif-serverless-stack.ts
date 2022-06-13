@@ -1,8 +1,10 @@
 import apigateway = require('aws-cdk-lib/aws-apigateway')
 import { CfnOutput, Duration, NestedStack, NestedStackProps, Stack, StackProps } from "aws-cdk-lib"
 import { FoundationStack } from "../foundation"
-import { CnameRecord } from "aws-cdk-lib/aws-route53"
+import { CnameRecord, HostedZone } from "aws-cdk-lib/aws-route53"
 import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
+import { Certificate } from 'aws-cdk-lib/aws-certificatemanager'
 import { Construct } from "constructs"
 import { AssetHelpers } from '../asset-helpers'
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
@@ -26,16 +28,11 @@ export interface IIiifServerlessStackProps extends StackProps {
   readonly foundationStack: FoundationStack
 
   /**
-   * If true, will attempt to create a CNAME for the service in the
-   * Route53 zone created in the foundation stack
-   */
-  readonly createDns: boolean
-
-  /**
    * Path in SSM where parameters for this stack are stored.
    */
   readonly paramPathPrefix: string
   readonly domainName: string
+  readonly hostedZoneTypes: string[]
 }
 
 export interface IIiifApiStackProps extends NestedStackProps {
@@ -43,8 +40,8 @@ export interface IIiifApiStackProps extends NestedStackProps {
   readonly foundationStack: FoundationStack
   readonly paramPathPrefix: string
   readonly hostnamePrefix: string
-  readonly createDns: boolean
   readonly domainName: string
+  readonly hostedZoneTypes: string[]
 }
 
 /**
@@ -97,6 +94,8 @@ class ApiStack extends NestedStack {
     })
 
     const fqdn = `${props.hostnamePrefix}.${props.domainName}`
+    const certificate = Certificate.fromCertificateArn(this, 'WebsiteCertificate', props.foundationStack.certificateArn)
+
     const apiProps = {
       restApiName: this.apiName,
       handler: iiifFunc,
@@ -110,7 +109,7 @@ class ApiStack extends NestedStack {
       },
       domainName: {
         domainName: fqdn,
-        certificate: props.foundationStack.certificate,
+        certificate: certificate,
       },
       deployOptions: {
         cacheClusterEnabled: true,
@@ -149,14 +148,24 @@ class ApiStack extends NestedStack {
         'responseModels': { 'application/json': apigateway.Model.EMPTY_MODEL },
       }],
     })
-    if (props.createDns) {
-      new CnameRecord(this, `HostnamePrefix-Route53CnameRecord`, {
-        recordName: props.hostnamePrefix,
-        // domainName: fqdn,
-        domainName: iiifApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
-        zone: props.foundationStack.hostedZone,
-        ttl: Duration.minutes(15),
-      })
+
+    // Create DNS entries for each hosted zone
+    for (const hostedZoneType of ['public', 'private']) {
+      if (props.hostedZoneTypes.includes(hostedZoneType)) {
+        const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
+        const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
+
+        new CnameRecord(this, `ServiceCNAME${hostedZoneType}`, {
+          recordName: props.hostnamePrefix,
+          comment: props.hostnamePrefix,
+          domainName: iiifApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+          zone: HostedZone.fromHostedZoneAttributes(this, `ImportedHostedZone${hostedZoneType}`, {
+            hostedZoneId: hostedZoneId as string,
+            zoneName: props.domainName,
+          }),
+          ttl: Duration.minutes(15),
+        })
+      }
     }
 
     new CfnOutput(this, 'ApiEndpointUrl', {

@@ -111,6 +111,11 @@ export class FoundationStack extends Stack {
       validation: certificateValidation,
     })
 
+    new CfnOutput(this, 'ExportsOutputRefCertificate4E7ABB08F7C8AF50', {
+      value: this.certificate.certificateArn,
+      exportName: `${this.stackName}:ExportsOutputRefCertificate4E7ABB08F7C8AF50`,
+    })
+
     const certificateArnPath = `/all/dns/${props.domainName}/certificateArn`
     this.certificateArn = StringParameter.valueForStringParameter(this, certificateArnPath)
 

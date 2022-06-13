@@ -32,6 +32,7 @@ const manifestPipelineContext = {
   metadataTimeToLiveDays: "365",
   filesTimeToLiveDays: "365",
   marbleContentFileShareId: "some fake arn",
+  hostedZoneTypes: ['public'],
 }
 
 const maintainMetadataContext = {

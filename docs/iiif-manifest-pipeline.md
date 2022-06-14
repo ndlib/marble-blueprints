@@ -32,7 +32,6 @@ Below is the list of parameters that can be overridden in this template. Paramet
 | ProdHostnamePrefix | Hostname prefix for the production manifest bucket CDN |  |
 | TestStackName | The name of the CloudFormation stack to use when creating the test resources | marble-manifest-test |
 | TestHostnamePrefix | Hostname prefix for the test manifest bucket CDN |  |
-| CreateDNSRecord | If True, will attempt to create a Route 53 DNS record for the test and prod stacks. | True |
 | ConfigurationRepoName | The GitHub repo for the cloudfromation blueprints | marble-blueprints |
 | ConfigurationRepoBranchName | The GitHub repo branch the codepipeline should checkout to run blueprints from | master |
 | ManifestPipelineRepoName | The GitHub repo name | marble-manifest-pipeline |

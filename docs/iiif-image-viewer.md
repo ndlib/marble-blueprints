@@ -8,7 +8,6 @@ This component uses the [static-host.yml](/deploy/cloudformation/static-host.yml
 |-----------|-------------|---------|
 | InfrastructureStackName | The name of the parent infrastructure/networking stack that you created. Necessary to locate and reference resources created by that stack. | marble-app-infrastructure |
 | DomainStackName | The name of the parent domain stack that you created. Necessary to locate and reference resources created by that stack. | marble-domain |
-| CreateDNSRecord | If True, will attempt to create a Route 53 DNS record for the CloudFront. | True |
 | HostnamePrefix | Hostname prefix for the website CDN |  |
 | EnvType | The type of environment to create, dev or prod. Affects default TTL | dev |
 

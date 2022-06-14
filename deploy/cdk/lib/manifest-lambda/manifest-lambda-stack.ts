@@ -17,39 +17,34 @@ export interface IBaseStackProps extends StackProps {
   /**
    * The name of the foundation stack upon which this stack is dependent
    */
-  readonly foundationStack: FoundationStack;
-
-  /**
-   * The domain name to use to reference and create Parameter Store parameters
-   */
-  // readonly domainName: string;
+  readonly foundationStack: FoundationStack
 
   /**
    * The sentry data source name (DSN)
    */
-  readonly sentryDsn: string;
+  readonly sentryDsn: string
 
   /**
    * Hostname prefix for the manifest manifest lambda
    */
-  readonly hostnamePrefix: string;
+  readonly hostnamePrefix: string
 
   /**
    * Hostname prefix for the public graphql API Gateway
    */
-  readonly publicGraphqlHostnamePrefix: string;
+  readonly publicGraphqlHostnamePrefix: string
 
   /** 
    * The filesystem root where we can find the source code for all our lambdas.  
    * e.g.  /user/me/source/marble-manifest-pipeline/
    * The path for each individual lambda will be appended to this.
    */
-  readonly lambdaCodeRootPath: string;
+  readonly lambdaCodeRootPath: string
 
   /**
    * The name of the maintain metadata stack upon which this stack is dependent
    */
-  readonly maintainMetadataStack: MaintainMetadataStack;
+  readonly maintainMetadataStack: MaintainMetadataStack
 
   /**
    * Domain name to use when creating DNS entries

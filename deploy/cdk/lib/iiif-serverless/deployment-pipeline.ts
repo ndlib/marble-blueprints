@@ -32,7 +32,6 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly testFoundationStack: FoundationStack
   readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
-  readonly createDns: boolean
   readonly createGithubWebhooks: boolean
   readonly slackNotifyStackName?: string
   readonly notificationReceivers?: string
@@ -107,7 +106,6 @@ export class DeploymentPipelineStack extends Stack {
           "iiifImageService:serverlessIiifSrcPath": "$CODEBUILD_SRC_DIR_AppCode",
           "iiifImageService:hostnamePrefix": hostnamePrefix,
           "iiifImageService:paramPathPrefix": paramPath,
-          "createDns": props.createDns ? "true" : "false",
         },
       })
 

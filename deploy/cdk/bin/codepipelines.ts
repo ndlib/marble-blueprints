@@ -27,7 +27,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     prodFoundationStack: prodStacks.foundationStack,
     env: contextEnv.env,
     contextEnvName: contextEnv.name,
-    createDns: contextEnv.createDns,
     slackNotifyStackName: contextEnv.slackNotifyStackName,
     notificationReceivers: contextEnv.notificationReceivers,
     createGithubWebhooks: contextEnv.createGithubWebhooks,

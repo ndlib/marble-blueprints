@@ -10,52 +10,52 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
    * The name of the stack that this project will deploy to. Will add
    * permissions to create change sets on these stacks.
    */
-  readonly targetStack: string;
+  readonly targetStack: string
   /**
    * The stack names that the target stack will depend on. Will add permissions
    * to also create change sets on these stacks. Note: This can be ignored
    * if using the cdk deploy --exclusively option.
    */
-  readonly dependsOnStacks: string[];
+  readonly dependsOnStacks: string[]
 
   /**
    * Infrastructure source artifact. Must include the cdk code
    */
-  readonly infraSourceArtifact: Artifact;
+  readonly infraSourceArtifact: Artifact
 
   /**
    * Application source artifact.
    */
-  readonly appSourceArtifact?: Artifact;
+  readonly appSourceArtifact?: Artifact
 
   /**
    * Subdirectory of the infrastructure source where the cdk code can be found, without leading /
    * The action created will use infra source as primary input, so this should be a subdir of the
    * CODEBUILD_SRC_DIR environment variable
    */
-  readonly cdkDirectory?: string;
+  readonly cdkDirectory?: string
 
   /**
    * Namespace to use for stack names etc
    */
-  readonly namespace: string;
+  readonly namespace: string
 
   /**
    * Any additional key value pairs to pass as additional --context overrides when deploying
    */
-  readonly additionalContext?: { [key: string]: string };
+  readonly additionalContext?: { [key: string]: string }
 
-  readonly contextEnvName: string;
-  readonly appBuildCommands?: string[];
-  readonly postDeployCommands?: string[];
-  readonly outputDirectory?: string;
-  readonly outputFiles?: string[];
-  readonly outputArtifact?: Artifact;
-  readonly dockerhubCredentialsPath: string;
+  readonly contextEnvName: string
+  readonly appBuildCommands?: string[]
+  readonly postDeployCommands?: string[]
+  readonly outputDirectory?: string
+  readonly outputFiles?: string[]
+  readonly outputArtifact?: Artifact
+  readonly dockerhubCredentialsPath: string
   /**
    * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '14.x')  e.g. `python: '3.9'`
    */
-  readonly additionalRuntimeEnvironments?: { [key: string]: string };
+  readonly additionalRuntimeEnvironments?: { [key: string]: string }
 }
 
 /**

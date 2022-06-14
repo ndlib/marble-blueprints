@@ -33,7 +33,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     namespace,
     env: contextEnv.env,
     contextEnvName: contextEnv.name,
-    createDns: contextEnv.createDns,
     domainName: contextEnv.domainName,
     hostedZoneTypes: contextEnv.hostedZoneTypes,
   }

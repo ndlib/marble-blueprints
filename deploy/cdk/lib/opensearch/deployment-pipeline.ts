@@ -11,19 +11,19 @@ import { PipelineFoundationStack } from '../foundation/pipeline-foundation-stack
 
 export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
-  readonly oauthTokenPath: string;
-  readonly namespace: string;
-  readonly contextEnvName: string;
-  readonly owner: string;
-  readonly contact: string;
-  readonly esDomainName: string;
-  readonly infraRepoOwner: string;
-  readonly infraRepoName: string;
-  readonly infraSourceBranch: string;
-  readonly createGithubWebhooks: boolean;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
-  readonly dockerhubCredentialsPath: string;
+  readonly oauthTokenPath: string
+  readonly namespace: string
+  readonly contextEnvName: string
+  readonly owner: string
+  readonly contact: string
+  readonly esDomainName: string
+  readonly infraRepoOwner: string
+  readonly infraRepoName: string
+  readonly infraSourceBranch: string
+  readonly createGithubWebhooks: boolean
+  readonly slackNotifyStackName?: string
+  readonly notificationReceivers?: string
+  readonly dockerhubCredentialsPath: string
 }
 
 export class DeploymentPipelineStack extends Stack {

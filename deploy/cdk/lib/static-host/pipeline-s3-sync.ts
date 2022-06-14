@@ -16,13 +16,13 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
    * Artifact that contains the files which need to be built by the code.
    * Presumably the output from a github pull
    */
-  readonly inputBuildArtifact: Artifact;
+  readonly inputBuildArtifact: Artifact
 
   /**
    * Additional Artifacts that contain the files which need to be built by the code.
    * Presumably the output from a github pull
    */
-  extraBuildArtifacts?: Array<Artifact>;
+  extraBuildArtifacts?: Array<Artifact>
 
   /**
   * The name of the index that should be created for the website in OpenSearch

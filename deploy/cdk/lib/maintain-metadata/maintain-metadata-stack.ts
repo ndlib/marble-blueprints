@@ -15,12 +15,12 @@ export interface IBaseStackProps extends StackProps {
   /**
    * The name of the foundation stack upon which this stack is dependent
    */
-  readonly foundationStack: FoundationStack;
+  readonly foundationStack: FoundationStack
 
   /**
    * The name of the manifest pipeline stack which defines dynamodb tables used here
    */
-  readonly manifestPipelineStack: ManifestPipelineStack;
+  readonly manifestPipelineStack: ManifestPipelineStack
 
   /**
    *

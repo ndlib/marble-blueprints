@@ -6,7 +6,6 @@ export class ContextEnv {
   readonly name: string
   readonly env: Environment
   readonly useVpcId: string
-  readonly createDns: boolean
   readonly domainName: string
   readonly useExistingDnsZone: boolean
   readonly slackNotifyStackName: string

@@ -1563,6 +1563,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
         $!{expValues.put(":dateAddedToDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
         $!{expValues.put(":dateModifiedInDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
         $!{expValues.put(":description", $util.dynamodb.toDynamoDB($ctx.args.description))}
+        $!{expValues.put(":description64", $util.dynamodb.toDynamoDB($ctx.args.description64))}
         $!{expValues.put(":imageUri", $util.dynamodb.toDynamoDB($ctx.args.imageUri))}
         $!{expValues.put(":featuredCollection", $util.dynamodb.toDynamoDB($featuredCollection))}
         $!{expValues.put(":highlightedCollection", $util.dynamodb.toDynamoDB($highlightedCollection))}
@@ -1592,9 +1593,9 @@ def _delete_expired_api_keys(graphql_api_id: str):
           },
           "update": {
             #if( $privacy == "private" )
-            "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK REMOVE GSI2PK, GSI2SK",
+            "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, description64 = :description64, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK REMOVE GSI2PK, GSI2SK",
             #else
-              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
+              "expression": "SET portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, description64 = :description64,imageUri = :imageUri, featuredCollection = :featuredCollection, highlightedCollection = :highlightedCollection, layout = :layout, privacy = :privacy, title = :title, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK, GSI2PK = :GSI2PK, GSI2SK = :GSI2SK",
             #end
             "expressionNames": {"#TYPE": "TYPE"},
             "expressionValues": $util.toJson($expValues)
@@ -1631,9 +1632,11 @@ def _delete_expired_api_keys(graphql_api_id: str):
         $!{expValues.put(":portfolioUserId", $util.dynamodb.toDynamoDB($portfolioUserId))}
         $!{expValues.put(":rowType", $util.dynamodb.toDynamoDB("PortfolioItem"))}
         $!{expValues.put(":annotation", $util.dynamodb.toDynamoDB($ctx.args.annotation))}
+        $!{expValues.put(":annotation64", $util.dynamodb.toDynamoDB($ctx.args.annotation64))}
         $!{expValues.put(":dateAddedToDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
         $!{expValues.put(":dateModifiedInDynamo", $util.dynamodb.toDynamoDB($util.time.nowISO8601()))}
         $!{expValues.put(":description", $util.dynamodb.toDynamoDB($ctx.args.description))}
+        $!{expValues.put(":description64", $util.dynamodb.toDynamoDB($ctx.args.description64))}
         $!{expValues.put(":imageUri", $util.dynamodb.toDynamoDB($ctx.args.imageUri))}
         $!{expValues.put(":internalItemId", $util.dynamodb.toDynamoDB($ctx.args.internalItemId))}
         $!{expValues.put(":sequence", $util.dynamodb.toDynamoDB($ctx.args.sequence))}
@@ -1661,9 +1664,9 @@ def _delete_expired_api_keys(graphql_api_id: str):
           },
           "update": {
             #if( !$util.defaultIfNullOrBlank($ctx.args.internalItemId, ""))
-              "expression": "SET portfolioItemId = :portfolioItemId, portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, annotation = :annotation, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, internalItemId = :internalItemId, itemType = :itemType, #sequence = :sequence, title = :title, uri = :uri REMOVE GSI1PK, GSI1SK",
+              "expression": "SET portfolioItemId = :portfolioItemId, portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, annotation = :annotation, annotation64 = :annotation64, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, description64 = :description64, imageUri = :imageUri, internalItemId = :internalItemId, itemType = :itemType, #sequence = :sequence, title = :title, uri = :uri REMOVE GSI1PK, GSI1SK",
             #else
-              "expression": "SET portfolioItemId = :portfolioItemId, portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, annotation = :annotation, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, imageUri = :imageUri, internalItemId = :internalItemId, itemType = :itemType, #sequence = :sequence, title = :title, uri = :uri, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK",
+              "expression": "SET portfolioItemId = :portfolioItemId, portfolioCollectionId = :portfolioCollectionId, portfolioUserId = :portfolioUserId, #TYPE = :rowType, annotation = :annotation, annotation64 = :annotation64, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, description = :description, description64 = :description64, imageUri = :imageUri, internalItemId = :internalItemId, itemType = :itemType, #sequence = :sequence, title = :title, uri = :uri, GSI1PK = :GSI1PK, GSI1SK = :GSI1SK",
             #end
             "expressionNames": {"#TYPE": "TYPE", "#sequence": "sequence"},
             "expressionValues": $util.toJson($expValues)
@@ -1702,11 +1705,12 @@ def _delete_expired_api_keys(graphql_api_id: str):
             "SK": $util.dynamodb.toDynamoDBJson($sk),
           },
           "update": {
-            "expression": "SET portfolioUserId = :portfolioUserId, bio = :bio, #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, department = :department, email = :email, fullName = :fullName, primaryAffiliation = :primaryAffiliation",
+            "expression": "SET portfolioUserId = :portfolioUserId, bio = :bio, bio64 =:bio64,  #TYPE = :rowType, dateAddedToDynamo = if_not_exists(dateAddedToDynamo, :dateAddedToDynamo), dateModifiedInDynamo = :dateModifiedInDynamo, department = :department, email = :email, fullName = :fullName, primaryAffiliation = :primaryAffiliation",
             "expressionNames": {"#TYPE": "TYPE"},
             "expressionValues": {
               ":portfolioUserId": $util.dynamodb.toDynamoDBJson($portfolioUserId),
               ":bio": $util.dynamodb.toDynamoDBJson($ctx.args.bio),
+              ":bio64": $util.dynamodb.toDynamoDBJson($ctx.args.bio64),
               ":rowType": $util.dynamodb.toDynamoDBJson("PortfolioUser"),
               ":dateAddedToDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),
               ":dateModifiedInDynamo": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601()),

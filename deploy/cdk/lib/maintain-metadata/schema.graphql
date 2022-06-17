@@ -298,6 +298,7 @@ type Mutation @aws_oidc @aws_api_key {
   savePortfolioCollection(
     portfolioCollectionId: String
     description: String
+    description64: String
     imageUri: String
     layout: String
     privacy: PortfolioPrivacy
@@ -309,7 +310,9 @@ type Mutation @aws_oidc @aws_api_key {
     portfolioItemId: String
     portfolioCollectionId: String!
     annotation: String
+    annotation64: String
     description: String
+    description64: String
     imageUri: String
     internalItemId: String
     itemType: PortfolioItemType
@@ -318,6 +321,7 @@ type Mutation @aws_oidc @aws_api_key {
   ): PortfolioItem @aws_oidc
   savePortfolioUser(
     bio: String
+    bio64: String
     fullName: String
     email: String
   ): PortfolioUser @aws_oidc
@@ -333,6 +337,7 @@ type PortfolioCollection @aws_oidc @aws_api_key {
   dateAddedToDynamo: String
   dateModifiedInDynamo: String
   description: String
+  description64: String
   imageUri: String
   featuredCollection: Boolean
   highlightedCollection: Boolean
@@ -354,9 +359,11 @@ type PortfolioItem @aws_oidc @aws_api_key {
   portfolioCollectionId: String
   portfolioUserId: String
   annotation: String
+  annotation64: String
   dateAddedToDynamo: String
   dateModifiedInDynamo: String
   description: String
+  description64: String
   imageUri: String
   internalItemId: String
   itemType: PortfolioItemType
@@ -386,6 +393,7 @@ enum PortfolioPrivacy @aws_oidc @aws_api_key {
 type PortfolioUser @aws_oidc @aws_api_key {
   portfolioUserId: String
   bio: String
+  bio64: String
   dateAddedToDynamo: String
   dateModifiedInDynamo: String
   department: String

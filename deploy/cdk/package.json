@@ -13,22 +13,22 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "devDependencies": {
-    "@types/jest": "^28.1.1",
-    "@typescript-eslint/eslint-plugin": "^5.28.0",
-    "@typescript-eslint/parser": "^5.28.0",
-    "aws-cdk": "^2.22.0",
-    "eslint": "^8.17.0",
-    "eslint-plugin-jest": "^26.5.3",
-    "jest": "^28.1.1",
-    "ts-jest": "^28.0.5",
-    "ts-node": "^10.8.1",
-    "typescript": "^4.7.3"
+    "@types/jest": "^28.1.7",
+    "@typescript-eslint/eslint-plugin": "^5.33.1",
+    "@typescript-eslint/parser": "^5.33.1",
+    "aws-cdk": "^2.37.1",
+    "eslint": "^8.22.0",
+    "eslint-plugin-jest": "^26.8.3",
+    "jest": "^28.1.3",
+    "ts-jest": "^28.0.8",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.7.4"
   },
   "dependencies": {
     "@ndlib/ndlib-cdk2": "^1.0.6",
     "@types/source-map-support": "^0.5.2",
-    "aws-cdk-lib": "^2.27.0",
-    "constructs": "^10.1.37",
+    "aws-cdk-lib": "^2.37.1",
+    "constructs": "^10.1.76",
     "leaked-handles": "^5.2.0",
     "source-map-support": "^0.5.21"
   }

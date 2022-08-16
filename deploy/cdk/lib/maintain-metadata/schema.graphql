@@ -366,6 +366,7 @@ type PortfolioItem @aws_oidc @aws_api_key {
   description64: String
   imageUri: String
   internalItemId: String
+  internalItem: ItemMetadata
   itemType: PortfolioItemType
   sequence: Int
   title: String

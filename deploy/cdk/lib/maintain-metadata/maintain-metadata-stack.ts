@@ -1835,6 +1835,20 @@ def _delete_expired_api_keys(graphql_api_id: str):
         }`),
     })
 
+    new Resolver(this, 'PortfolioItemInternalItemResolver', {
+      api: this.api,
+      typeName: 'PortfolioItem',
+      fieldName: 'internalItem',
+      pipelineConfig: [getMergedItemRecordFunction, expandSubjectTermsFunction],
+      requestMappingTemplate: MappingTemplate.fromString(`
+        ## add stash values to enable us to call GetMergedItemRecordFunction
+        $!{ctx.stash.put("itemId", $ctx.source.internalItemId)}
+        $!{ctx.stash.put("websiteId", $util.defaultIfNullOrBlank($ctx.args.websiteId, ""))}
+
+        {}`),
+      responseMappingTemplate: MappingTemplate.dynamoDbResultItem(),
+    })
+    
     new Resolver(this, 'QueryGetExposedPortfolioCollectionResolver', {
       api: this.api,
       typeName: 'Query',

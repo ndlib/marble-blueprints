@@ -196,11 +196,11 @@ export class PipelineS3Sync extends Construct {
         phases: {
           install: {
             'runtime-versions': {
-              nodejs: '14.x',
             },
           },
           build: {
             commands: [
+              'n stable',
               'echo OPENSEARCH_INDEX = $OPENSEARCH_INDEX',
               'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_ENDPOINT',
               'echo OPENSEARCH_READ_ONLY_USERNAME = $OPENSEARCH_READ_ONLY_USERNAME',

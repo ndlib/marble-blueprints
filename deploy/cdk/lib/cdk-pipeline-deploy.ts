@@ -53,7 +53,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly outputArtifact?: Artifact
   readonly dockerhubCredentialsPath: string
   /**
-   * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '14.x')  e.g. `python: '3.9'`
+   * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '16.x')  e.g. `python: '3.9'`
    */
   readonly additionalRuntimeEnvironments?: { [key: string]: string }
 }
@@ -95,11 +95,11 @@ export class CDKPipelineDeploy extends Construct {
         phases: {
           install: {
             commands: [
+              'n stable',
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
               'yarn install',
             ],
             'runtime-versions': {
-              nodejs: '14.x',
               ...(props.additionalRuntimeEnvironments || []),
             },
           },

@@ -69,7 +69,7 @@ export class StaticHostStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, props.lambdaCodePath),
       description: 'Basic rewrite rule to send directory requests to appropriate locations in the SPA.',
       handler: 'handler.handler',
-      runtime: lambda.Runtime.NODEJS_14_X,
+      runtime: lambda.Runtime.NODEJS_16_X,
     })
 
     const domainName = props.domainNameOverride || props.domainName

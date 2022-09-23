@@ -4,7 +4,7 @@ import { Rule, Schedule } from "aws-cdk-lib/aws-events"
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets"
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda"
-import { ParameterType, StringParameter } from 'aws-cdk-lib/aws-ssm'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { Construct } from "constructs"
 import { FoundationStack } from '../foundation'
 import { ManifestPipelineStack } from '../manifest-pipeline'
@@ -97,7 +97,6 @@ export class MaintainMetadataStack extends Stack {
 
     // Save values to Parameter Store (SSM) for later reference
     new StringParameter(this, 'SSMGraphqlApiUrl', {
-      type: ParameterType.STRING,
       parameterName: this.graphqlApiUrlKeyPath,
       stringValue: this.api.graphqlUrl,
       description: 'AppSync GraphQL base url',
@@ -107,7 +106,6 @@ export class MaintainMetadataStack extends Stack {
 
     this.graphqlApiIdKeyPath = `/all/stacks/${this.stackName}/graphql-api-id`
     new StringParameter(this, 'SSMGraphqlApiId', {
-      type: ParameterType.STRING,
       parameterName: this.graphqlApiIdKeyPath,
       stringValue: this.api.apiId,
       description: 'AppSync GraphQL base id',

@@ -6,7 +6,7 @@ import { Certificate } from 'aws-cdk-lib/aws-certificatemanager'
 import { Duration, Fn, Stack, StackProps, Annotations } from "aws-cdk-lib"
 import { Construct } from "constructs"
 import path = require('path')
-import { ParameterType, StringParameter } from 'aws-cdk-lib/aws-ssm'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { FoundationStack } from '../foundation'
 import { AssetHelpers } from '../asset-helpers'
 import { MaintainMetadataStack } from '../maintain-metadata'
@@ -244,7 +244,6 @@ export class ManifestLambdaStack extends Stack {
     // Create SSM keys
     this.publicGraphqlApiKeyPath = `/all/stacks/${this.stackName}/public-graphql-api-url`
     new StringParameter(this, 'SSMPublicGraphqlApiUrl', {
-      type: ParameterType.STRING,
       parameterName: this.publicGraphqlApiKeyPath,
       stringValue: this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
       description: 'Public GraphQL API URL',

@@ -3,7 +3,7 @@ import { SfnStateMachine } from "aws-cdk-lib/aws-events-targets"
 import { CanonicalUserPrincipal, Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Function, Runtime } from "aws-cdk-lib/aws-lambda"
 import { Bucket, HttpMethods, IBucket } from "aws-cdk-lib/aws-s3"
-import { ParameterType, StringParameter } from 'aws-cdk-lib/aws-ssm'
+import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { Choice, Condition, Errors, Fail, JsonPath, LogLevel, Parallel, Pass, Result, StateMachine, Succeed } from 'aws-cdk-lib/aws-stepfunctions'
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks'
 import { Duration, Fn, Stack, StackProps, CfnOutput, Annotations, Tags } from "aws-cdk-lib"
@@ -236,7 +236,6 @@ export class ManifestPipelineStack extends Stack {
       stringValue: this.websiteMetadataDynamoTable.tableName,
     })
     new StringParameter(this, 'WebsiteMetadataTTLDaysParam', {
-      type: ParameterType.STRING,
       parameterName: `/all/stacks/${this.stackName}/website-metadata-time-to-live-days`,
       stringValue: props.metadataTimeToLiveDays,
       description: 'Time To live for metadata dynamodb records',
@@ -313,56 +312,48 @@ export class ManifestPipelineStack extends Stack {
 
     // Add parameter store values for later reference by other apps
     new StringParameter(this, 'sSMImageServerBaseUrl', {
-      type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/image-server-base-url`,
       stringValue: StringParameter.fromStringParameterAttributes(this, 'SSMImageServerHostname', { parameterName: props.imageServerHostname }).stringValue,
       description: 'Image server base url',
     })
 
     new StringParameter(this, 'sSMImageSourceBucket', {
-      type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/image-server-bucket`,
       stringValue: props.foundationStack.publicBucket.bucketName,
       description: 'Image source bucket',
     })
 
     new StringParameter(this, 'sSMManifestServerBaseUrl', {
-      type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/manifest-server-base-url`,
       stringValue: props.hostnamePrefix + '.' + props.domainName,
       description: 'Manifest Server URL',
     })
 
     new StringParameter(this, 'sSMManifestBucket', {
-      type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/manifest-server-bucket`,
       stringValue: this.manifestBucket.bucketName,
       description: 'S3 Bucket to hold Manifests',
     })
 
     new StringParameter(this, 'sSMProcessBucket', {
-      type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/process-bucket`,
       stringValue: processBucket.bucketName,
       description: 'S3 Bucket to accumulate assets during processing',
     })
 
     new StringParameter(this, 'sSMRBSCS3ImageBucketName', {
-      type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/rbsc-image-bucket`,
       stringValue: props.rBSCS3ImageBucketName,
       description: 'Name of the RBSC Image Bucket',
     })
 
     new StringParameter(this, 'sSMMarbleContentBucketName', {
-      type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/marble-content-bucket`,
       stringValue: props.marbleContentBucketName,
       description: 'Name of the Bucket containing marble content',
     })
 
     new StringParameter(this, 'sSMMultimediaBucketName', {
-      type: ParameterType.STRING,
       parameterName: `${props.appConfigPath}/multimedia-bucket`,
       stringValue: props.multimediaBucket.bucketName,
       description: 'Name of the Multimedia Assets Bucket',

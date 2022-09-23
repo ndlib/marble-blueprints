@@ -60,6 +60,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     { name: 'seaside', props: commonSitePipelineProps },
     { name: 'inquisitions', props: commonSitePipelineProps },
     { name: 'viewer', props: commonSitePipelineProps },
+    { name: 'biographies', props: commonSitePipelineProps },
   ]
   siteInstances.map(instance => {
     const instanceContext = getContextByNamespace(instance.name)

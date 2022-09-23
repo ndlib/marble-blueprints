@@ -47,6 +47,9 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const seasideProps = mapContextToProps<IStaticHostStackProps>('seaside', commonProps, staticHostTypeHints)
   const seaside = new staticHost.StaticHostStack(app, `${namespace}-seaside`, seasideProps)
 
+  const biographiesProps = mapContextToProps<IStaticHostStackProps>('biographies', commonProps, staticHostTypeHints)
+  const biographies = new staticHost.StaticHostStack(app, `${namespace}-biographies`, biographiesProps)
+
   const inquisitionsProps = mapContextToProps<IStaticHostStackProps>('inquisitions', commonProps, staticHostTypeHints)
   const inquisitions = new staticHost.StaticHostStack(app, `${namespace}-inquisitions`, inquisitionsProps)
 
@@ -99,6 +102,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     inquisitions,
     viewer,
     seaside,
+    biographies,
     iiifServerlessStack,
     imageProcessingStack,
     openSearchStack,

@@ -52,6 +52,9 @@ export class PipelineS3Sync extends Construct {
     const staticHostPath = `/all/static-host/${props.targetStack}/`
     const subModName = props.extraBuildArtifacts?.find(x=>x!==undefined)?.artifactName
 
+
+    const opensearchDomainName = SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'opensearchDomainName' }).unsafeUnwrap()
+
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
       timeout: Duration.minutes(30),
@@ -114,8 +117,8 @@ export class PipelineS3Sync extends Construct {
 
         // Pass external (to marble) Opensearch Domain parameters found in Secrets Manager
         OPENSEARCH_DOMAIN_NAME: {
-          value: `${props.opensearchSecretsKeyPath}:opensearchDomainName`,
-          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+          value: opensearchDomainName,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
         },
         OPENSEARCH_ENDPOINT: {
           value: `${props.opensearchSecretsKeyPath}:opensearchEndpoint`,
@@ -224,7 +227,6 @@ export class PipelineS3Sync extends Construct {
     this.project.addToRolePolicy(NamespacedPolicy.s3(props.targetStack))
     this.project.addToRolePolicy(NamespacedPolicy.ssm(props.targetStack))
 
-    const opensearchDomainName = SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'opensearchDomainName' }).unsafeUnwrap()
     console.log("opensearch Domain= ", opensearchDomainName)
     this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(opensearchDomainName))
     

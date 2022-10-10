@@ -60,6 +60,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly dockerhubCredentialsPath: string
   readonly domainName: string
   readonly hostedZoneTypes: string[]
+  readonly opensearchSecretsKeyPath: string
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -121,6 +122,7 @@ export class DeploymentPipelineStack extends Stack {
         GlobalActions.Cloudfront,
         GlobalActions.Route53,
         GlobalActions.S3,
+        GlobalActions.Secrets,
       ]))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.iamRole(targetStack))
       cdkDeploy.project.addToRolePolicy(NamespacedPolicy.lambda(targetStack))
@@ -212,13 +214,6 @@ export class DeploymentPipelineStack extends Stack {
       searchIndex: `${props.searchIndex}-test`,
       siteDirectory: props.siteDirectory,
       workspaceName: props.workspaceName,
-      openSearchDomainNameKeyPath: props.prodOpenSearchStack.domainNameKeyPath,
-      openSearchEndpointKeyPath: props.prodOpenSearchStack.domainEndpointKeyPath,
-      openSearchMasterUserNameKeyPath: props.prodOpenSearchStack.domainMasterUserNameKeyPath,
-      openSearchMasterPasswordKeyPath: props.prodOpenSearchStack.domainMasterPasswordKeyPath,
-      openSearchReadOnlyUserNameKeyPath: props.prodOpenSearchStack.domainReadOnlyUserNameKeyPath,
-      openSearchReadOnlyPasswordKeyPath: props.prodOpenSearchStack.domainReadOnlyPasswordKeyPath,
-      openSearchDomainPrefix: props.namespace,
       graphqlApiUrlKeyPath: props.testMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.testMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.testManifestLambdaStack.publicGraphqlApiKeyPath,
@@ -227,6 +222,7 @@ export class DeploymentPipelineStack extends Stack {
       authClientUrl: props.authClientUrl,
       authClientId: props.authClientId,
       authClientIssuer: props.authClientIssuer,
+      opensearchSecretsKeyPath: props.opensearchSecretsKeyPath,
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncTestProps.extraBuildArtifacts = [subAppSourceArtifact]
@@ -254,16 +250,9 @@ export class DeploymentPipelineStack extends Stack {
     const s3syncProdProps: IPipelineS3SyncProps = {
       targetStack: prodStackName,
       inputBuildArtifact: appSourceArtifact,
-      searchIndex: `${props.searchIndex}-prod`,
+      searchIndex: `${props.searchIndex}`,
       siteDirectory: props.siteDirectory,
       workspaceName: props.workspaceName,
-      openSearchDomainNameKeyPath: props.prodOpenSearchStack.domainNameKeyPath,
-      openSearchEndpointKeyPath: props.prodOpenSearchStack.domainEndpointKeyPath,
-      openSearchMasterUserNameKeyPath: props.prodOpenSearchStack.domainMasterUserNameKeyPath,
-      openSearchMasterPasswordKeyPath: props.prodOpenSearchStack.domainMasterPasswordKeyPath,
-      openSearchReadOnlyUserNameKeyPath: props.prodOpenSearchStack.domainReadOnlyUserNameKeyPath,
-      openSearchReadOnlyPasswordKeyPath: props.prodOpenSearchStack.domainReadOnlyPasswordKeyPath,
-      openSearchDomainPrefix: props.namespace,
       graphqlApiUrlKeyPath: props.prodMaintainMetadataStack.graphqlApiUrlKeyPath,
       graphqlApiKeyKeyPath: props.prodMaintainMetadataStack.graphqlApiKeyKeyPath,
       publicGraphqlApiKeyPath: props.prodManifestLambdaStack.publicGraphqlApiKeyPath,
@@ -272,6 +261,7 @@ export class DeploymentPipelineStack extends Stack {
       authClientUrl: props.authClientUrl,
       authClientId: props.authClientId,
       authClientIssuer: props.authClientIssuer,
+      opensearchSecretsKeyPath: props.opensearchSecretsKeyPath,
     }
     if (subAppSourceArtifact !== undefined) {
       s3syncProdProps.extraBuildArtifacts = [subAppSourceArtifact]

@@ -2,7 +2,7 @@ import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps, Buil
 import { Artifact } from 'aws-cdk-lib/aws-codepipeline'
 import { CodeBuildAction } from 'aws-cdk-lib/aws-codepipeline-actions'
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
-import { Fn, Duration } from 'aws-cdk-lib'
+import { Fn, Duration, SecretValue } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 import { NamespacedPolicy } from '../namespaced-policy'
 
@@ -36,18 +36,10 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly maintainMetadataKeyBase: string
   readonly buildEnvironment: string
   readonly publicGraphqlApiKeyPath: string
-
-  readonly openSearchDomainNameKeyPath: string
-  readonly openSearchEndpointKeyPath: string
-  readonly openSearchMasterUserNameKeyPath: string
-  readonly openSearchMasterPasswordKeyPath: string
-  readonly openSearchDomainPrefix: string
-  readonly openSearchReadOnlyUserNameKeyPath: string
-  readonly openSearchReadOnlyPasswordKeyPath: string
-  
   readonly authClientUrl: string
   readonly authClientId: string
   readonly authClientIssuer: string
+  readonly opensearchSecretsKeyPath: string
 }
 
 export class PipelineS3Sync extends Construct {
@@ -59,17 +51,6 @@ export class PipelineS3Sync extends Construct {
     const paramsPath = `/all/stacks/${props.targetStack}/`
     const staticHostPath = `/all/static-host/${props.targetStack}/`
     const subModName = props.extraBuildArtifacts?.find(x=>x!==undefined)?.artifactName
-
-    // console.log("props.openSearchEndpointKeyPath=", props.openSearchEndpointKeyPath)
-    // console.log("props.openSearchMasterUserNameKeyPath=", props.openSearchMasterUserNameKeyPath)
-    // console.log("props.openSearchMasterPasswordKeyPath=", props.openSearchMasterPasswordKeyPath)    
-    // console.log("props.openSearchReadOnlyUserNameKeyPath=", props.openSearchReadOnlyUserNameKeyPath)
-    // console.log("props.openSearchReadOnlyPasswordKeyPath=", props.openSearchReadOnlyPasswordKeyPath)
-    // console.log("openSearchEndpoint=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchEndpoint', { parameterName: props.openSearchEndpointKeyPath }).stringValue)
-    // console.log("openSearchMasterUserName=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchMasterUserName', { parameterName: props.openSearchMasterUserNameKeyPath }).stringValue)
-    // console.log("openSearchMasterPassword=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchMasterPassword', { parameterName: props.openSearchMasterPasswordKeyPath }).stringValue)
-    // console.log("openSearchReadOnlyUserName=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchReadOnlyUserName', { parameterName: props.openSearchReadOnlyUserNameKeyPath }).stringValue)
-    // console.log("openSearchReadOnlyPassword=", StringParameter.fromStringParameterAttributes(this, 'OpenSearchReadOnlyPassword', { parameterName: props.openSearchReadOnlyPasswordKeyPath }).stringValue)
 
     this.project = new PipelineProject(scope, `${props.targetStack}-S3Sync`, {
       description: 'Deploys built source web component to bucket',
@@ -130,55 +111,33 @@ export class PipelineS3Sync extends Construct {
           value: props.publicGraphqlApiKeyPath,
           type: BuildEnvironmentVariableType.PARAMETER_STORE,
         },
-        // Added from here for OpenSearch
+
+        // Pass external (to marble) Opensearch Domain parameters found in Secrets Manager
         OPENSEARCH_DOMAIN_NAME: {
-          value: props.openSearchDomainNameKeyPath,
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `${props.opensearchSecretsKeyPath}:opensearchDomainName`,
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
         OPENSEARCH_ENDPOINT: {
-          value: props.openSearchEndpointKeyPath,
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `${props.opensearchSecretsKeyPath}:opensearchEndpoint`,
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
         OPENSEARCH_MASTER_USERNAME: {
-          value: props.openSearchMasterUserNameKeyPath,
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `${props.opensearchSecretsKeyPath}:readonlyUserName`,
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
         OPENSEARCH_MASTER_PASSWORD: {
-          value: props.openSearchMasterPasswordKeyPath,
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `${props.opensearchSecretsKeyPath}:masterPassword`,
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
         OPENSEARCH_READ_ONLY_USERNAME: {
-          value: props.openSearchReadOnlyUserNameKeyPath,
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `${props.opensearchSecretsKeyPath}:readonlyUserName`,
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
         OPENSEARCH_READ_ONLY_PASSWORD: {
-          value: props.openSearchReadOnlyPasswordKeyPath,
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          value: `${props.opensearchSecretsKeyPath}:readonlyPassword`,
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
-        OPENSEARCH_DOMAIN_NAME_KEY_PATH: {
-          value: props.openSearchDomainNameKeyPath,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
-        },
-        OPENSEARCH_ENDPOINT_KEY_PATH: {
-          value: props.openSearchEndpointKeyPath,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
-        },
-        OPENSEARCH_MASTER_USERNAME_KEY_PATH: {
-          value: props.openSearchMasterUserNameKeyPath,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
-        },
-        OPENSEARCH_MASTER_PASSWORD_KEY_PATH: {
-          value: props.openSearchMasterPasswordKeyPath,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
-        },
-        OPENSEARCH_READ_ONLY_USERNAME_KEY_PATH: {
-          value: props.openSearchReadOnlyUserNameKeyPath,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
-        },
-        OPENSEARCH_READ_ONLY_PASSWORD_KEY_PATH: {
-          value: props.openSearchReadOnlyPasswordKeyPath,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
-        },
+       
         AUTH_CLIENT_URL: {
           value: props.authClientUrl,
           type: BuildEnvironmentVariableType.PLAINTEXT,
@@ -205,12 +164,6 @@ export class PipelineS3Sync extends Construct {
               'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_ENDPOINT',
               'echo OPENSEARCH_READ_ONLY_USERNAME = $OPENSEARCH_READ_ONLY_USERNAME',
               'echo OPENSEARCH_READ_ONLY_PASSWORD = $OPENSEARCH_READ_ONLY_PASSWORD',
-              'echo OPENSEARCH_DOMAIN_NAME_KEY_PATH = $OPENSEARCH_DOMAIN_NAME_KEY_PATH',
-              'echo OPENSEARCH_ENDPOINT_KEY_PATH = $OPENSEARCH_ENDPOINT_KEY_PATH',
-              'echo OPENSEARCH_MASTER_USERNAME_KEY_PATH = $OPENSEARCH_MASTER_USERNAME_KEY_PATH',
-              'echo OPENSEARCH_MASTER_PASSWORD_KEY_PATH = $OPENSEARCH_MASTER_PASSWORD_KEY_PATH',
-              'echo OPENSEARCH_READ_ONLY_USERNAME_KEY_PATH = $OPENSEARCH_READ_ONLY_USERNAME_KEY_PATH',
-              'echo OPENSEARCH_READ_ONLY_PASSWORD_KEY_PATH = $OPENSEARCH_READ_ONLY_PASSWORD_KEY_PATH',
                 `chmod -R 755 ./scripts`,
                 `export PARAM_CONFIG_PATH="${staticHostPath}"`,
                 `export SUBMOD_DIR=$CODEBUILD_SRC_DIR_${subModName}`,
@@ -248,12 +201,6 @@ export class PipelineS3Sync extends Construct {
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + paramsPath + '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + staticHostPath + '*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.maintainMetadataKeyBase + '*'),
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchDomainNameKeyPath+ '*'),
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchEndpointKeyPath + '*'),
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchMasterUserNameKeyPath + '*'),
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchMasterPasswordKeyPath + '*'),
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchReadOnlyUserNameKeyPath + '*'),
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.openSearchReadOnlyPasswordKeyPath + '*'),
       ],
     }))
     this.project.addToRolePolicy(new PolicyStatement({
@@ -276,9 +223,8 @@ export class PipelineS3Sync extends Construct {
     // We don't know exactly what the bucket's name will be until runtime, but it starts with the stack's name
     this.project.addToRolePolicy(NamespacedPolicy.s3(props.targetStack))
     this.project.addToRolePolicy(NamespacedPolicy.ssm(props.targetStack))
-    if (props.openSearchDomainPrefix !== undefined) {
-      this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(props.openSearchDomainPrefix))
-    }
+
+    this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'opensearchDomainName' }).toString()))
     
     this.action = new CodeBuildAction({
       actionName: 'BuildSite_and_CopyS3',

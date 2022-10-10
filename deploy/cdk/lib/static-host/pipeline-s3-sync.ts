@@ -224,7 +224,9 @@ export class PipelineS3Sync extends Construct {
     this.project.addToRolePolicy(NamespacedPolicy.s3(props.targetStack))
     this.project.addToRolePolicy(NamespacedPolicy.ssm(props.targetStack))
 
-    this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'opensearchDomainName' }).toString()))
+    const opensearchDomainName = SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'opensearchDomainName' }).unsafeUnwrap()
+    console.log("opensearch Domain= ", opensearchDomainName)
+    this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(opensearchDomainName))
     
     this.action = new CodeBuildAction({
       actionName: 'BuildSite_and_CopyS3',

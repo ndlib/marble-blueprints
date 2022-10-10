@@ -165,6 +165,7 @@ export class PipelineS3Sync extends Construct {
               'n stable',
               'echo OPENSEARCH_INDEX = $OPENSEARCH_INDEX',
               'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_ENDPOINT',
+              'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_DOMAIN',
               'echo OPENSEARCH_READ_ONLY_USERNAME = $OPENSEARCH_READ_ONLY_USERNAME',
               'echo OPENSEARCH_READ_ONLY_PASSWORD = $OPENSEARCH_READ_ONLY_PASSWORD',
                 `chmod -R 755 ./scripts`,

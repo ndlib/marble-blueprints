@@ -121,11 +121,11 @@ export class PipelineS3Sync extends Construct {
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
         OPENSEARCH_ENDPOINT: {
-          value: `${props.opensearchSecretsKeyPath}:opensearchEndpoint`,
-          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+          value: SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'opensearchEndpoint' }).unsafeUnwrap(),
+          type: BuildEnvironmentVariableType.PLAINTEXT,
         },
         OPENSEARCH_MASTER_USERNAME: {
-          value: `${props.opensearchSecretsKeyPath}:readonlyUserName`,
+          value: `${props.opensearchSecretsKeyPath}:masterUserName`,
           type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
         OPENSEARCH_MASTER_PASSWORD: {
@@ -133,12 +133,12 @@ export class PipelineS3Sync extends Construct {
           type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
         OPENSEARCH_READ_ONLY_USERNAME: {
-          value: `${props.opensearchSecretsKeyPath}:readonlyUserName`,
-          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+          value: SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'readonlyUserName' }).unsafeUnwrap(),
+          type: BuildEnvironmentVariableType.PLAINTEXT,
         },
         OPENSEARCH_READ_ONLY_PASSWORD: {
-          value: `${props.opensearchSecretsKeyPath}:readonlyPassword`,
-          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+          value: SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'readonlyPassword' }).unsafeUnwrap(),
+          type: BuildEnvironmentVariableType.PLAINTEXT,
         },
        
         AUTH_CLIENT_URL: {
@@ -163,9 +163,9 @@ export class PipelineS3Sync extends Construct {
           build: {
             commands: [
               'n stable',
-              'echo OPENSEARCH_INDEX = $OPENSEARCH_INDEX',
+              'echo SEARCH_INDEX = $SEARCH_INDEX',
               'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_ENDPOINT',
-              'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_DOMAIN',
+              'echo OPENSEARCH_DOMAIN = $OPENSEARCH_DOMAIN',
               'echo OPENSEARCH_READ_ONLY_USERNAME = $OPENSEARCH_READ_ONLY_USERNAME',
               'echo OPENSEARCH_READ_ONLY_PASSWORD = $OPENSEARCH_READ_ONLY_PASSWORD',
                 `chmod -R 755 ./scripts`,

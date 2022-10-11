@@ -168,6 +168,7 @@ export class PipelineS3Sync extends Construct {
             commands: [
               'n stable',
               'echo SEARCH_INDEX = $SEARCH_INDEX',
+              'echo OPENSEARCH_INDEX = $OPENSEARCH_INDEX',
               'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_ENDPOINT',
               'echo OPENSEARCH_DOMAIN_NAME = $OPENSEARCH_DOMAIN_NAME',
               'echo OPENSEARCH_READ_ONLY_USERNAME = $OPENSEARCH_READ_ONLY_USERNAME',

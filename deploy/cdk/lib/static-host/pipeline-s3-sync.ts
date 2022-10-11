@@ -116,6 +116,10 @@ export class PipelineS3Sync extends Construct {
         },
 
         // Pass external (to marble) Opensearch Domain parameters found in Secrets Manager
+        OPENSEARCH_INDEX: {
+          value: props.searchIndex,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
         OPENSEARCH_DOMAIN_NAME: {
           value: opensearchDomainName,
           type: BuildEnvironmentVariableType.PLAINTEXT,
@@ -228,7 +232,6 @@ export class PipelineS3Sync extends Construct {
     this.project.addToRolePolicy(NamespacedPolicy.s3(props.targetStack))
     this.project.addToRolePolicy(NamespacedPolicy.ssm(props.targetStack))
 
-    console.log("opensearch Domain= ", opensearchDomainName)
     this.project.addToRolePolicy(NamespacedPolicy.opensearchInvoke(opensearchDomainName))
     
     this.action = new CodeBuildAction({

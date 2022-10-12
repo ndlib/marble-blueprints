@@ -243,10 +243,11 @@ export class DeploymentPipelineStack extends Stack {
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
     const prodBuildPath = `$CODEBUILD_SRC_DIR_${appSourceArtifact.artifactName}`
     const prodBuildOutput = new Artifact('ProdBuild')
-    const certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
+    let certificateArnPath = (props.contextEnvName === 'dev') ? "" : props.prodCertificateArnPath
     let domainNameOverride = (props.contextEnvName === 'dev') ? "" : props.prodDomainNameOverride
     if (!(props.namespace.includes('marble'))) {  //This should allow the marble website to be deployed to testlibnd without the error of the nd.edu certificate not working for a libraries.nd.edu domain.
       domainNameOverride = ""
+      certificateArnPath = ""
     }
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, prodBuildPath, prodBuildOutput, props.prodFoundationStack, certificateArnPath, domainNameOverride, props.prodAdditionalAliases)
 

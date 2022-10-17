@@ -40,7 +40,7 @@
   "infraRepoName": "marble-blueprints",
   "infraSourceBranch": "master",
   "dockerhubCredentialsPath": "/all/dockerhub/credentials",
-  "opensearchSecretsKeyPath": "/all/opensearch",
+  "opensearchSecretsKeyPath": "opensearch",
 
   "iiifImageService:serverlessIiifSrcPath": "../../../serverless-iiif",
   "iiifImageService:hostnamePrefix": "image-iiif",

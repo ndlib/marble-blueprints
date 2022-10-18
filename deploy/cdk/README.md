@@ -4,9 +4,9 @@ This application uses [aws-cdk](https://aws.amazon.com/cdk/) for deployment.
 
 Prerequisites:
 
-* node 9+
+* node 14+
 * yarn
-* aws-cdk v1.75+
+* aws-cdk v2.45+
 
 ## Build
 

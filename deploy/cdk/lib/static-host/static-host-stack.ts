@@ -39,6 +39,7 @@ export interface IStaticHostStackProps extends StackProps {
    */
   readonly additionalAliases?: Array<string>
   readonly hostedZoneTypes: string[]
+  readonly opensearchSecretsKeyPath: string
 }
 
 export class StaticHostStack extends Stack {

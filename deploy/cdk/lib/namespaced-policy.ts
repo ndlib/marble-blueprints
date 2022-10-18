@@ -12,6 +12,7 @@ export enum GlobalActions {
   ES,
   Route53,
   S3,
+  Secrets,
 }
 
 export class NamespacedPolicy {
@@ -72,10 +73,17 @@ export class NamespacedPolicy {
     if(actionOptions.includes(GlobalActions.ES)) {
       actions.push('es:AddTags')
     }
+    if (actionOptions.includes(GlobalActions.Secrets)) {
+      actions = [...actions,
+        'secretsmanager:GetRandomPassword',
+        'secretsmanager:ListSecrets',
+      ]
+    }
     return new PolicyStatement({
       resources: ['*'],
       actions,
     })
+    
   }
 
   public static iamRole(stackName: string): PolicyStatement  {

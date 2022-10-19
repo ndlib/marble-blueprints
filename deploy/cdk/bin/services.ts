@@ -4,7 +4,6 @@ import 'source-map-support/register'
 import { FoundationStack } from '../lib/foundation'
 import IIIF = require('../lib/iiif-serverless')
 import imageProcessing = require('../lib/image-processing')
-import opensearch = require('../lib/opensearch')
 import staticHost = require('../lib/static-host')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import maintainMetadata = require('../lib/maintain-metadata')
@@ -59,10 +58,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   const imageServiceProps = mapContextToProps<IIIF.IIiifServerlessStackProps>('iiifImageService', commonProps)
   const iiifServerlessStack = new IIIF.IiifServerlessStack(app, `${namespace}-image-service`, imageServiceProps)
 
-  const openSearchProps = mapContextToProps<opensearch.OpenSearchStackProps>('opensearch', commonProps)
-  const openSearchStack = new opensearch.OpenSearchStack(app, `${namespace}-opensearch`, openSearchProps)
-
-
   const multimediaAssetsProps = mapContextToProps<multimediaAssets.IMultimediaAssetsStackProps>('multimediaAssets', {
     ...commonProps,
     marbleContentBucketName: contextEnv.marbleContentBucketName,
@@ -105,7 +100,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     biographies,
     iiifServerlessStack,
     imageProcessingStack,
-    openSearchStack,
     manifestPipelineStack,
     maintainMetadataStack,
     multimediaAssetsStack,

@@ -205,45 +205,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     //     Low: false,
     //   },
     // },
-    // Note:  ndlib-cdk/src/slos/types.ts does not yet contain anything for opensearch, so we'll need to just comment the elasticcearch SLOs for now.  Once functionality is added to ndlib-cdk, we can modify these commented lines.
-    // {
-    //   title: "Marble - Search API",
-    //   type: "ElasticSearchAvailability",
-    //   accountId: contextEnv.env.account,
-    //   domainName: openSearchStack.domainName,
-    //   // sloThreshold: 0.99,
-    //   sloThreshold: 0.95, // Changed sloThreshold to .95 because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-    //   alarmsEnabled: {
-    //     High: true,
-    //     Low: false,
-    //   },
-    // },
-    // {
-    //   title: "Marble - Search API",
-    //   type: "ElasticSearchLatency",
-    //   accountId: contextEnv.env.account,
-    //   domainName: openSearchStack.domainName,
-    //   sloThreshold: 0.95,
-    //   // latencyThreshold: 200,
-    //   latencyThreshold: 200 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-    //   alarmsEnabled: {
-    //     High: true,
-    //     Low: false,
-    //   },
-    // },
-    // {
-    //   title: "Marble - Search API",
-    //   type: "ElasticSearchLatency",
-    //   accountId: contextEnv.env.account,
-    //   domainName: openSearchStack.domainName,
-    //   sloThreshold: 0.99,
-    //   // latencyThreshold: 1000,
-    //   latencyThreshold: 1000 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-    //   alarmsEnabled: {
-    //     High: true,
-    //     Low: false,
-    //   },
-    // },
     {
       title: "Marble - IIIF Viewer CDN",
       type: "CloudfrontAvailability",

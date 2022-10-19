@@ -12,7 +12,6 @@ import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
-import { OpenSearchStack } from '../opensearch'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
 import { GithubApproval } from '../github-approval'
@@ -41,7 +40,6 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
   readonly buildScriptsDir: string
-  readonly prodOpenSearchStack: OpenSearchStack
   readonly searchIndex: string
   readonly siteDirectory: string
   readonly workspaceName: string
@@ -136,12 +134,6 @@ export class DeploymentPipelineStack extends Stack {
           Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodMaintainMetadataStack.maintainMetadataKeyBase + '*'),
           Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.testManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
           Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodManifestLambdaStack.publicGraphqlApiKeyPath + '*'),
-          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainNameKeyPath + '*'),
-          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainEndpointKeyPath + '*'),
-          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
-          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainMasterUserNameKeyPath + '*'),
-          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainReadOnlyUserNameKeyPath + '*'),
-          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter' + props.prodOpenSearchStack.domainReadOnlyPasswordKeyPath + '*'),
         ],
         actions: ["ssm:Get*"],
       }))

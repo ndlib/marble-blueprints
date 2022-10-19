@@ -4,7 +4,6 @@ import 'source-map-support/register'
 import IIIF = require('../lib/iiif-serverless')
 import imageProcessing = require('../lib/image-processing')
 import staticHost = require('../lib/static-host')
-import opensearch = require('../lib/opensearch')
 import manifestPipeline = require('../lib/manifest-pipeline')
 import { getRequiredContext, getContextByNamespace } from '../lib/context-helpers'
 import { ContextEnv } from '../lib/context-env'
@@ -45,7 +44,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
 
   const staticHostContext = getContextByNamespace('staticHost')
   const commonSitePipelineProps = {
-    prodOpenSearchStack: prodStacks.openSearchStack,
     testMaintainMetadataStack: testStacks.maintainMetadataStack,
     prodMaintainMetadataStack: prodStacks.maintainMetadataStack,
     testManifestLambdaStack: testStacks.manifestLambdaStack,
@@ -82,12 +80,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
   new imageProcessing.DeploymentPipelineStack(app, `${namespace}-image-processing-deployment`, {
     ...commonProps,
     ...imageProcessingContext,
-  })
-
-  const opensearchContext = getContextByNamespace('opensearch')
-  new opensearch.DeploymentPipelineStack(app, `${namespace}-opensearch-deployment`, {
-    ...commonProps,
-    ...opensearchContext,
   })
 
   const manifestPipelineContext = getContextByNamespace('manifestPipeline')

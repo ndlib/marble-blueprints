@@ -205,19 +205,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     //     Low: false,
     //   },
     // },
-    // {
-    //   title: "Marble - Search API",
-    //   type: "ElasticSearchLatency",
-    //   accountId: contextEnv.env.account,
-    //   domainName: openSearchStack.domainName,
-    //   sloThreshold: 0.99,
-    //   // latencyThreshold: 1000,
-    //   latencyThreshold: 1000 * 1.5, // Extended latencyThreshold by 50% because we don't have canaries hitting this every minute to drive up usage.  The result is a single bad value raises a false alarm.
-    //   alarmsEnabled: {
-    //     High: true,
-    //     Low: false,
-    //   },
-    // },
     {
       title: "Marble - IIIF Viewer CDN",
       type: "CloudfrontAvailability",

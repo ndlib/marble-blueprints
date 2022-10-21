@@ -144,6 +144,18 @@ export class PipelineS3Sync extends Construct {
           value: SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'readonlyPassword' }).unsafeUnwrap(),
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
+        GATSBY_OPENSEARCH_ENDPOINT: {
+          value: SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'opensearchEndpoint' }).unsafeUnwrap(),
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        GATSBY_OPENSEARCH_READ_ONLY_USERNAME: {
+          value: SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'readonlyUserName' }).unsafeUnwrap(),
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        GATSBY_OPENSEARCH_READ_ONLY_PASSWORD: {
+          value: SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'readonlyPassword' }).unsafeUnwrap(),
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
        
         AUTH_CLIENT_URL: {
           value: props.authClientUrl,
@@ -173,6 +185,9 @@ export class PipelineS3Sync extends Construct {
               'echo OPENSEARCH_DOMAIN_NAME = $OPENSEARCH_DOMAIN_NAME',
               'echo OPENSEARCH_READ_ONLY_USERNAME = $OPENSEARCH_READ_ONLY_USERNAME',
               'echo OPENSEARCH_READ_ONLY_PASSWORD = $OPENSEARCH_READ_ONLY_PASSWORD',
+              'echo GATSBY_OPENSEARCH_ENDPOINT = $GATSBY_OPENSEARCH_ENDPOINT',
+              'echo GATSBY_OPENSEARCH_READ_ONLY_USERNAME = $GATSBY_OPENSEARCH_READ_ONLY_USERNAME',
+              'echo GATSBY_OPENSEARCH_READ_ONLY_PASSWORD = $GATSBY_OPENSEARCH_READ_ONLY_PASSWORD',
                 `chmod -R 755 ./scripts`,
                 `export PARAM_CONFIG_PATH="${staticHostPath}"`,
                 `export SUBMOD_DIR=$CODEBUILD_SRC_DIR_${subModName}`,

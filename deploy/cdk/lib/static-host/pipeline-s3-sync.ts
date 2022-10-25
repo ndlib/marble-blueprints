@@ -156,6 +156,10 @@ export class PipelineS3Sync extends Construct {
           value: SecretValue.secretsManager(props.opensearchSecretsKeyPath, { jsonField: 'readonlyPassword' }).unsafeUnwrap(),
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
+        GATSBY_OPENSEARCH_INDEX: {
+          value: props.searchIndex,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
        
         AUTH_CLIENT_URL: {
           value: props.authClientUrl,

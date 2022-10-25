@@ -192,6 +192,7 @@ export class PipelineS3Sync extends Construct {
               'echo GATSBY_OPENSEARCH_ENDPOINT = $GATSBY_OPENSEARCH_ENDPOINT',
               'echo GATSBY_OPENSEARCH_READ_ONLY_USERNAME = $GATSBY_OPENSEARCH_READ_ONLY_USERNAME',
               'echo GATSBY_OPENSEARCH_READ_ONLY_PASSWORD = $GATSBY_OPENSEARCH_READ_ONLY_PASSWORD',
+              'echo GATSBY_OPENSEARCH_INDEX = $GATSBY_OPENSEARCH_INDEX',
                 `chmod -R 755 ./scripts`,
                 `export PARAM_CONFIG_PATH="${staticHostPath}"`,
                 `export SUBMOD_DIR=$CODEBUILD_SRC_DIR_${subModName}`,

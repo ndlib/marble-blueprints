@@ -95,11 +95,12 @@ export class CDKPipelineDeploy extends Construct {
         phases: {
           install: {
             commands: [
-              'n stable',
+              // 'n stable',
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
               'yarn install',
             ],
             'runtime-versions': {
+              nodejs: '16.x',
               ...(props.additionalRuntimeEnvironments || []),
             },
           },

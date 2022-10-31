@@ -178,12 +178,13 @@ export class PipelineS3Sync extends Construct {
         phases: {
           install: {
             'runtime-versions': {
-              nodejs: '16.x',
+              // nodejs: '16.x',
             },
           },
           build: {
             commands: [
               // 'n stable',
+              'n 16',
               'echo SEARCH_INDEX = $SEARCH_INDEX',
               'echo OPENSEARCH_INDEX = $OPENSEARCH_INDEX',
               'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_ENDPOINT',

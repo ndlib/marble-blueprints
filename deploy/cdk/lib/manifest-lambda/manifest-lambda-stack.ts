@@ -157,9 +157,10 @@ export class ManifestLambdaStack extends Stack {
 
     // Output API url to ssm so we can import it in the smoke test
     new StringParameter(this, 'ApiUrlParameter', {
-      parameterName: `/all/${this.stackName}/api-url`,
+      parameterName: `/all/stacks/${this.stackName}/api-url`,
       description: 'Path to root of the API gateway.',
       stringValue: this.privateApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+      simpleName: false,
     })
 
     // endpoints
@@ -247,9 +248,10 @@ export class ManifestLambdaStack extends Stack {
 
     // Output API url to ssm so we can import it in the smoke test
     new StringParameter(this, 'PublicApiUrlParameter', {
-      parameterName: `/all/${this.stackName}/public-api-url`,
+      parameterName: `/all/stacks/${this.stackName}/public-api-url`,
       description: 'Path to root of the API gateway.',
       stringValue: this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+      simpleName: false,
     })
 
     // Create endpoints

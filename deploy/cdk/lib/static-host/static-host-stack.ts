@@ -192,9 +192,10 @@ export class StaticHostStack extends Stack {
 
     // Output API url to ssm so we can import it in the smoke test
     new StringParameter(this, 'WebsiteUrlParameter', {
-      parameterName: `/all/${this.stackName}/website-url`,
+      parameterName: `/all/stacks/${this.stackName}/website-url`,
       description: 'Path to root of the API gateway.',
       stringValue: this.cloudfront.distributionDomainName,
+      simpleName: false,
     })
 
     new CfnOutput(this, 'DistributionDomainName', {

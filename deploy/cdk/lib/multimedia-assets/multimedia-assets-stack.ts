@@ -169,9 +169,10 @@ export class MultimediaAssetsStack extends Stack {
 
     // Output API url to ssm so we can import it in the smoke test
     new StringParameter(this, 'ApiUrlParameter', {
-      parameterName: `/all/${this.stackName}/api-url`,
+      parameterName: `/all/stacks/${this.stackName}/api-url`,
       description: 'Path to root of the API gateway.',
       stringValue: this.cloudfront.distributionDomainName,
+      simpleName: false,
     })
 
 

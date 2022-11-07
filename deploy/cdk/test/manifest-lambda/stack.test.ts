@@ -32,6 +32,8 @@ const manifestPipelineContext = {
   filesTimeToLiveDays: "365",
   marbleContentFileShareId: "some fake arn",
   hostedZoneTypes: ['public'],
+  hostedZoneTypesTest: ['public'],
+  stage: 'prod',
 }
 
 const maintainMetadataContext = {
@@ -45,6 +47,8 @@ const manifestLambdaContext = {
   lambdaCodeRootPath: "../../../marble-manifest-lambda",
   publicGraphqlHostnamePrefix: "sample-public-graphql",
   hostedZoneTypes: ['public'],
+  hostedZoneTypesTest: ['public'],
+  stage: 'prod',
 }
 
 const setup = (props: { manifestPipelineContext: any, maintainMetadataContext: any, manifestLambdaContext: any }) => {

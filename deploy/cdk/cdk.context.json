@@ -11,7 +11,7 @@
       "createGithubWebhooks": false,
       "marbleContentBucketName": "testlibnd-smb-test",
       "marbleContentFileShareId": "share-1112707B",
-      "hostedZoneTypes": ["public"],
+      "hostedZoneTypes": ["private"],
       "hostedZoneTypesTest": [
         "private"
       ]

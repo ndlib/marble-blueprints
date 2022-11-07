@@ -56,6 +56,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
    * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '16.x')  e.g. `python: '3.9'`
    */
   readonly additionalRuntimeEnvironments?: { [key: string]: string }
+  readonly stage: string
 }
 
 /**
@@ -117,7 +118,9 @@ export class CDKPipelineDeploy extends Construct {
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
               `npm run cdk deploy -- ${props.targetStack} \
                 --require-approval never --exclusively \
-                -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`,
+                -c "namespace=${props.namespace}" \
+                -c "stage=${props.stage}" \
+                -c "env=${props.contextEnvName}" ${addtlContext}`,
             ],
           },
           post_build: {

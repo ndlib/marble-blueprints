@@ -52,7 +52,7 @@ export class DeploymentPipelineStack extends Stack {
     const prodStackName = `${props.namespace}-prod-manifest`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean, metadataTimeToLiveDays: string, filesTimeToLiveDays: string, createCopyMediaContentLambda: boolean, createBackup: boolean) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, imageServiceStackName: string, dataProcessingKeyPath: string, deployConstructName: string, createEventRules: boolean, metadataTimeToLiveDays: string, filesTimeToLiveDays: string, createCopyMediaContentLambda: boolean, createBackup: boolean, stage: string) => {
 
       const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
         targetStack,
@@ -75,6 +75,7 @@ export class DeploymentPipelineStack extends Stack {
         namespace: `${namespace}`,
         contextEnvName: props.contextEnvName,
         dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+        stage,
         additionalContext: {
           description: "data pipeline for IIIF Manifests",
           projectName: "marble",
@@ -261,7 +262,7 @@ export class DeploymentPipelineStack extends Stack {
 
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays, false, false)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays, false, false, 'test')
 
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
@@ -284,7 +285,7 @@ export class DeploymentPipelineStack extends Stack {
     // Deploy to Production
     const createCopyMediaContentLambda = props.contextEnvName === 'prod' ? true : false  // only deploy copy lambda to prod stage in prod environment
     const createBackup = props.contextEnvName === 'prod' ? true : false // only create a dynamoDB backup to prod stage in prod enviornment
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true, props.prodMetadataTimeToLiveDays, props.prodFilesTimeToLiveDays, createCopyMediaContentLambda, createBackup)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, props.prodImageServiceStackName, props.prodDataProcessingKeyPath, `${props.namespace}-manifest-deploy-prod`, true, props.prodMetadataTimeToLiveDays, props.prodFilesTimeToLiveDays, createCopyMediaContentLambda, createBackup, 'prod')
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

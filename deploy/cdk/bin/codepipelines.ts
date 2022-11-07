@@ -39,6 +39,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     infraSourceBranch: getRequiredContext(app.node, 'infraSourceBranch'),
     dockerhubCredentialsPath: getRequiredContext(app.node, 'dockerhubCredentialsPath'),
     hostedZoneTypes: contextEnv.hostedZoneTypes,
+    hostedZoneTypesTest: contextEnv.hostedZoneTypesTest,
     domainName: contextEnv.domainName,
   }
 

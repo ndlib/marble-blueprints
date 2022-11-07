@@ -44,7 +44,7 @@ export class DeploymentPipelineStack extends Stack {
     const prodStackName = `${props.namespace}-prod-image-processing`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, foundationStack: FoundationStack) => {
+    const createDeploy = (targetStack: string, namespace: string, foundationStack: FoundationStack, stage: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -55,6 +55,7 @@ export class DeploymentPipelineStack extends Stack {
         namespace: `${namespace}`,
         contextEnvName: props.contextEnvName,
         dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+        stage,
         additionalContext: {
           description: "Image processing",
           projectName: "marble",
@@ -111,7 +112,7 @@ export class DeploymentPipelineStack extends Stack {
     })
 
     // Deploy to Test
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, props.testFoundationStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, props.testFoundationStack, 'test')
 
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
@@ -132,7 +133,7 @@ export class DeploymentPipelineStack extends Stack {
     }
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.prodFoundationStack)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.prodFoundationStack, 'prod')
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {

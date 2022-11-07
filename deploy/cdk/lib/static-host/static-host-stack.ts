@@ -40,6 +40,8 @@ export interface IStaticHostStackProps extends StackProps {
   readonly additionalAliases?: Array<string>
   readonly hostedZoneTypes: string[]
   readonly opensearchSecretsKeyPath: string
+  readonly hostedZoneTypesTest: string[]
+  readonly stage: string
 }
 
 export class StaticHostStack extends Stack {
@@ -186,6 +188,13 @@ export class StaticHostStack extends Stack {
       parameterName: `/all/stacks/${this.stackName}/distribution-id`,
       description: 'ID of the CloudFront distribution.',
       stringValue: this.cloudfront.distributionId,
+    })
+
+    // Output API url to ssm so we can import it in the smoke test
+    new StringParameter(this, 'WebsiteUrlParameter', {
+      parameterName: `/all/${this.stackName}/website-url`,
+      description: 'Path to root of the API gateway.',
+      stringValue: this.cloudfront.distributionDomainName,
     })
 
     new CfnOutput(this, 'DistributionDomainName', {

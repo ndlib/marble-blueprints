@@ -51,6 +51,8 @@ export interface IBaseStackProps extends StackProps {
    */
   readonly domainName: string
   hostedZoneTypes: string[]
+  readonly hostedZoneTypesTest: string[]
+  readonly stage: string
 }
 
 export class ManifestLambdaStack extends Stack {
@@ -153,6 +155,13 @@ export class ManifestLambdaStack extends Stack {
       }
     }
 
+    // Output API url to ssm so we can import it in the smoke test
+    new StringParameter(this, 'ApiUrlParameter', {
+      parameterName: `/all/${this.stackName}/api-url`,
+      description: 'Path to root of the API gateway.',
+      stringValue: this.privateApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+    })
+
     // endpoints
     const manifest = this.privateApi.root.addResource('manifest')
     const manifestId = manifest.addResource('{id}')
@@ -235,6 +244,13 @@ export class ManifestLambdaStack extends Stack {
         })
       }
     }
+
+    // Output API url to ssm so we can import it in the smoke test
+    new StringParameter(this, 'PublicApiUrlParameter', {
+      parameterName: `/all/${this.stackName}/public-api-url`,
+      description: 'Path to root of the API gateway.',
+      stringValue: this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+    })
 
     // Create endpoints
     const query = this.publicApi.root.addResource('query')

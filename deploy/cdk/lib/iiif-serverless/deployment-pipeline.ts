@@ -39,6 +39,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly dockerhubCredentialsPath: string
   readonly domainName: string
   readonly hostedZoneTypes: string[]
+  readonly hostedZoneTypesTest: string[]
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -83,7 +84,7 @@ export class DeploymentPipelineStack extends Stack {
     })
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, paramPath: string, foundationStack: FoundationStack) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, paramPath: string, stage: string) => {
       const fqdn = `${hostnamePrefix}.${props.domainName}`
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
@@ -98,6 +99,7 @@ export class DeploymentPipelineStack extends Stack {
         namespace,
         contextEnvName: props.contextEnvName,
         dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+        stage,
         additionalContext: {
           description: "IIIF Serverless API",
           projectName: "marble",
@@ -162,7 +164,7 @@ export class DeploymentPipelineStack extends Stack {
       ],
     }))
 
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `${props.hostnamePrefix}-test`, `${props.paramPathPrefix}/test`, props.testFoundationStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `${props.hostnamePrefix}-test`, `${props.paramPathPrefix}/test`, 'test')
     const copyImagesTestAction = new CodeBuildAction({
       actionName: 'CopyImages',
       project: copyImagesProject,
@@ -195,13 +197,13 @@ export class DeploymentPipelineStack extends Stack {
       ],
     })
     if (props.slackNotifyStackName !== undefined) {
-      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+      new SlackApproval(this, 'SlackApproval', {
         approvalTopic,
         notifyStackName: props.slackNotifyStackName,
       })
     }
 
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `${props.hostnamePrefix}`, `${props.paramPathPrefix}/prod`, props.prodFoundationStack)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `${props.hostnamePrefix}`, `${props.paramPathPrefix}/prod`, 'prod')
     const copyImagesProdAction = new CodeBuildAction({
       actionName: 'CopyImages',
       project: copyImagesProject,

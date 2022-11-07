@@ -48,7 +48,7 @@ export class DeploymentPipelineStack extends Stack {
     const prodStackName = `${props.namespace}-prod-manifest-lambda`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, deployConstructName: string, publicGraphqlHostnamePrefix: string) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, deployConstructName: string, publicGraphqlHostnamePrefix: string, stage: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, deployConstructName, {
         targetStack,
         dependsOnStacks: [],
@@ -71,6 +71,7 @@ export class DeploymentPipelineStack extends Stack {
         namespace: `${namespace}`,
         contextEnvName: props.contextEnvName,
         dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+        stage,
         additionalContext: {
           description: "data pipeline for creating manifest lambda",
           projectName: "marble",
@@ -180,7 +181,7 @@ export class DeploymentPipelineStack extends Stack {
     // Deploy to Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
     const testPublicGraphqlHostnamePrefix = `${props.namespace}-test-${props.publicGraphqlHostnamePrefix}`
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, `${props.namespace}-manifest-lambda-deploy-test`, testPublicGraphqlHostnamePrefix)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, `${props.namespace}-manifest-lambda-deploy-test`, testPublicGraphqlHostnamePrefix, 'test')
     const testHostname = `${testPublicGraphqlHostnamePrefix}.${props.domainName}`
 
     const newmanRunnerTest = new NewmanRunner(this, 'NewmanRunnerTest', {
@@ -212,7 +213,7 @@ export class DeploymentPipelineStack extends Stack {
 
     // Deploy to Production
     const prodPublicGraphqlHostnamePrefix = `${props.namespace}-prod-${props.publicGraphqlHostnamePrefix}`
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, `${props.namespace}-manifest-lambda-deploy-prod`, prodPublicGraphqlHostnamePrefix)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, `${props.namespace}-manifest-lambda-deploy-prod`, prodPublicGraphqlHostnamePrefix, 'prod')
     const prodHostname = `${prodPublicGraphqlHostnamePrefix}.${props.domainName}`
     const newmanRunnerProd = new NewmanRunner(this, 'NewmanRunnerProd', {
       sourceArtifact: infraSourceArtifact,

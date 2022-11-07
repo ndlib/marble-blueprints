@@ -45,7 +45,7 @@ export class DeploymentPipelineStack extends Stack {
     const prodHostnamePrefix = props.hostnamePrefix || `${props.namespace}-multimedia`
 
     // Helper for creating a Pipeline project and action with deployment permissions needed by this pipeline
-    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, foundationStack: FoundationStack) => {
+    const createDeploy = (targetStack: string, namespace: string, hostnamePrefix: string, stage: string) => {
       const cdkDeploy = new CDKPipelineDeploy(this, `${namespace}-deploy`, {
         targetStack,
         dependsOnStacks: [],
@@ -55,6 +55,7 @@ export class DeploymentPipelineStack extends Stack {
         namespace,
         contextEnvName: props.contextEnvName,
         dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+        stage,
         additionalContext: {
           description: props.description,
           projectName: props.projectName,
@@ -106,7 +107,7 @@ export class DeploymentPipelineStack extends Stack {
     })
 
     // Deploy to Test
-    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.testFoundationStack)
+    const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, 'test')
 
     const testHostname = `${testHostnamePrefix}.${props.domainName}`
     const newmanRunnerTest = new NewmanRunner(this, 'NewmanRunnerTest', {
@@ -119,7 +120,7 @@ export class DeploymentPipelineStack extends Stack {
     })
 
     // Deploy to Production
-    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, props.prodFoundationStack)
+    const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, 'prod')
 
     const prodHostname = `${prodHostnamePrefix}.${props.domainName}`
     const newmanRunnerProd = new NewmanRunner(this, 'NewmanRunnerProd', {

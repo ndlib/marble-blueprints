@@ -33,6 +33,8 @@ export interface IIiifServerlessStackProps extends StackProps {
   readonly paramPathPrefix: string
   readonly domainName: string
   readonly hostedZoneTypes: string[]
+  readonly hostedZoneTypesTest: string[]
+  readonly stage: string
 }
 
 export interface IIiifApiStackProps extends NestedStackProps {
@@ -42,6 +44,8 @@ export interface IIiifApiStackProps extends NestedStackProps {
   readonly hostnamePrefix: string
   readonly domainName: string
   readonly hostedZoneTypes: string[]
+  readonly hostedZoneTypesTest: string[]
+  readonly stage: string
 }
 
 /**
@@ -167,6 +171,14 @@ class ApiStack extends NestedStack {
         })
       }
     }
+
+    // Output API url to ssm so we can import it in the smoke test
+    new StringParameter(this, 'ApiUrlParameter', {
+      parameterName: `/all/stacks/${this.stackName}/api-url`,
+      description: 'Path to root of the API gateway.',
+      stringValue: iiifApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+      simpleName: false,
+    })
 
     new CfnOutput(this, 'ApiEndpointUrl', {
       value: `${iiifApi.url}/iiif/2/`,

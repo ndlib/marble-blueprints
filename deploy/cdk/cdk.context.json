@@ -11,8 +11,11 @@
       "createGithubWebhooks": false,
       "marbleContentBucketName": "testlibnd-smb-test",
       "marbleContentFileShareId": "share-1112707B",
-      "hostedZoneTypes": ["public"]
-    },
+      "hostedZoneTypes": ["public"],
+      "hostedZoneTypesTest": [
+        "private"
+      ]
+      },
     "prod": {
       "account": "230391840102",
       "region": "us-east-1",
@@ -25,7 +28,10 @@
       "createGithubWebhooks": true,
       "marbleContentBucketName": "libnd-smb-marble",
       "marbleContentFileShareId": "share-3CDC3057",
-      "hostedZoneTypes": ["private", "public"]
+      "hostedZoneTypes": ["private", "public"],
+      "hostedZoneTypesTest": [
+        "private"
+      ]
     }
   },
 

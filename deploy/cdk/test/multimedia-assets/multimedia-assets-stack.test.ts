@@ -24,6 +24,8 @@ describe('MultimediaAssetsStack', () => {
     stackName: 'test-stack-name',
     marbleContentBucketName: 'libnd-smb-marble',
     hostedZoneTypes: ['public'],
+    hostedZoneTypesTest: ['private'],
+    stage: 'test',
   })
 
   test('creates an s3 bucket for assets', () => {

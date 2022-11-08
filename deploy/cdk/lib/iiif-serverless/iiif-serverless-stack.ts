@@ -46,6 +46,7 @@ export interface IIiifApiStackProps extends NestedStackProps {
   readonly hostedZoneTypes: string[]
   readonly hostedZoneTypesTest: string[]
   readonly stage: string
+  readonly parameterStoreKeyPath: string
 }
 
 /**
@@ -175,7 +176,7 @@ class ApiStack extends NestedStack {
 
     // Output API url to ssm so we can import it in the smoke test
     new StringParameter(this, 'ApiUrlParameter', {
-      parameterName: `/all/stacks/${this.stackName}/api-url`,
+      parameterName: props.parameterStoreKeyPath,
       description: 'Path to root of the API gateway.',
       stringValue: iiifApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
       simpleName: false,
@@ -201,6 +202,11 @@ export class IiifServerlessStack extends Stack {
 
   constructor(scope: Construct, id: string, props: IIiifServerlessStackProps) {
     super(scope, id, props)
-    this.apiStack = new ApiStack(this, 'IiifApiStack', props)
+    const parameterStoreKeyPath = `/all/stacks/${this.stackName}/api-url`
+    const apiProps= {
+      parameterStoreKeyPath,
+      ...props,
+    }
+    this.apiStack = new ApiStack(this, 'IiifApiStack', apiProps)
   }
 }

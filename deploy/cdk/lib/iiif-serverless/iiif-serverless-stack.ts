@@ -178,7 +178,7 @@ class ApiStack extends NestedStack {
     new StringParameter(this, 'ApiUrlParameter', {
       parameterName: props.parameterStoreKeyPath,
       description: 'Path to root of the API gateway.',
-      stringValue: iiifApi.url,  // iiifApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+      stringValue: iiifApi.url.replace('https://', ''),  // iiifApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
       simpleName: false,
     })
 

@@ -251,7 +251,7 @@ export class ManifestLambdaStack extends Stack {
     new StringParameter(this, 'PublicApiUrlParameter', {
       parameterName: `/all/stacks/${this.stackName}/public-api-url`,
       description: 'Path to root of the API gateway.',
-      stringValue: this.publicApi.url, // this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
+      stringValue: this.publicApi.url.replace('https://', ''), // this.publicApi.domainName!.domainNameAliasDomainName, // cloudfront the api creates
       simpleName: false,
     })
 

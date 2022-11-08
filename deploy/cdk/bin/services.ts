@@ -35,6 +35,7 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     domainName: contextEnv.domainName,
     hostedZoneTypes: contextEnv.hostedZoneTypes,
     hostedZoneTypesTest: contextEnv.hostedZoneTypesTest,
+    stage: app.node.tryGetContext('stage'),
   }
 
   const staticHostTypeHints : TypeHint = { additionalAliases: 'csv' }

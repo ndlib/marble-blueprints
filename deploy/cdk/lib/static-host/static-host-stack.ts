@@ -160,8 +160,9 @@ export class StaticHostStack extends Stack {
     })
 
     // Create DNS entries for each hosted zone
+    const hostedZoneTypes = (props.stage == 'prod' ? props.hostedZoneTypes : props.hostedZoneTypesTest)
     for (const hostedZoneType of ['public', 'private']) {
-      if (props.hostedZoneTypes.includes(hostedZoneType)) {
+      if (hostedZoneTypes.includes(hostedZoneType)) {
         const hostedZoneIdPath = `/all/dns/${props.domainName}/${hostedZoneType}/zoneId`
         const hostedZoneId = StringParameter.valueForStringParameter(this, hostedZoneIdPath)
 

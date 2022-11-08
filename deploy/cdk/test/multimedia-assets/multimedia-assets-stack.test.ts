@@ -90,7 +90,7 @@ describe('MultimediaAssetsStack', () => {
       Type: 'CNAME',
       Comment: 'my-happy-place-multimedia.fake.domain',
       HostedZoneId: {
-        'Ref': Match.stringLikeRegexp('^SsmParameterValuealldnsfakedomainpubliczone*'),
+        'Ref': Match.stringLikeRegexp('^SsmParameterValuealldns*'),
       },
       ResourceRecords: [
         {

@@ -176,11 +176,12 @@ export class DeploymentPipelineStack extends Stack {
         },
       },
     })
+    const testHostname = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/api-url`)
     const smokeTestsProject = new NewmanRunner(this, 'IIIFServerlessSmokeTests', {
       sourceArtifact: qaSourceArtifact,
       collectionPath: 'newman/smoke.json',
       collectionVariables: {
-        'image-server-host': testHost,
+        'image-server-host': testHostname,
       },
       actionName: 'SmokeTests',
     })
@@ -215,11 +216,12 @@ export class DeploymentPipelineStack extends Stack {
         },
       },
     })
+    const prodHostname = StringParameter.valueForStringParameter(this, `/all/stacks/${prodStackName}/api-url`)
     const smokeTestsProdProject = new NewmanRunner(this, 'IIIFServerlessSmokeTestsProd', {
       sourceArtifact: qaSourceArtifact,
       collectionPath: 'newman/smoke.json',
       collectionVariables: {
-        'image-server-host': prodHost,
+        'image-server-host': prodHostname,
       },
       actionName: 'SmokeTests',
     })

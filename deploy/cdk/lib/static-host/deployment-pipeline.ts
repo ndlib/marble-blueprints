@@ -223,11 +223,12 @@ export class DeploymentPipelineStack extends Stack {
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', s3syncTestProps)
 
     const testHostname = `${testHostnamePrefix}.${props.domainName}`
+    const testHost = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/website-url`)
     const smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
       sourceArtifact: appSourceArtifact,
       collectionPath: props.qaSpecPath,
       collectionVariables: {
-        'hostname': testHostname,
+        'hostname': testHost,
       },
       actionName: 'SmokeTests',
     })
@@ -269,11 +270,12 @@ export class DeploymentPipelineStack extends Stack {
 
     const domainName = domainNameOverride || props.domainName
     const prodHostname = `${prodHostnamePrefix}.${domainName}`
+    const prodHost = StringParameter.valueForStringParameter(this, `/all/stacks/${prodStackName}/website-url`)
     const smokeTestsProd = new NewmanRunner(this, 'StaticHostProdSmokeTests', {
       sourceArtifact: appSourceArtifact,
       collectionPath: props.qaSpecPath,
       collectionVariables: {
-        'hostname': prodHostname,
+        'hostname': prodHost,
       },
       actionName: 'SmokeTests',
     })

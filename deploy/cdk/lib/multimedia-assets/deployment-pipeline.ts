@@ -110,11 +110,12 @@ export class DeploymentPipelineStack extends Stack {
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, 'test')
 
     const testHostname = `${testHostnamePrefix}.${props.domainName}`
+    const testHost = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/api-url`)
     const newmanRunnerTest = new NewmanRunner(this, 'NewmanRunnerTest', {
       sourceArtifact: infraSourceArtifact,
       collectionPath: 'deploy/cdk/test/multimedia-assets/smokeTests.json',
       collectionVariables: {
-        hostname: testHostname,
+        hostname: testHost,
       },
       actionName: 'SmokeTests',
     })
@@ -123,11 +124,12 @@ export class DeploymentPipelineStack extends Stack {
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, prodHostnamePrefix, 'prod')
 
     const prodHostname = `${prodHostnamePrefix}.${props.domainName}`
+    const prodHost = StringParameter.valueForStringParameter(this, `/all/stacks/${prodStackName}/api-url`)
     const newmanRunnerProd = new NewmanRunner(this, 'NewmanRunnerProd', {
       sourceArtifact: infraSourceArtifact,
       collectionPath: 'deploy/cdk/test/multimedia-assets/smokeTests.json',
       collectionVariables: {
-        hostname: prodHostname,
+        hostname: prodHost,
       },
       actionName: 'SmokeTests',
     })

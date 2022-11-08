@@ -11,7 +11,7 @@
       "createGithubWebhooks": false,
       "marbleContentBucketName": "testlibnd-smb-test",
       "marbleContentFileShareId": "share-1112707B",
-      "hostedZoneTypes": ["public"],
+      "hostedZoneTypes": ["private"],
       "hostedZoneTypesTest": [
         "private"
       ]
@@ -42,6 +42,7 @@
   "oauthTokenPath": "/all/github/ndlib-git",
   "namespace": "marbleb",
   "stackType": "service",
+  "stage": "test",
   "infraRepoOwner": "ndlib",
   "infraRepoName": "marble-blueprints",
   "infraSourceBranch": "master",

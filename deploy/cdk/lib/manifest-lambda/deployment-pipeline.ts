@@ -182,7 +182,8 @@ export class DeploymentPipelineStack extends Stack {
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
     const testPublicGraphqlHostnamePrefix = `${props.namespace}-test-${props.publicGraphqlHostnamePrefix}`
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, `${props.namespace}-manifest-lambda-deploy-test`, testPublicGraphqlHostnamePrefix, 'test')
-    const testHostname = `${testPublicGraphqlHostnamePrefix}.${props.domainName}`
+    // const testHostname = `${testPublicGraphqlHostnamePrefix}.${props.domainName}`
+    const testHostname = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/public-api-url`)
 
     const newmanRunnerTest = new NewmanRunner(this, 'NewmanRunnerTest', {
       sourceArtifact: infraSourceArtifact,
@@ -214,7 +215,8 @@ export class DeploymentPipelineStack extends Stack {
     // Deploy to Production
     const prodPublicGraphqlHostnamePrefix = `${props.namespace}-prod-${props.publicGraphqlHostnamePrefix}`
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, props.hostnamePrefix, `${props.namespace}-manifest-lambda-deploy-prod`, prodPublicGraphqlHostnamePrefix, 'prod')
-    const prodHostname = `${prodPublicGraphqlHostnamePrefix}.${props.domainName}`
+    // const prodHostname = `${prodPublicGraphqlHostnamePrefix}.${props.domainName}`
+    const prodHostname = StringParameter.valueForStringParameter(this, `/all/stacks/${prodStackName}/public-api-url`)
     const newmanRunnerProd = new NewmanRunner(this, 'NewmanRunnerProd', {
       sourceArtifact: infraSourceArtifact,
       collectionPath: 'deploy/cdk/test/manifest-lambda/smokeTests.json',

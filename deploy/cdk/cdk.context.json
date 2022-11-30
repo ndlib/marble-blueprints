@@ -135,8 +135,6 @@
   "inquisitions:searchIndex": "inquisition",
   "inquisitions:siteDirectory": "",
   "inquisitions:workspaceName": "",
-  "inquisitions:submoduleRepoName": "",
-  "inquisitions:submoduleSourceBranch": "",
   "inquisitions:authClientIssuer": "",
   "inquisitions:authClientUrl": "",
   "inquisitions:authClientId": "",

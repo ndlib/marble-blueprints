@@ -311,7 +311,7 @@ export class DeploymentPipelineStack extends Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, s3syncTest.action, smokeTestsProject.action, approvalAction],
+          actions: [deployTest.action, s3syncTest.action, approvalAction],
           stageName: 'Test',
         },
         {

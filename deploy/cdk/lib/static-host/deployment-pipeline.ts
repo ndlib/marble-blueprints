@@ -223,15 +223,15 @@ export class DeploymentPipelineStack extends Stack {
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', s3syncTestProps)
 
     const testHostname = `${testHostnamePrefix}.${props.domainName}`
-    const testHost = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/website-url`)
-    const smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
-      sourceArtifact: appSourceArtifact,
-      collectionPath: props.qaSpecPath,
-      collectionVariables: {
-        'hostname': testHost,
-      },
-      actionName: 'SmokeTests',
-    })
+    // const testHost = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/website-url`)
+    // const smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
+    //   sourceArtifact: appSourceArtifact,
+    //   collectionPath: props.qaSpecPath,
+    //   collectionVariables: {
+    //     'hostname': testHost,
+    //   },
+    //   actionName: 'SmokeTests',
+    // })
 
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
@@ -270,12 +270,12 @@ export class DeploymentPipelineStack extends Stack {
 
     const domainName = domainNameOverride || props.domainName
     const prodHostname = `${prodHostnamePrefix}.${domainName}`
-    const prodHost = StringParameter.valueForStringParameter(this, `/all/stacks/${prodStackName}/website-url`)
+    // const prodHost = StringParameter.valueForStringParameter(this, `/all/stacks/${prodStackName}/website-url`)
     const smokeTestsProd = new NewmanRunner(this, 'StaticHostProdSmokeTests', {
       sourceArtifact: appSourceArtifact,
       collectionPath: props.qaSpecPath,
       collectionVariables: {
-        'hostname': prodHost,
+        'hostname': prodHostname,
       },
       actionName: 'SmokeTests',
     })

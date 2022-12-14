@@ -6,6 +6,7 @@ import { Fn, Duration, SecretValue } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 import { NamespacedPolicy } from '../namespaced-policy'
 
+
 export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
    * The name of the stack that this project will deploy to. Will add
    * permissions to create change sets on these stacks.
@@ -36,10 +37,12 @@ export interface IPipelineS3SyncProps extends PipelineProjectProps {  /**
   readonly maintainMetadataKeyBase: string
   readonly buildEnvironment: string
   readonly publicGraphqlApiKeyPath: string
-  readonly authClientUrl: string
-  readonly authClientId: string
-  readonly authClientIssuer: string
   readonly opensearchSecretsKeyPath: string
+  readonly oktaClientIdField: string
+  readonly oktaIssuerField: string,
+  readonly oktaSecret: string,
+  readonly oktaUrl: string
+
 }
 
 export class PipelineS3Sync extends Construct {
@@ -59,7 +62,7 @@ export class PipelineS3Sync extends Construct {
       description: 'Deploys built source web component to bucket',
       timeout: Duration.minutes(30),
       environment: {
-        buildImage: LinuxBuildImage.STANDARD_5_0,
+        buildImage: LinuxBuildImage.STANDARD_6_0,
         privileged: true,
         computeType: ComputeType.LARGE,
       },
@@ -160,18 +163,18 @@ export class PipelineS3Sync extends Construct {
           value: props.searchIndex,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
-       
+
         AUTH_CLIENT_URL: {
-          value: props.authClientUrl,
+          value: props.oktaUrl,
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
         AUTH_CLIENT_ID: {
-          value: props.authClientId,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
+          value: `${props.oktaSecret}:${props.oktaClientIdField}`,
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
         AUTH_CLIENT_ISSUER: {
-          value: props.authClientIssuer,
-          type: BuildEnvironmentVariableType.PLAINTEXT,
+          value: `${props.oktaSecret}:${props.oktaIssuerField}`,
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
         },
       },
       buildSpec: BuildSpec.fromObject({
@@ -184,7 +187,7 @@ export class PipelineS3Sync extends Construct {
           build: {
             commands: [
               // 'n stable',
-              'n 16',
+              'n 18',
               'echo SEARCH_INDEX = $SEARCH_INDEX',
               'echo OPENSEARCH_INDEX = $OPENSEARCH_INDEX',
               'echo OPENSEARCH_ENDPOINT = $OPENSEARCH_ENDPOINT',

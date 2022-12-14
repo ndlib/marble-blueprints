@@ -61,7 +61,7 @@ class ApiStack extends NestedStack {
     this.apiName = `${this.stackName}-api`
 
     const iiifFunc = new Function(this, "IiifFunction", {
-      runtime: Runtime.NODEJS_16_X,
+      runtime: Runtime.NODEJS_18_X,
       code: AssetHelpers.codeFromAsset(this, path.join(props.serverlessIiifSrcPath, 'src/')),
       handler: 'index.handler',
       timeout: Duration.seconds(10),

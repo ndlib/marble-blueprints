@@ -50,6 +50,10 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     testManifestLambdaStack: testStacks.manifestLambdaStack,
     prodManifestLambdaStack: prodStacks.manifestLambdaStack,
     opensearchSecretsKeyPath: getRequiredContext(app.node, 'opensearchSecretsKeyPath'),
+    oktaClientIdField: app.node.tryGetContext('oktaClientIdField'),
+    oktaIssuerField: app.node.tryGetContext('oktaIssuerField'),
+    oktaSecret: app.node.tryGetContext('oktaSecret'),
+    oktaUrl: app.node.tryGetContext('oktaUrl'),
     ...commonProps,
     ...staticHostContext,
   }

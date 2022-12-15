@@ -52,13 +52,15 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly prodMaintainMetadataStack: MaintainMetadataStack
   readonly testManifestLambdaStack: ManifestLambdaStack
   readonly prodManifestLambdaStack: ManifestLambdaStack
-  readonly authClientUrl: string
-  readonly authClientId: string
-  readonly authClientIssuer: string
   readonly dockerhubCredentialsPath: string
   readonly domainName: string
   readonly hostedZoneTypes: string[]
   readonly opensearchSecretsKeyPath: string
+  readonly oktaClientIdField: string
+  readonly oktaIssuerField: string,
+  readonly oktaSecret: string,
+  readonly oktaUrl: string
+
 }
 
 export class DeploymentPipelineStack extends Stack {
@@ -212,9 +214,10 @@ export class DeploymentPipelineStack extends Stack {
       publicGraphqlApiKeyPath: props.testManifestLambdaStack.publicGraphqlApiKeyPath,
       buildEnvironment: 'test',
       maintainMetadataKeyBase: props.testMaintainMetadataStack.maintainMetadataKeyBase,
-      authClientUrl: props.authClientUrl,
-      authClientId: props.authClientId,
-      authClientIssuer: props.authClientIssuer,
+      oktaClientIdField: props.oktaClientIdField,
+      oktaIssuerField: props.oktaIssuerField,
+      oktaSecret: props.oktaSecret,
+      oktaUrl: props.oktaUrl,
       opensearchSecretsKeyPath: props.opensearchSecretsKeyPath,
     }
     if (subAppSourceArtifact !== undefined) {
@@ -258,9 +261,10 @@ export class DeploymentPipelineStack extends Stack {
       publicGraphqlApiKeyPath: props.prodManifestLambdaStack.publicGraphqlApiKeyPath,
       buildEnvironment: 'production',
       maintainMetadataKeyBase: props.prodMaintainMetadataStack.maintainMetadataKeyBase,
-      authClientUrl: props.authClientUrl,
-      authClientId: props.authClientId,
-      authClientIssuer: props.authClientIssuer,
+      oktaClientIdField: props.oktaClientIdField,
+      oktaIssuerField: props.oktaIssuerField,
+      oktaSecret: props.oktaSecret,
+      oktaUrl: props.oktaUrl,
       opensearchSecretsKeyPath: props.opensearchSecretsKeyPath,
     }
     if (subAppSourceArtifact !== undefined) {

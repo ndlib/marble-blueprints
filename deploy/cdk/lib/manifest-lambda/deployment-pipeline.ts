@@ -136,7 +136,7 @@ export class DeploymentPipelineStack extends Stack {
 
     const appUnitTestsProject = new PipelineProject(this, 'AppUnitTests', {
       environment: {
-        buildImage: LinuxBuildImage.STANDARD_4_0,
+        buildImage: LinuxBuildImage.STANDARD_6_0,
       },
       environmentVariables: {
         /* macos and other versions(ex: aws ubuntu codebuild) of pyenv dont ALWAYS

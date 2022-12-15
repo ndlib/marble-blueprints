@@ -2,297 +2,290 @@
   "environments": {
     "dev": {
       "account": "333680067100",
-      "region": "us-east-1",
-      "useVpcId": "vpc-797fed1d",
-      "domainName": "libraries.nd.edu",
-      "useExistingDnsZone": true,
-      "slackNotifyStackName": "slack-cd-approvals-test-notifier",
-      "rBSCS3ImageBucketName": "rbsc-test-files",
       "createGithubWebhooks": false,
+      "domainName": "libraries.nd.edu",
+      "hostedZoneTypes": [
+        "private"
+      ],
+      "hostedZoneTypesTest": [
+        "private"
+      ],
       "marbleContentBucketName": "testlibnd-smb-test",
       "marbleContentFileShareId": "share-1112707B",
-      "hostedZoneTypes": ["private"],
-      "hostedZoneTypesTest": [
-        "private"
-      ]
-      },
+      "rBSCS3ImageBucketName": "rbsc-test-files",
+      "region": "us-east-1",
+      "slackNotifyStackName": "slack-cd-approvals-test-notifier",
+      "useExistingDnsZone": true,
+      "useVpcId": "vpc-797fed1d"
+    },
     "prod": {
       "account": "230391840102",
-      "region": "us-east-1",
-      "useVpcId": "vpc-55c35e30",
-      "domainName": "library.nd.edu",
-      "useExistingDnsZone": false,
-      "slackNotifyStackName": "slack-approval-bot-marble-notifier",
-      "notificationReceivers": "hl-mellon-deployment-approvers-list@nd.edu",
-      "rBSCS3ImageBucketName": "libnd-smb-rbsc",
       "createGithubWebhooks": true,
-      "marbleContentBucketName": "libnd-smb-marble",
-      "marbleContentFileShareId": "share-3CDC3057",
-      "hostedZoneTypes": ["private", "public"],
+      "domainName": "library.nd.edu",
+      "hostedZoneTypes": [
+        "private",
+        "public"
+      ],
       "hostedZoneTypesTest": [
         "private"
-      ]
+      ],
+      "marbleContentBucketName": "libnd-smb-marble",
+      "marbleContentFileShareId": "share-3CDC3057",
+      "notificationReceivers": "hl-mellon-deployment-approvers-list@nd.edu",
+      "rBSCS3ImageBucketName": "libnd-smb-rbsc",
+      "region": "us-east-1",
+      "slackNotifyStackName": "slack-approval-bot-marble-notifier",
+      "useExistingDnsZone": false,
+      "useVpcId": "vpc-55c35e30"
     }
   },
 
-  "owner": "wse",
   "contact": "web-and-software-engineering-group@nd.edu",
-  "projectName": "marble",
   "description": "Infrastructure for Marble project",
-  "oauthTokenPath": "/all/github/ndlib-git",
+  "dockerhubCredentialsPath": "/all/dockerhub/credentials",
+  "infraRepoName": "marble-blueprints",
+  "infraRepoOwner": "ndlib",
+  "infraSourceBranch": "master",
   "namespace": "marbleb",
+  "oauthTokenPath": "/all/github/ndlib-git",
+  "oktaClientIdField": "client-id",
+  "oktaIssuerField": "okta-issuer",
+  "oktaSecret": "okta",
+  "oktaUrl": "https://okta.nd.edu",
+  "opensearchSecretsKeyPath": "opensearch",
+  "owner": "wse",
+  "projectName": "marble",
   "stackType": "service",
   "stage": "test",
-  "infraRepoOwner": "ndlib",
-  "infraRepoName": "marble-blueprints",
-  "infraSourceBranch": "master",
-  "dockerhubCredentialsPath": "/all/dockerhub/credentials",
-  "opensearchSecretsKeyPath": "opensearch",
 
-  "iiifImageService:serverlessIiifSrcPath": "../../../serverless-iiif",
-  "iiifImageService:hostnamePrefix": "image-iiif",
-  "iiifImageService:appRepoOwner": "ndlib",
-  "iiifImageService:appRepoName": "serverless-iiif",
-  "iiifImageService:appSourceBranch": "master",
-  "iiifImageService:qaRepoOwner": "ndlib",
-  "iiifImageService:qaRepoName": "iiif-qa",
-  "iiifImageService:qaSourceBranch": "master",
-  "iiifImageService:paramPathPrefix": "/all/marble/image-service",
-
-  "imageProcessing:lambdaCodePath": "../../../marble-images/s3_event",
-  "imageProcessing:dockerfilePath": "../../../marble-images/",
-  "imageProcessing:appRepoOwner": "ndlib",
-  "imageProcessing:appRepoName": "marble-images",
-  "imageProcessing:appSourceBranch": "master",
-
-  "website:hostnamePrefix": "marble",
-  "website:appRepoOwner": "ndlib",
-  "website:appRepoName": "marble-website-starter",
-  "website:appSourceBranch": "master",
-  "website:buildScriptsDir": "scripts/codebuild",
-  "website:lambdaCodePath": "../../src/unifiedEdgeLambda",
-  "website:qaSpecPath": "tests/postman/collection.json",
-  "website:searchIndex": "marble",
-  "website:siteDirectory": "sites/marble",
-  "website:workspaceName": "marble",
-  "website:submoduleRepoName": "marble-web",
-  "website:submoduleSourceBranch": "master",
-  "website:prodCertificateArnPath": "/all/marble/website/prod/certificateArn",
-  "website:prodDomainNameOverride": "nd.edu",
-  "website:authClientIssuer": "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
-  "website:authClientUrl": "https://okta.nd.edu",
-  "website:authClientId": "0oa1f3ut0aKpdwap5357",
-
-  "redbox:hostnamePrefix": "redbox",
-  "redbox:appRepoOwner": "ndlib",
-  "redbox:appRepoName": "marble-redbox",
-  "redbox:appSourceBranch": "master",
-  "redbox:buildScriptsDir": "scripts/codebuild",
-  "redbox:lambdaCodePath": "../../src/unifiedEdgeLambda",
-  "redbox:qaSpecPath": "tests/postman/collection.json",
-  "redbox:searchIndex": "",
-  "redbox:siteDirectory": "",
-  "redbox:workspaceName": "",
-  "redbox:authClientIssuer": "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
-  "redbox:authClientUrl": "https://okta.nd.edu",
-  "redbox:authClientId": "0oa4tlda8nvJGLv9i357",
-
-  "seaside:hostnamePrefix": "seaside",
-  "seaside:appRepoOwner": "ndlib",
-  "seaside:appRepoName": "seaside",
-  "seaside:appSourceBranch": "main",
-  "seaside:buildScriptsDir": "scripts/codebuild",
-  "seaside:lambdaCodePath": "../../src/unifiedEdgeLambda",
-  "seaside:qaSpecPath": "test/newman/smoke_tests.postman_collection.json",
-  "seaside:searchIndex": "seaside",
-  "seaside:siteDirectory": "",
-  "seaside:workspaceName": "",
-  "seaside:authClientIssuer": "",
-  "seaside:authClientUrl": "",
-  "seaside:authClientId": "",
-
-  "biographies:hostnamePrefix": "biographies",
-  "biographies:appRepoOwner": "ndlib",
   "biographies:appRepoName": "catholic-biographies",
+  "biographies:appRepoOwner": "ndlib",
   "biographies:appSourceBranch": "main",
   "biographies:buildScriptsDir": "scripts/codebuild",
+  "biographies:hostnamePrefix": "biographies",
   "biographies:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "biographies:qaSpecPath": "test/newman/smoke_tests.postman_collection.json",
   "biographies:searchIndex": "biographies",
   "biographies:siteDirectory": "",
   "biographies:workspaceName": "",
-  "biographies:authClientIssuer": "",
-  "biographies:authClientUrl": "",
-  "biographies:authClientId": "",
 
-  "inquisitions:hostnamePrefix": "inquisition",
-  "inquisitions:appRepoOwner": "ndlib",
+  "iiifImageService:appRepoName": "serverless-iiif",
+  "iiifImageService:appRepoOwner": "ndlib",
+  "iiifImageService:appSourceBranch": "master",
+  "iiifImageService:hostnamePrefix": "image-iiif",
+  "iiifImageService:paramPathPrefix": "/all/marble/image-service",
+  "iiifImageService:qaRepoName": "iiif-qa",
+  "iiifImageService:qaRepoOwner": "ndlib",
+  "iiifImageService:qaSourceBranch": "master",
+  "iiifImageService:serverlessIiifSrcPath": "../../../serverless-iiif",
+
+  "imageProcessing:appRepoName": "marble-images",
+  "imageProcessing:appRepoOwner": "ndlib",
+  "imageProcessing:appSourceBranch": "master",
+  "imageProcessing:dockerfilePath": "../../../marble-images/",
+  "imageProcessing:lambdaCodePath": "../../../marble-images/s3_event",
+
   "inquisitions:appRepoName": "inquisition",
+  "inquisitions:appRepoOwner": "ndlib",
   "inquisitions:appSourceBranch": "main",
   "inquisitions:buildScriptsDir": "scripts/codebuild",
+  "inquisitions:hostnamePrefix": "inquisition",
   "inquisitions:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "inquisitions:qaSpecPath": "tests/postman/collection.json",
   "inquisitions:searchIndex": "inquisition",
   "inquisitions:siteDirectory": "",
   "inquisitions:workspaceName": "",
-  "inquisitions:authClientIssuer": "",
-  "inquisitions:authClientUrl": "",
-  "inquisitions:authClientId": "",
 
-  "viewer:hostnamePrefix": "viewer-iiif",
-  "viewer:appRepoOwner": "ndlib",
+  "maintainMetadata:openIdConnectProvider": "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
+
+  "manifestLambda:appRepoName": "marble-manifest-lambda",
+  "manifestLambda:appRepoOwner": "ndlib",
+  "manifestLambda:appSourceBranch": "master",
+  "manifestLambda:hostnamePrefix": "iiif-manifest",
+  "manifestLambda:lambdaCodeRootPath": "../../../marble-manifest-lambda",
+  "manifestLambda:publicGraphqlHostnamePrefix": "public-graphql",
+  "manifestLambda:sentryDsn": "https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199",
+
+  "manifestPipeline:appRepoName": "marble-manifest-pipeline",
+  "manifestPipeline:appRepoOwner": "ndlib",
+  "manifestPipeline:appSourceBranch": "master",
+  "manifestPipeline:curateKeyPath": "/all/marble/curate",
+  "manifestPipeline:dataProcessingKeyPath": "/all/marble-data-processing/test",
+  "manifestPipeline:filesTimeToLiveDays": "365",
+  "manifestPipeline:googleKeyPath": "/all/marble/google",
+  "manifestPipeline:hostnamePrefix": "presentation-iiif",
+  "manifestPipeline:imageServerHostname": "/all/stacks/marble-image-service-prod/hostname",
+  "manifestPipeline:imageServiceStackName": "marble-image-service-test",
+  "manifestPipeline:lambdaCodeRootPath": "../../../marble-manifest-pipeline",
+  "manifestPipeline:marbleProcessingKeyPath": "/all/marble-data-processing/prod",
+  "manifestPipeline:metadataTimeToLiveDays": "365",
+  "manifestPipeline:museumKeyPath": "/all/marble/museum",
+  "manifestPipeline:noReplyEmailAddr": "noreply@nd.edu",
+  "manifestPipeline:prodDataProcessingKeyPath": "/all/marble-data-processing/prod",
+  "manifestPipeline:prodFilesTimeToLiveDays": "5",
+  "manifestPipeline:prodImageServiceStackName": "marble-image-service-prod",
+  "manifestPipeline:prodMetadataTimeToLiveDays": "5",
+  "manifestPipeline:sentryDsn": "https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199",
+
+  "multimediaAssets:cacheTtl": 86400,
+
+  "redbox:appRepoName": "marble-redbox",
+  "redbox:appRepoOwner": "ndlib",
+  "redbox:appSourceBranch": "master",
+  "redbox:buildScriptsDir": "scripts/codebuild",
+  "redbox:hostnamePrefix": "redbox",
+  "redbox:lambdaCodePath": "../../src/unifiedEdgeLambda",
+  "redbox:qaSpecPath": "tests/postman/collection.json",
+  "redbox:searchIndex": "",
+  "redbox:siteDirectory": "",
+  "redbox:workspaceName": "",
+
+  "seaside:appRepoName": "seaside",
+  "seaside:appRepoOwner": "ndlib",
+  "seaside:appSourceBranch": "main",
+  "seaside:buildScriptsDir": "scripts/codebuild",
+  "seaside:hostnamePrefix": "seaside",
+  "seaside:lambdaCodePath": "../../src/unifiedEdgeLambda",
+  "seaside:qaSpecPath": "test/newman/smoke_tests.postman_collection.json",
+  "seaside:searchIndex": "seaside",
+  "seaside:siteDirectory": "",
+  "seaside:workspaceName": "",
+
+  "slos:debugDashboardLink": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=Marble",
+  "slos:emailSubscriber": "hesburgh-libraries-duty-office-list@nd.edu",
+  "slos:runbookLink": "https://github.com/ndlib/TechnologistsPlaybook/tree/master/run-books",
+  "slos:sloDocLink": "https://docs.google.com/document/d/1AZGtz4es6fPMPzgkJuDOL0RDULFpy97emeKMPFYxyCA/edit",
+  
   "viewer:appRepoName": "marble-image-viewer",
+  "viewer:appRepoOwner": "ndlib",
   "viewer:appSourceBranch": "master",
   "viewer:buildScriptsDir": "scripts/codebuild",
+  "viewer:hostnamePrefix": "viewer-iiif",
   "viewer:lambdaCodePath": "../../src/unifiedEdgeLambda",
   "viewer:qaSpecPath": "tests/postman/collection.json",
   "viewer:searchIndex": "",
   "viewer:siteDirectory": "",
   "viewer:workspaceName": "",
-  "viewer:authClientIssuer": "",
-  "viewer:authClientUrl": "",
-  "viewer:authClientId": "",
+   
+  "website:appRepoName": "marble-website-starter",
+  "website:appRepoOwner": "ndlib",
+  "website:appSourceBranch": "master",
+  "website:buildScriptsDir": "scripts/codebuild",
+  "website:hostnamePrefix": "marble",
+  "website:lambdaCodePath": "../../src/unifiedEdgeLambda",
+  "website:prodCertificateArnPath": "/all/marble/website/prod/certificateArn",
+  "website:prodDomainNameOverride": "nd.edu",
+  "website:qaSpecPath": "tests/postman/collection.json",
+  "website:searchIndex": "marble",
+  "website:siteDirectory": "sites/marble",
+  "website:submoduleRepoName": "marble-web",
+  "website:submoduleSourceBranch": "master",
+  "website:workspaceName": "marble",
 
-  "manifestPipeline:imageServerHostname": "/all/stacks/marble-image-service-prod/hostname",
-  "manifestPipeline:marbleProcessingKeyPath": "/all/marble-data-processing/prod",
-  "manifestPipeline:noReplyEmailAddr": "noreply@nd.edu",
-  "manifestPipeline:googleKeyPath": "/all/marble/google",
-  "manifestPipeline:museumKeyPath": "/all/marble/museum",
-  "manifestPipeline:curateKeyPath": "/all/marble/curate",
-  "manifestPipeline:lambdaCodeRootPath": "../../../marble-manifest-pipeline",
-  "manifestPipeline:hostnamePrefix": "presentation-iiif",
-  "manifestPipeline:appRepoOwner": "ndlib",
-  "manifestPipeline:appRepoName": "marble-manifest-pipeline",
-  "manifestPipeline:appSourceBranch": "master",
-  "manifestPipeline:sentryDsn": "https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199",
-  "manifestPipeline:imageServiceStackName": "marble-image-service-test",
-  "manifestPipeline:prodImageServiceStackName": "marble-image-service-prod",
-  "manifestPipeline:dataProcessingKeyPath": "/all/marble-data-processing/test",
-  "manifestPipeline:prodDataProcessingKeyPath": "/all/marble-data-processing/prod",
-  "manifestPipeline:metadataTimeToLiveDays": "365",
-  "manifestPipeline:prodMetadataTimeToLiveDays": "5",
-  "manifestPipeline:filesTimeToLiveDays": "365",
-  "manifestPipeline:prodFilesTimeToLiveDays": "5",
-
-  "maintainMetadata:openIdConnectProvider": "https://okta.nd.edu/oauth2/ausxosq06SDdaFNMB356",
-
-  "manifestLambda:hostnamePrefix": "iiif-manifest",
-  "manifestLambda:sentryDsn": "https://136d489c91484b55be18e0a28d463b43@sentry.io/1831199",
-  "manifestLambda:lambdaCodeRootPath": "../../../marble-manifest-lambda",
-  "manifestLambda:appRepoOwner": "ndlib",
-  "manifestLambda:appRepoName": "marble-manifest-lambda",
-  "manifestLambda:appSourceBranch": "master",
-  "manifestLambda:publicGraphqlHostnamePrefix": "public-graphql",
-
-  "multimediaAssets:cacheTtl": 86400,
-
-  "slos:emailSubscriber": "hesburgh-libraries-duty-office-list@nd.edu",
-  "slos:sloDocLink": "https://docs.google.com/document/d/1AZGtz4es6fPMPzgkJuDOL0RDULFpy97emeKMPFYxyCA/edit",
-  "slos:runbookLink": "https://github.com/ndlib/TechnologistsPlaybook/tree/master/run-books",
-  "slos:debugDashboardLink": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=Marble",
-
-  "vpc-provider:account=333680067100:filter.vpc-id=vpc-797fed1d:region=us-east-1:returnAsymmetricSubnets=true": {
-    "vpcId": "vpc-797fed1d",
-    "vpcCidrBlock": "172.22.242.0/23",
-    "availabilityZones": [],
-    "vpnGatewayId": "vgw-0e5db167",
-    "subnetGroups": [
-      {
-        "name": "Private",
-        "type": "Private",
-        "subnets": [
-          {
-            "subnetId": "subnet-fee3a4d3",
-            "cidr": "172.22.242.0/25",
-            "availabilityZone": "us-east-1b",
-            "routeTableId": "rtb-242f6440"
-          },
-          {
-            "subnetId": "subnet-d5adecea",
-            "cidr": "172.22.243.0/25",
-            "availabilityZone": "us-east-1e",
-            "routeTableId": "rtb-242f6440"
-          }
-        ]
-      },
-      {
-        "name": "Public",
-        "type": "Public",
-        "subnets": [
-          {
-            "subnetId": "subnet-d94a0af4",
-            "cidr": "172.22.242.128/25",
-            "availabilityZone": "us-east-1b",
-            "routeTableId": "rtb-a260a9db"
-          },
-          {
-            "subnetId": "subnet-07b7cf3728cf18859",
-            "cidr": "172.22.243.128/25",
-            "availabilityZone": "us-east-1e",
-            "routeTableId": "rtb-a260a9db"
-          }
-        ]
-      }
-    ]
-  },
   "hosted-zone:account=333680067100:domainName=libraries.nd.edu:region=us-east-1": {
     "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
     "Name": "libraries.nd.edu."
   },
+
   "vpc-provider:account=230391840102:filter.vpc-id=vpc-55c35e30:region=us-east-1:returnAsymmetricSubnets=true": {
-    "vpcId": "vpc-55c35e30",
-    "vpcCidrBlock": "172.22.8.0/21",
     "availabilityZones": [],
-    "vpnGatewayId": "vgw-0a5833365c34c9958",
     "subnetGroups": [
       {
         "name": "Private",
-        "type": "Private",
         "subnets": [
           {
-            "subnetId": "subnet-8838e1d1",
-            "cidr": "172.22.12.0/24",
             "availabilityZone": "us-east-1a",
-            "routeTableId": "rtb-147fe571"
+            "cidr": "172.22.12.0/24",
+            "routeTableId": "rtb-147fe571",
+            "subnetId": "subnet-8838e1d1"
           },
           {
-            "subnetId": "subnet-e95aa1c2",
-            "cidr": "172.22.13.0/24",
             "availabilityZone": "us-east-1c",
-            "routeTableId": "rtb-147fe571"
+            "cidr": "172.22.13.0/24",
+            "routeTableId": "rtb-147fe571",
+            "subnetId": "subnet-e95aa1c2"
           },
           {
-            "subnetId": "subnet-57c67820",
-            "cidr": "172.22.14.0/24",
             "availabilityZone": "us-east-1d",
-            "routeTableId": "rtb-147fe571"
+            "cidr": "172.22.14.0/24",
+            "routeTableId": "rtb-147fe571",
+            "subnetId": "subnet-57c67820"
           }
-        ]
+        ],
+        "type": "Private"
       },
       {
         "name": "Public",
-        "type": "Public",
         "subnets": [
           {
-            "subnetId": "subnet-d538e18c",
-            "cidr": "172.22.8.0/24",
             "availabilityZone": "us-east-1a",
-            "routeTableId": "rtb-61eb7104"
+            "cidr": "172.22.8.0/24",
+            "routeTableId": "rtb-61eb7104",
+            "subnetId": "subnet-d538e18c"
           },
           {
-            "subnetId": "subnet-ac5aa187",
-            "cidr": "172.22.9.0/24",
             "availabilityZone": "us-east-1c",
-            "routeTableId": "rtb-61eb7104"
+            "cidr": "172.22.9.0/24",
+            "routeTableId": "rtb-61eb7104",
+            "subnetId": "subnet-ac5aa187"
           },
           {
-            "subnetId": "subnet-84c977f3",
-            "cidr": "172.22.10.0/24",
             "availabilityZone": "us-east-1d",
-            "routeTableId": "rtb-61eb7104"
+            "cidr": "172.22.10.0/24",
+            "routeTableId": "rtb-61eb7104",
+            "subnetId": "subnet-84c977f3"
           }
-        ]
+        ],
+        "type": "Public"
       }
-    ]
+    ],
+    "vpcCidrBlock": "172.22.8.0/21",
+    "vpcId": "vpc-55c35e30",
+    "vpnGatewayId": "vgw-0a5833365c34c9958"
+  },
+  "vpc-provider:account=333680067100:filter.vpc-id=vpc-797fed1d:region=us-east-1:returnAsymmetricSubnets=true": {
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "subnets": [
+          {
+            "availabilityZone": "us-east-1b",
+            "cidr": "172.22.242.0/25",
+            "routeTableId": "rtb-242f6440",
+            "subnetId": "subnet-fee3a4d3"
+          },
+          {
+            "availabilityZone": "us-east-1e",
+            "cidr": "172.22.243.0/25",
+            "routeTableId": "rtb-242f6440",
+            "subnetId": "subnet-d5adecea"
+          }
+        ],
+        "type": "Private"
+      },
+      {
+        "name": "Public",
+        "subnets": [
+          {
+            "availabilityZone": "us-east-1b",
+            "cidr": "172.22.242.128/25",
+            "routeTableId": "rtb-a260a9db",
+            "subnetId": "subnet-d94a0af4"
+          },
+          {
+            "availabilityZone": "us-east-1e",
+            "cidr": "172.22.243.128/25",
+            "routeTableId": "rtb-a260a9db",
+            "subnetId": "subnet-07b7cf3728cf18859"
+          }
+        ],
+        "type": "Public"
+      }
+    ],
+    "vpcCidrBlock": "172.22.242.0/23",
+    "vpcId": "vpc-797fed1d",
+    "vpnGatewayId": "vgw-0e5db167"
   }
+
 }

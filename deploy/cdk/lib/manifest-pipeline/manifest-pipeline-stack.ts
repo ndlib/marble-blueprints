@@ -367,7 +367,7 @@ export class ManifestPipelineStack extends Stack {
         code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'copy_media_content/')),
         description: 'Copies media files from other folders to /public-access/media folder to be served by CDN',
         handler: 'handler.run',
-        runtime: Runtime.PYTHON_3_8,
+        runtime: Runtime.PYTHON_3_9,
         environment: {
           SENTRY_DSN: props.sentryDsn,
           FILE_SHARE_ARN: fileShareArn,
@@ -394,7 +394,7 @@ export class ManifestPipelineStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'museum_export/')),
       description: 'Creates standard json from web-enabled items from Web Kiosk.',
       handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
         SENTRY_DSN: props.sentryDsn,
@@ -423,7 +423,7 @@ export class ManifestPipelineStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'aleph_export/')),
       description: 'Creates standard json from Aleph records with 500$a = MARBLE.',
       handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
         SENTRY_DSN: props.sentryDsn,
@@ -453,7 +453,7 @@ export class ManifestPipelineStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'curate_export/')),
       description: 'Creates standard json from a list of curate PIDs.',
       handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
         SENTRY_DSN: props.sentryDsn,
@@ -483,7 +483,7 @@ export class ManifestPipelineStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'archivesspace_export/')),
       description: 'Creates standard json from a list of ArchivesSpace urls.',
       handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
         SENTRY_DSN: props.sentryDsn,
@@ -513,7 +513,7 @@ export class ManifestPipelineStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'object_files_api/')),
       description: 'Creates json representations files to be used by Red Box.',
       handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       memorySize: 512,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,
@@ -540,7 +540,7 @@ export class ManifestPipelineStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'expand_subject_terms_lambda/')),
       description: 'Cycles through subject term URIs stored in dynamo, and expands those subject terms using the appropriate online authority.',
       handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       memorySize: 512,
       environment: {
         WEBSITE_METADATA_TABLE_Name: this.websiteMetadataDynamoTable.tableName,

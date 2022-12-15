@@ -143,7 +143,7 @@ export class DeploymentPipelineStack extends Stack {
         allow for the same patch version of python to be installed. If they differ
         then use this env var override .python-version files */
         PYENV_VERSION: {
-          value: `3.8.13`,
+          value: `3.10`, // 3.8.13
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },
@@ -151,7 +151,7 @@ export class DeploymentPipelineStack extends Stack {
         phases: {
           install: {
             'runtime-versions': {
-              python: '3.8',
+              python: '3.10',
             },
             commands: [
               'pyenv versions',

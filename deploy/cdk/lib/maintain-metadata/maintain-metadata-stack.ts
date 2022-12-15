@@ -174,7 +174,7 @@ def _delete_expired_api_keys(graphql_api_id: str):
 `),
       description: 'Rotates API Keys for AppSync - Maintain Metadata',
       handler: 'index.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       environment: {
         GRAPHQL_API_ID_KEY_PATH: this.graphqlApiIdKeyPath,
         GRAPHQL_API_KEY_KEY_PATH: this.graphqlApiKeyKeyPath,

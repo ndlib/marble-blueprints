@@ -95,7 +95,7 @@ export class ManifestLambdaStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'manifest_lambda/')),
       description: 'Create iiif manifests real-time',
       handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       environment: {
         GRAPHQL_API_URL_KEY_PATH: graphqlApiUrlKeyPath,
         GRAPHQL_API_KEY_KEY_PATH: graphqlApiKeyKeyPath,
@@ -186,7 +186,7 @@ export class ManifestLambdaStack extends Stack {
       code: AssetHelpers.codeFromAsset(this, path.join(props.lambdaCodeRootPath, 'public_graphql_lambda/')),
       description: 'Appends API keys and queries named AppSync resolvers',
       handler: 'handler.run',
-      runtime: Runtime.PYTHON_3_8,
+      runtime: Runtime.PYTHON_3_9,
       environment: {
         GRAPHQL_API_URL_KEY_PATH: graphqlApiUrlKeyPath,
         GRAPHQL_API_KEY_KEY_PATH: graphqlApiKeyKeyPath,

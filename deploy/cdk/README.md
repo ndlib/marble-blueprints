@@ -4,7 +4,7 @@ This application uses [aws-cdk](https://aws.amazon.com/cdk/) for deployment.
 
 Prerequisites:
 
-* node 14+
+* node 16+
 * yarn
 * aws-cdk v2.45+
 
@@ -46,11 +46,11 @@ marble-service-levels
 
 We will be using continuous deployment pipelines for managing our stacks in the production account. These pipelines can be deployed with one command:
 
-`cdk deploy -c env=prod -c stackType=pipeline  marble*deployment`
+`cdk deploy -c env=prod -c stackType=pipeline  marble\*deployment`
 
 It is recommended you run this as a diff to review the changes prior to redeploying:
 
-`cdk diff -c env=prod -c stackType=pipeline  marble*deployment`
+`cdk diff -c env=prod -c stackType=pipeline  marble\*deployment`
 
 Once all pipelines have fully deployed to production, deploy the service levels and dashboards stacks to monitor the production stacks:
 
@@ -87,7 +87,7 @@ Use the `env` context to determine what AWS account to deploy to and what config
 
 Example deploy of all service stacks to our dev account:
 
-`cdk deploy -c env=dev marble*`
+`cdk deploy -c env=dev marble\*`
 
 ### Stack type
 
@@ -98,7 +98,7 @@ Stacks are split into two different types. The type chosen will determine what s
 
 Example deploy of all deployment pipelines to our development account:
 
-`cdk deploy -c env=dev -c stackType=pipeline  marble*deployment`
+`cdk deploy -c env=dev -c stackType=pipeline  marble\*deployment`
 
 ### Stack namespace
 

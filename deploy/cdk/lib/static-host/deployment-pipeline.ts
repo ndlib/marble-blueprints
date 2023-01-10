@@ -17,49 +17,50 @@ import { ManifestLambdaStack } from '../manifest-lambda'
 import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
-  readonly pipelineFoundationStack: PipelineFoundationStack
-  readonly contextEnvName: string
-  readonly oauthTokenPath: string
-  readonly appRepoOwner: string
   readonly appRepoName: string
+  readonly appRepoOwner: string
   readonly appSourceBranch: string
-  readonly infraRepoOwner: string
-  readonly infraRepoName: string
-  readonly infraSourceBranch: string
-  readonly createGithubWebhooks: boolean
-  readonly qaSpecPath: string
-  readonly namespace: string
-  readonly instanceName: string
-  readonly owner: string
-  readonly contact: string
-  readonly projectName: string
-  readonly description: string
-  readonly slackNotifyStackName?: string
-  readonly notificationReceivers?: string
-  readonly testFoundationStack: FoundationStack
-  readonly prodFoundationStack: FoundationStack
-  readonly hostnamePrefix: string
   readonly buildScriptsDir: string
-  readonly searchIndex: string
-  readonly siteDirectory: string
-  readonly workspaceName: string
-  readonly submoduleRepoName?: string
-  readonly submoduleSourceBranch?: string
-  readonly prodCertificateArnPath?: string
-  readonly prodDomainNameOverride?: string
-  readonly prodAdditionalAliases?: string
-  readonly testMaintainMetadataStack: MaintainMetadataStack
-  readonly prodMaintainMetadataStack: MaintainMetadataStack
-  readonly testManifestLambdaStack: ManifestLambdaStack
-  readonly prodManifestLambdaStack: ManifestLambdaStack
+  readonly contact: string
+  readonly contextEnvName: string
+  readonly createGithubWebhooks: boolean
+  readonly description: string
   readonly dockerhubCredentialsPath: string
   readonly domainName: string
   readonly hostedZoneTypes: string[]
-  readonly opensearchSecretsKeyPath: string
+  readonly hostedZoneTypesTest: string[]
+  readonly hostnamePrefix: string
+  readonly infraRepoName: string
+  readonly infraRepoOwner: string
+  readonly infraSourceBranch: string
+  readonly instanceName: string
+  readonly namespace: string
+  readonly notificationReceivers?: string
+  readonly oauthTokenPath: string
   readonly oktaClientIdField: string
   readonly oktaIssuerField: string,
   readonly oktaSecret: string,
   readonly oktaUrl: string
+  readonly opensearchSecretsKeyPath: string
+  readonly owner: string
+  readonly pipelineFoundationStack: PipelineFoundationStack
+  readonly prodAdditionalAliases?: string
+  readonly prodCertificateArnPath?: string
+  readonly prodDomainNameOverride?: string
+  readonly prodFoundationStack: FoundationStack
+  readonly prodMaintainMetadataStack: MaintainMetadataStack
+  readonly prodManifestLambdaStack: ManifestLambdaStack
+  readonly projectName: string
+  readonly qaSpecPath: string
+  readonly searchIndex: string
+  readonly siteDirectory: string
+  readonly slackNotifyStackName?: string
+  readonly submoduleRepoName?: string
+  readonly submoduleSourceBranch?: string
+  readonly testFoundationStack: FoundationStack
+  readonly testMaintainMetadataStack: MaintainMetadataStack
+  readonly testManifestLambdaStack: ManifestLambdaStack
+  readonly workspaceName: string
 
 }
 
@@ -226,15 +227,20 @@ export class DeploymentPipelineStack extends Stack {
     const s3syncTest = new PipelineS3Sync(this, 'S3SyncTest', s3syncTestProps)
 
     const testHostname = `${testHostnamePrefix}.${props.domainName}`
-    // const testHost = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/website-url`)
-    // const smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
-    //   sourceArtifact: appSourceArtifact,
-    //   collectionPath: props.qaSpecPath,
-    //   collectionVariables: {
-    //     'hostname': testHost,
-    //   },
-    //   actionName: 'SmokeTests',
-    // })
+    let smokeTestsProject
+    const testActions: codepipeline.IAction[] = [deployTest.action, s3syncTest.action]
+    if (props.hostedZoneTypesTest.includes('public')){
+      // const testHost = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/website-url`)
+      smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
+        sourceArtifact: appSourceArtifact,
+        collectionPath: props.qaSpecPath,
+        collectionVariables: {
+          'hostname': testHostname,
+        },
+        actionName: 'SmokeTests',
+      })
+      testActions.push(smokeTestsProject.action)
+    }
 
     // Deploy to Production
     const prodHostnamePrefix = props.hostnamePrefix ? props.hostnamePrefix : `${props.namespace}-${props.instanceName}`
@@ -275,15 +281,20 @@ export class DeploymentPipelineStack extends Stack {
     const domainName = domainNameOverride || props.domainName
     const prodHostname = `${prodHostnamePrefix}.${domainName}`
     // const prodHost = StringParameter.valueForStringParameter(this, `/all/stacks/${prodStackName}/website-url`)
-    const smokeTestsProd = new NewmanRunner(this, 'StaticHostProdSmokeTests', {
-      sourceArtifact: appSourceArtifact,
-      collectionPath: props.qaSpecPath,
-      collectionVariables: {
-        'hostname': prodHostname,
-      },
-      actionName: 'SmokeTests',
-    })
-
+    
+    let smokeTestsProd
+    const prodActions: codepipeline.IAction[] = [deployProd.action, s3syncProd.action]
+    if (props.hostedZoneTypes.includes('public')){
+      smokeTestsProd = new NewmanRunner(this, 'StaticHostProdSmokeTests', {
+        sourceArtifact: appSourceArtifact,
+        collectionPath: props.qaSpecPath,
+        collectionVariables: {
+          'hostname': prodHostname,
+        },
+        actionName: 'SmokeTests',
+      })
+    prodActions.push(smokeTestsProd.action)
+  }
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
     const approvalAction = new GithubApproval({
@@ -295,6 +306,7 @@ export class DeploymentPipelineStack extends Stack {
         { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
       ],
     })
+    testActions.push(approvalAction)
     if (props.slackNotifyStackName !== undefined) {
       new SlackApproval(this, 'SlackApproval', {
         approvalTopic,
@@ -315,11 +327,11 @@ export class DeploymentPipelineStack extends Stack {
           stageName: 'Source',
         },
         {
-          actions: [deployTest.action, s3syncTest.action, approvalAction],
+          actions: testActions,
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action, s3syncProd.action, smokeTestsProd.action],
+          actions: prodActions,
           stageName: 'Production',
         },
       ],

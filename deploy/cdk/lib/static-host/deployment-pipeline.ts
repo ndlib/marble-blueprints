@@ -230,12 +230,12 @@ export class DeploymentPipelineStack extends Stack {
     let smokeTestsProject
     const testActions: codepipeline.IAction[] = [deployTest.action, s3syncTest.action]
     if (props.hostedZoneTypesTest.includes('public')){
-      const testHost = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/website-url`)
+      // const testHost = StringParameter.valueForStringParameter(this, `/all/stacks/${testStackName}/website-url`)
       smokeTestsProject = new NewmanRunner(this, 'StaticHostSmokeTests', {
         sourceArtifact: appSourceArtifact,
         collectionPath: props.qaSpecPath,
         collectionVariables: {
-          'hostname': testHost,
+          'hostname': testHostname,
         },
         actionName: 'SmokeTests',
       })

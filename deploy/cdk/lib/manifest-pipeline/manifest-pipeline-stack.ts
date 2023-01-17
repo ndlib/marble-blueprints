@@ -677,7 +677,7 @@ export class ManifestPipelineStack extends Stack {
     parallelSteps.branch(archivesSpaceExportTask)
     parallelSteps.branch(curateExportTask)
     parallelSteps.branch(expandSubjectTermsTask)
-    parallelSteps.branch(museumExportTask)
+    // parallelSteps.branch(museumExportTask)
     parallelSteps.branch(objectFilesApiTask)
     // Catch errors
     parallelSteps.addCatch(passDictEventTask, { errors: ['Lambda.Unknown'], resultPath: '$.unexpected' })

@@ -226,7 +226,7 @@ export class DeploymentPipelineStack extends Stack {
         allow for the same patch version of python to be installed. If they differ
         then use this env var override .python-version files */
         PYENV_VERSION: {
-          value: `3.10.5`, //3.8.13
+          value: `3.10.9`, //3.8.13
           type: BuildEnvironmentVariableType.PLAINTEXT,
         },
       },

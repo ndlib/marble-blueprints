@@ -14,7 +14,9 @@
       "marbleContentFileShareId": "share-1112707B",
       "rBSCS3ImageBucketName": "rbsc-test-files",
       "region": "us-east-1",
-      "slackNotifyStackName": "slack-cd-approvals-test-notifier",
+      "slackChannelId": "GG6GVEMSM",
+      "slackChannelName": "cd-approval-test",
+      "slackNotifyStackName": "slack-notify",
       "useExistingDnsZone": true,
       "useVpcId": "vpc-797fed1d"
     },
@@ -34,7 +36,9 @@
       "notificationReceivers": "hl-mellon-deployment-approvers-list@nd.edu",
       "rBSCS3ImageBucketName": "libnd-smb-rbsc",
       "region": "us-east-1",
-      "slackNotifyStackName": "slack-approval-bot-marble-notifier",
+      "slackChannelId": "GGN9AHVPV",
+      "slackChannelName": "mellon-approvals",
+      "slackNotifyStackName": "slack-notify",
       "useExistingDnsZone": false,
       "useVpcId": "vpc-55c35e30"
     }

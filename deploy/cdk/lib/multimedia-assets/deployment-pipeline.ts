@@ -6,11 +6,10 @@ import { Topic } from 'aws-cdk-lib/aws-sns'
 import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { SecretValue, Stack, StackProps } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
-import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk2'
+import { NewmanRunner, PipelineNotifications, SlackIntegratedManualApproval, SlackSubscription } from '@ndlib/ndlib-cdk2'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
-import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -25,6 +24,8 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly contact: string
   readonly projectName: string
   readonly description: string
+  readonly slackChannelId: string
+  readonly slackChannelName: string
   readonly slackNotifyStackName?: string
   readonly notificationReceivers?: string
   readonly testFoundationStack: FoundationStack
@@ -136,16 +137,21 @@ export class DeploymentPipelineStack extends Stack {
 
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new GithubApproval({
+    const approvalAction = new SlackIntegratedManualApproval({
+      actionName: 'ApproveTestStack',
       notificationTopic: approvalTopic,
-      testTarget: `https://${testHostname}`,
-      prodTarget: `https://${prodHostname}`,
-      githubSources: [
-        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
-      ],
+      customData: {
+        successfulTarget: `https://${testHostname}`,
+        attemptTarget: `https://${prodHostname}`,
+        slackChannelId: props.slackChannelId,
+        slackChannelName: props.slackChannelName,
+        githubSources: [
+          { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+        ],
+      },
     })
     if (props.slackNotifyStackName !== undefined) {
-      new SlackApproval(this, 'SlackApproval', {
+      new SlackSubscription(this, 'SlackSubscription', {
         approvalTopic,
         notifyStackName: props.slackNotifyStackName,
       })

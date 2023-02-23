@@ -8,6 +8,8 @@ export class ContextEnv {
   readonly useVpcId: string
   readonly domainName: string
   readonly useExistingDnsZone: boolean
+  readonly slackChannelId: string
+  readonly slackChannelName: string
   readonly slackNotifyStackName: string
   readonly notificationReceivers: string
   readonly rBSCS3ImageBucketName: string

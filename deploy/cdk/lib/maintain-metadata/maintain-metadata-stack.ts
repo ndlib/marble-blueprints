@@ -1,5 +1,5 @@
 import { Duration, Expiration, Fn, Stack, StackProps } from "aws-cdk-lib"
-import { AppsyncFunction, AuthorizationType, DynamoDbDataSource, FieldLogLevel, GraphqlApi, MappingTemplate, Resolver, Schema } from '@aws-cdk/aws-appsync-alpha'
+import { AppsyncFunction, AuthorizationType, DynamoDbDataSource, FieldLogLevel, GraphqlApi, MappingTemplate, Resolver, SchemaFile } from 'aws-cdk-lib/aws-appsync'
 import { Rule, Schedule } from "aws-cdk-lib/aws-events"
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets"
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam'
@@ -64,7 +64,7 @@ export class MaintainMetadataStack extends Stack {
     const daysForKeyToLast = 7
 
     // Define construct contents here
-    const apiSchema = Schema.fromAsset(path.join(__dirname, 'schema.graphql'))
+    const apiSchema = SchemaFile.fromAsset(path.join(__dirname, 'schema.graphql'))
 
     this.api = new GraphqlApi(this, 'Api', {
       name: `${this.stackName}-api`,

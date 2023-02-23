@@ -5,11 +5,10 @@ import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Topic } from 'aws-cdk-lib/aws-sns'
 import { Fn, SecretValue, Stack, StackProps } from  'aws-cdk-lib'
 import { Construct } from "constructs"
-import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk2'
+import { PipelineNotifications, SlackIntegratedManualApproval, SlackSubscription } from '@ndlib/ndlib-cdk2'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation'
-import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -22,6 +21,8 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly owner: string
   readonly contact: string
   readonly sentryDsn: string
+  readonly slackChannelId: string
+  readonly slackChannelName: string
   readonly slackNotifyStackName?: string
   readonly notificationReceivers?: string
   readonly createGithubWebhooks: boolean
@@ -135,16 +136,21 @@ export class DeploymentPipelineStack extends Stack {
 
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new GithubApproval({
+    const approvalAction = new SlackIntegratedManualApproval({
+      actionName: 'ApproveTestStack',
       notificationTopic: approvalTopic,
-      testTarget: `stack ${testStackName}`,
-      prodTarget: `stack ${prodStackName}`,
-      githubSources: [
-        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
-      ],
+      customData: {
+        successfulTarget: `stack ${testStackName}`,
+        attemptTarget: `stack ${prodStackName}`,
+        slackChannelId: props.slackChannelId,
+        slackChannelName: props.slackChannelName,
+        githubSources: [
+          { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+        ],
+      },
     })
     if(props.slackNotifyStackName !== undefined){
-      new SlackApproval(this, 'SlackApproval', {
+      new SlackSubscription(this, 'SlackSubscription', {
         approvalTopic,
         notifyStackName: props.slackNotifyStackName,
       })

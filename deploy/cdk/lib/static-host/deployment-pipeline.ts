@@ -7,14 +7,13 @@ import { Topic } from 'aws-cdk-lib/aws-sns'
 import { StringParameter } from 'aws-cdk-lib/aws-ssm'
 import { Fn, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
-import { NewmanRunner, PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk2'
+import { NewmanRunner, PipelineNotifications, SlackIntegratedManualApproval, SlackSubscription } from '@ndlib/ndlib-cdk2'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { IPipelineS3SyncProps, PipelineS3Sync } from './pipeline-s3-sync'
 import { MaintainMetadataStack } from '../maintain-metadata'
 import { ManifestLambdaStack } from '../manifest-lambda'
-import { GithubApproval } from '../github-approval'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
   readonly appRepoName: string
@@ -54,6 +53,8 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly qaSpecPath: string
   readonly searchIndex: string
   readonly siteDirectory: string
+  readonly slackChannelId: string
+  readonly slackChannelName: string
   readonly slackNotifyStackName?: string
   readonly submoduleRepoName?: string
   readonly submoduleSourceBranch?: string
@@ -297,18 +298,23 @@ export class DeploymentPipelineStack extends Stack {
   }
     // Approval
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new GithubApproval({
+    const approvalAction = new SlackIntegratedManualApproval({
+      actionName: 'ApproveTestStack',
       notificationTopic: approvalTopic,
-      testTarget: `https://${testHostname}`,
-      prodTarget: `https://${prodHostname}`,
-      githubSources: [
-        { owner: props.appRepoOwner, sourceAction: appSourceAction },
-        { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
-      ],
+      customData: {
+        successfulTarget: `https://${testHostname}`,
+        attemptTarget: `https://${prodHostname}`,
+        slackChannelId: props.slackChannelId,
+        slackChannelName: props.slackChannelName,
+        githubSources: [
+          { owner: props.appRepoOwner, sourceAction: appSourceAction },
+          { owner: props.infraRepoOwner, sourceAction: infraSourceAction },
+        ],
+      },
     })
     testActions.push(approvalAction)
     if (props.slackNotifyStackName !== undefined) {
-      new SlackApproval(this, 'SlackApproval', {
+      new SlackSubscription(this, 'SlackSubscription', {
         approvalTopic,
         notifyStackName: props.slackNotifyStackName,
       })

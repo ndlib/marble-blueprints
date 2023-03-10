@@ -42,6 +42,21 @@ marble-maintain-metadata
 marble-service-levels
 ```
 
+Here is an example to deploy something with the namespace of "sm" with overriding many parameters:
+```cdk deploy -c env=dev -c stackType=pipeline \
+  -c "redbox:hostnamePrefix=redbox-sm" \
+  -c "iiifImageService:hostnamePrefix=image-iiif-sm" \
+  -c "website:hostnamePrefix=marble-sm" \
+  -c "manifestPipeline:hostnamePrefix=presentation-iiif-sm" \
+  -c "userContent:hostnamePrefix=marble-user-content-sm" \
+  -c "inquisitions:hostnamePrefix=inquisition-sm" \
+  -c "viewer:hostnamePrefix=viewer-sm" \
+  -c namespace=sm \
+  -c "manifestLambda:hostnamePrefix=iiif-manifest-sm" \
+  -c "seaside:hostnamePrefix=seaside-sm" \
+sm-\*-deployment
+```
+
 ## Deploying to production
 
 We will be using continuous deployment pipelines for managing our stacks in the production account. These pipelines can be deployed with one command:
@@ -64,13 +79,6 @@ npx cdk deploy --exclusively marbleb-prod-dashboards-stack \
   -c "namespace=marbleb-prod" \
   -c "env=prod" \
   -c "manifestLambda:publicGraphqlHostnamePrefix=marbleb-prod-public-graphql"
-```
-
-In order to backup the DynamoDB database which contains the source for information contained on the various websites as well as portfolio content, deploy the backup stack to production:
-```sh
-npm run cdk deploy -- --exclusively marbleb-prod-backup \
-  -c "namespace=marbleb-prod" \
-  -c "env=prod"
 ```
 
 

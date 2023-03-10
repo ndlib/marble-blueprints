@@ -705,7 +705,7 @@ export class ManifestPipelineStack extends Stack {
       })
     }
     if ((props.createBackup !== undefined) && (props.createBackup)) {
-      Tags.of(this.websiteMetadataDynamoTable).add("BackupMarbleDynamoDB", "true")
+      Tags.of(this.websiteMetadataDynamoTable).add("BackupDynamoDB", "true")
     }
 
   }

@@ -501,7 +501,7 @@ describe('ManifestPipelineStack', () => {
       template.hasResourceProperties('AWS::DynamoDB::Table', {
         "Tags": [
           {
-            "Key": "BackupMarbleDynamoDB",
+            "Key": "BackupDynamoDB",
             "Value": "true",
           },
         ],

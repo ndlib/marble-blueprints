@@ -14,7 +14,6 @@ import { ContextEnv } from '../lib/context-env'
 import { ServiceStacks } from '../lib/types'
 import { ServiceLevelsStack } from '../lib/monitoring/service-levels-stack'
 import { IStaticHostStackProps } from '../lib/static-host'
-import { BackupStack } from '../lib/backup/backup-stack'
 import { Bucket } from 'aws-cdk-lib/aws-s3'
 import { DashboardsStack } from '../lib/monitoring/dashboards-stack'
 
@@ -232,11 +231,6 @@ export const instantiateStacks = (app: App, namespace: string, contextEnv: Conte
     emailSubscriber: contextEnv.alarmsEmail,
     ...sloContext,
     ...commonProps,
-  })
-
-  const backupContext = getContextByNamespace('backup')
-  new BackupStack(app, `${namespace}-backup`, {
-    ...backupContext,
   })
 
   return services

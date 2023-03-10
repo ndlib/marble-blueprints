@@ -15,7 +15,7 @@ export class BackupStack extends Stack {
     const backupPlan = BackupPlan.dailyMonthly1YearRetention(this, backupPlanName , backupVault)
     backupPlan.addSelection('DynamoTables', {
       resources: [
-        BackupResource.fromTag('BackupMarbleDynamoDB', 'true'),
+        BackupResource.fromTag('BackupDynamoDB', 'true'),
       ],
     })
 

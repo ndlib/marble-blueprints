@@ -1,4 +1,4 @@
-import { BuildEnvironmentVariableType, BuildSpec, PipelineProject } from 'aws-cdk-lib/aws-codebuild'
+import { BuildEnvironmentVariableType, BuildSpec, LinuxBuildImage, PipelineProject } from 'aws-cdk-lib/aws-codebuild'
 import codepipeline = require('aws-cdk-lib/aws-codepipeline')
 import codepipelineActions = require('aws-cdk-lib/aws-codepipeline-actions')
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
@@ -141,6 +141,9 @@ export class DeploymentPipelineStack extends Stack {
     }
     // Project for copying test images into the public buckets
     const copyImagesProject = new PipelineProject(this, 'CopyImages', {
+      environment: {
+        buildImage: LinuxBuildImage.STANDARD_6_0,
+      },
       buildSpec: BuildSpec.fromObject({
         version: '0.2',
         phases: {

@@ -27,7 +27,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly contact: string
   readonly slackChannelId: string
   readonly slackChannelName: string
-  readonly slackNotifyStackName?: string
+  readonly slackNotifyTopicOutput: string
   readonly notificationReceivers?: string
   readonly hostnamePrefix: string
   readonly sentryDsn: string
@@ -266,7 +266,8 @@ export class DeploymentPipelineStack extends Stack {
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, testHostnamePrefix, props.imageServiceStackName, props.dataProcessingKeyPath, `${props.namespace}-manifest-deploy-test`, false, props.metadataTimeToLiveDays, props.filesTimeToLiveDays, false, false, 'test')
 
     // Approval
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const importedSlackNotifyTopicArn = Fn.importValue(props.slackNotifyTopicOutput)
+    const approvalTopic = Topic.fromTopicArn(this, 'SlackTopicFromArn', importedSlackNotifyTopicArn)
     const approvalAction = new SlackIntegratedManualApproval({
       actionName: 'ApproveTestStack',
       notificationTopic: approvalTopic,
@@ -281,12 +282,6 @@ export class DeploymentPipelineStack extends Stack {
         ],
       },
     })
-    if(props.slackNotifyStackName !== undefined){
-      new SlackSubscription(this, 'SlackSubscription', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
 
     // Deploy to Production
     const createCopyMediaContentLambda = props.contextEnvName === 'prod' ? true : false  // only deploy copy lambda to prod stage in prod environment

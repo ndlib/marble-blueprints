@@ -23,7 +23,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly sentryDsn: string
   readonly slackChannelId: string
   readonly slackChannelName: string
-  readonly slackNotifyStackName?: string
+  readonly slackNotifyTopicOutput: string
   readonly notificationReceivers?: string
   readonly createGithubWebhooks: boolean
   readonly dockerhubCredentialsPath: string
@@ -135,7 +135,8 @@ export class DeploymentPipelineStack extends Stack {
     const deployTest = createDeploy(testStackName, `${props.namespace}-test`, `${props.namespace}-maintain-metadata-deploy-test`, 'test')
 
     // Approval
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const importedSlackNotifyTopicArn = Fn.importValue(props.slackNotifyTopicOutput)
+    const approvalTopic = Topic.fromTopicArn(this, 'SlackTopicFromArn', importedSlackNotifyTopicArn)
     const approvalAction = new SlackIntegratedManualApproval({
       actionName: 'ApproveTestStack',
       notificationTopic: approvalTopic,
@@ -149,12 +150,6 @@ export class DeploymentPipelineStack extends Stack {
         ],
       },
     })
-    if(props.slackNotifyStackName !== undefined){
-      new SlackSubscription(this, 'SlackSubscription', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
 
     // Deploy to Production
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `${props.namespace}-maintain-metadata-deploy-prod`, 'prod')

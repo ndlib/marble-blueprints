@@ -16,7 +16,7 @@
       "region": "us-east-1",
       "slackChannelId": "GG6GVEMSM",
       "slackChannelName": "cd-approval-test",
-      "slackNotifyStackName": "slack-notify",
+      "slackNotifyTopicOutput": "slack-notify:TopicArn",
       "useExistingDnsZone": true,
       "useVpcId": "vpc-797fed1d"
     },
@@ -38,7 +38,7 @@
       "region": "us-east-1",
       "slackChannelId": "GGN9AHVPV",
       "slackChannelName": "mellon-approvals",
-      "slackNotifyStackName": "slack-notify",
+      "slackNotifyTopicOutput": "slack-notify:TopicArn",
       "useExistingDnsZone": false,
       "useVpcId": "vpc-55c35e30"
     }

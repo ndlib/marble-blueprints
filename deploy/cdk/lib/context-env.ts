@@ -10,7 +10,7 @@ export class ContextEnv {
   readonly useExistingDnsZone: boolean
   readonly slackChannelId: string
   readonly slackChannelName: string
-  readonly slackNotifyStackName: string
+  readonly slackNotifyTopicOutput: string
   readonly notificationReceivers: string
   readonly rBSCS3ImageBucketName: string
   readonly createGithubWebhooks: boolean

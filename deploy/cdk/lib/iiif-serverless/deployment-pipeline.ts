@@ -10,7 +10,7 @@ import { FoundationStack, PipelineFoundationStack } from '../foundation'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { Fn, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
 import { Construct } from "constructs"
-import { NewmanRunner, PipelineNotifications, SlackIntegratedManualApproval, SlackSubscription } from '@ndlib/ndlib-cdk2'
+import { NewmanRunner, PipelineNotifications, SlackIntegratedManualApproval } from '@ndlib/ndlib-cdk2'
 
 export interface IDeploymentPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
@@ -34,7 +34,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly createGithubWebhooks: boolean
   readonly slackChannelId: string
   readonly slackChannelName: string
-  readonly slackNotifyStackName?: string
+  readonly slackNotifyTopicOutput: string
   readonly notificationReceivers?: string
   readonly paramPathPrefix: string
   readonly dockerhubCredentialsPath: string
@@ -191,7 +191,9 @@ export class DeploymentPipelineStack extends Stack {
     })
 
     // Approval
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const importedSlackNotifyTopicArn = Fn.importValue(props.slackNotifyTopicOutput)
+    const approvalTopic = Topic.fromTopicArn(this, 'SlackTopicFromArn', importedSlackNotifyTopicArn)
+
     const approvalAction = new SlackIntegratedManualApproval({
       actionName: 'ApproveTestStack',
       notificationTopic: approvalTopic,
@@ -206,12 +208,6 @@ export class DeploymentPipelineStack extends Stack {
         ],
       },
       })
-    if (props.slackNotifyStackName !== undefined) {
-      new SlackSubscription(this, 'SlackSubscription', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
 
     const deployProd = createDeploy(prodStackName, `${props.namespace}-prod`, `${props.hostnamePrefix}`, `${props.paramPathPrefix}/prod`, 'prod')
     const copyImagesProdAction = new CodeBuildAction({

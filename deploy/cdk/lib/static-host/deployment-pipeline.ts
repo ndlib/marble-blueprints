@@ -55,7 +55,7 @@ export interface IDeploymentPipelineStackProps extends StackProps {
   readonly siteDirectory: string
   readonly slackChannelId: string
   readonly slackChannelName: string
-  readonly slackNotifyStackName?: string
+  readonly slackNotifyTopicOutput: string
   readonly submoduleRepoName?: string
   readonly submoduleSourceBranch?: string
   readonly testFoundationStack: FoundationStack
@@ -297,7 +297,8 @@ export class DeploymentPipelineStack extends Stack {
     prodActions.push(smokeTestsProd.action)
   }
     // Approval
-    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const importedSlackNotifyTopicArn = Fn.importValue(props.slackNotifyTopicOutput)
+    const approvalTopic = Topic.fromTopicArn(this, 'SlackTopicFromArn', importedSlackNotifyTopicArn)
     const approvalAction = new SlackIntegratedManualApproval({
       actionName: 'ApproveTestStack',
       notificationTopic: approvalTopic,
@@ -313,12 +314,6 @@ export class DeploymentPipelineStack extends Stack {
       },
     })
     testActions.push(approvalAction)
-    if (props.slackNotifyStackName !== undefined) {
-      new SlackSubscription(this, 'SlackSubscription', {
-        approvalTopic,
-        notifyStackName: props.slackNotifyStackName,
-      })
-    }
 
     // Pipeline
     const sources = [appSourceAction, infraSourceAction]

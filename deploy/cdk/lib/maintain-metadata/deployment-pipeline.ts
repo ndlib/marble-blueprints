@@ -5,7 +5,7 @@ import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import { Topic } from 'aws-cdk-lib/aws-sns'
 import { Fn, SecretValue, Stack, StackProps } from  'aws-cdk-lib'
 import { Construct } from "constructs"
-import { PipelineNotifications, SlackIntegratedManualApproval, SlackSubscription } from '@ndlib/ndlib-cdk2'
+import { PipelineNotifications, SlackIntegratedManualApproval } from '@ndlib/ndlib-cdk2'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy } from '../namespaced-policy'
 import { PipelineFoundationStack } from '../foundation'

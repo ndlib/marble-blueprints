@@ -1,3 +1,5 @@
+# MARBLE-related
+# Archived 2023-05-12 sm
 # marble-blueprints
 The [Hesburgh Libraries](https://library.nd.edu) and [Snite Museum](https://sniteartmuseum.nd.edu/) of Art at the University of Notre Dame received a grant from The Andrew W. Mellon Foundation in December 2017 to develop a unified online collections platform to encourage comparative research, innovative joint exhibitions, and deeper integration of artwork, rare books, archival resources, and cultural artifacts into University teaching. For more information about Marble visit https://innovation.library.nd.edu/marble.
 
